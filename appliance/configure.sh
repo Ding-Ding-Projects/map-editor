@@ -4,6 +4,21 @@ set -eu
 rc-update add docker default
 rc-update add chronyd default
 rc-update add networking boot
+rc-update add devfs sysinit
+rc-update add mdev sysinit
+rc-update add hwdrivers sysinit
+rc-update add modules boot
+rc-update add sysctl boot
+rc-update add hostname boot
+rc-update add bootmisc boot
+rc-update add syslog boot
+rc-update add mount-ro shutdown
+rc-update add killprocs shutdown
+# Serial console too, so the boot test and VM consoles show the banner.
+echo 'ttyS0::respawn:/sbin/getty -L 115200 ttyS0 vt100' >> /etc/inittab
+# Make sure the initramfs can mount the ext4 root.
+sed -i 's/^features="/features="ext4 /' /etc/mkinitfs/mkinitfs.conf 2>/dev/null || true
+mkinitfs $(ls /lib/modules | head -1)
 rc-update add map-editor default
 cat > /etc/network/interfaces <<'NET'
 auto lo

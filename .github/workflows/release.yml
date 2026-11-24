@@ -77,11 +77,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with: { name: image-tar }
-      - run: sudo apt-get update && sudo apt-get install -y qemu-utils qemu-system-x86 curl
-      - name: Load the nbd module with partition support
-        run: sudo modprobe nbd max_part=16
+      - run: sudo apt-get update && sudo apt-get install -y qemu-utils qemu-system-x86 curl fdisk e2fsprogs parted
       - name: Build appliance image
-        run: sudo AMVI_SHA256=$(cut -d' ' -f1 appliance/tools.sha256) appliance/build.sh map-editor-image.tar ${{ needs.meta.outputs.version }}
+        run: sudo appliance/build.sh map-editor-image.tar ${{ needs.meta.outputs.version }}
       - name: Boot test under QEMU
         run: sudo appliance/boot-test.sh appliance/out/map-editor-appliance-x86_64.img
       - run: sudo xz -T0 -k appliance/out/map-editor-appliance-x86_64.img
