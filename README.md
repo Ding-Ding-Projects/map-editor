@@ -1,5 +1,7 @@
 # Map Editor
 
+**Documentation: https://ding-ding-projects.github.io/map-editor/**
+
 A Minecraft Java Edition world editor based on [Amulet Map Editor](https://github.com/Amulet-Team/Amulet-Map-Editor), rebuilt in TypeScript so the same editor runs three ways:
 
 | Form | What you get |

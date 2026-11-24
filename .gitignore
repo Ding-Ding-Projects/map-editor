@@ -5,3 +5,4 @@ vendor/
 appliance/out/
 .env
 *.log
+site/dist/

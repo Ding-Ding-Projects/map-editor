@@ -62,7 +62,9 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [ ] Exports in every format, bulk actions, changelog viewer, offline documentation.
 - [ ] Element locks, unlock ladder, authenticator.
 - [ ] Built-in tools: file converter, Base64, quicktype, Ollama suite, Minecraft server manager and world generator, virtual disk manager on Windows.
-- [ ] Documentation site on GitHub Pages, tabbed README, screen recording, line counts in releases.
+- [x] Documentation site generated from `site/content.mjs`: landing page and one article per feature, each ending in suggested articles, version and commit in the footer; checked at 320 px wide with no sideways scrolling.
+- [ ] Site: every required feature, bundled fonts, phone PDF edition, interactive diagrams, real screenshots, install buttons tied to verified releases.
+- [ ] Tabbed README, screen recording, line counts in releases.
 
 ## Decisions recorded
 
