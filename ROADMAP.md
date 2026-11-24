@@ -16,7 +16,8 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 ## Phase 2: desktop app
 
 - [x] Electron shell runs the shared server on loopback and loads the shared UI (bundle builds).
-- [ ] Squirrel.Windows installer built and installed on Windows. Packaging script and CI job exist; not yet run.
+- [x] Squirrel.Windows installers for Map Editor and Map Editor Deploy built in CI, checked as NotSigned, published in release v0.1.0-build.12.
+- [ ] Installer run and app launched on a real Windows PC.
 - [ ] Auto-update from the release feed with a restart banner, and "Update coming soon".
 - [ ] Native folder picker for worlds outside `.minecraft/saves`.
 
@@ -24,13 +25,14 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 
 - [x] Web UI driven in headless Chrome against the built server: owner sign-up, open world, fill, history, bilingual mode, no console errors.
 - [x] `scripts/setup.mjs` writes `.env` with validation and a non-interactive mode (tested); `host.bat` with `--detached` and `--logs`.
-- [ ] Image built and pushed to GHCR. Dockerfile and CI job exist; Docker Hub was unreachable from the build sandbox, so the first build happens in CI.
+- [x] Image built for amd64 and arm64, pushed to GHCR, and started with docker compose in CI until its health check answered.
 - [ ] Compose start and LAN link verified from another machine on the network.
 
 ## Phase 4: appliance OS image
 
-- [x] Build script (Alpine, pinned builder checked by SHA-256), service that loads the preloaded image, console banner with the link and owner notice, OVF for VirtualBox and VMware, QEMU boot test.
-- [ ] x86_64 image built and boot-tested. Runs in CI; the Alpine mirror was unreachable from the build sandbox.
+- [x] Build script (Alpine, pinned alpine-make-rootfs checked by SHA-256), service that loads the preloaded image, console banner with the link and owner notice, OVF for VirtualBox and VMware, QEMU boot test.
+- [x] x86_64 image built in CI (alpine-make-rootfs on a loop device, syslinux), booted under QEMU until the web app answered its health check, and published as `.img.xz` and `.ova` in release v0.1.0-build.12.
+- [ ] Booted on real VirtualBox, VMware and a spare PC from USB.
 - [ ] Raspberry Pi arm64 image with a QEMU boot test before upload.
 - [ ] Separate data partition and an in-place updater for the OS and the app image together.
 - [ ] A way to add worlds to the appliance from the web UI (upload or network share).
