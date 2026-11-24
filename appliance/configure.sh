@@ -19,7 +19,6 @@ echo 'ttyS0::respawn:/sbin/getty -L 115200 ttyS0 vt100' >> /etc/inittab
 # Make sure the initramfs can mount the ext4 root.
 sed -i 's/^features="/features="ext4 /' /etc/mkinitfs/mkinitfs.conf 2>/dev/null || true
 mkinitfs $(ls /lib/modules | head -1)
-rc-update add map-editor default
 cat > /etc/network/interfaces <<'NET'
 auto lo
 iface lo inet loopback
@@ -51,6 +50,7 @@ start() {
 }
 stop() { ebegin "Stopping Map Editor"; docker stop map-editor; eend $?; }
 SVC
+rc-update add map-editor default
 install -m 0755 /dev/stdin /usr/local/bin/map-editor-banner <<'BAN'
 #!/bin/sh
 IP=$(ip -4 -o addr show eth0 2>/dev/null | awk '{print $4}' | cut -d/ -f1)
