@@ -1,5 +1,6 @@
 # Map Editor web app. Build context is the repository root.
-FROM node:22-alpine AS build
+# The bundles are plain JavaScript, so build once on the runner's own platform.
+FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 WORKDIR /src
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts --no-audit --no-fund
