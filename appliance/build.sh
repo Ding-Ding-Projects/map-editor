@@ -26,15 +26,19 @@ cp "$IMAGE_TAR" "$OUT/payload/map-editor-image.tar"
 echo "$VERSION" > "$OUT/payload/VERSION"
 
 RAW="$OUT/map-editor-appliance-x86_64.img"
+QCOW="$OUT/map-editor-appliance-x86_64.qcow2"
+# Built as qcow2 (the builder's default): attaching a raw file over NBD can report a zero-size device.
 "$OUT/alpine-make-vm-image" \
-  --image-format raw --image-size 4G --arch x86_64 \
+  --image-format qcow2 --image-size 4G --arch x86_64 \
   --branch v3.21 \
   --packages "docker openrc chrony e2fsprogs-extra" \
   --fs-skel-dir "$OUT/payload" --fs-skel-chown root:root \
   --script-chroot \
-  "$RAW" -- "$HERE/configure.sh"
+  "$QCOW" -- "$HERE/configure.sh"
 
-qemu-img convert -O vmdk -o subformat=streamOptimized "$RAW" "$OUT/map-editor-appliance-x86_64.vmdk"
+qemu-img convert -O raw "$QCOW" "$RAW"
+
+qemu-img convert -O vmdk -o subformat=streamOptimized "$QCOW" "$OUT/map-editor-appliance-x86_64.vmdk"
 VMDK_SIZE=$(stat -c %s "$OUT/map-editor-appliance-x86_64.vmdk")
 sed -e "s/@VERSION@/$VERSION/g" -e "s/@VMDK_SIZE@/$VMDK_SIZE/g" "$HERE/appliance.ovf" > "$OUT/map-editor-appliance-x86_64.ovf"
 ( cd "$OUT" && sha256sum map-editor-appliance-x86_64.ovf map-editor-appliance-x86_64.vmdk | sed 's/^\([0-9a-f]*\)  \(.*\)$/SHA256(\2)= \1/' > map-editor-appliance-x86_64.mf \
