@@ -34,6 +34,12 @@ install -m 0755 /dev/stdin /etc/init.d/map-editor <<'SVC'
 description="Map Editor web app"
 depend() { need docker net; }
 start_pre() {
+  # The Docker service reports started before its socket answers; wait for it, up to 90 s.
+  i=0
+  until docker info >/dev/null 2>&1; do
+    i=$((i + 1)); [ "$i" -ge 90 ] && { eerror "Docker did not become ready"; return 1; }
+    sleep 1
+  done
   # Load the preloaded image once, then keep using it (an update replaces image.tar).
   if [ ! -f /var/lib/map-editor/.loaded-$(cat /opt/map-editor/VERSION) ]; then
     docker load -i /opt/map-editor/image.tar && touch /var/lib/map-editor/.loaded-$(cat /opt/map-editor/VERSION)
