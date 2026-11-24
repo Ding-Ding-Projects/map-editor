@@ -78,6 +78,8 @@ jobs:
       - uses: actions/download-artifact@v4
         with: { name: image-tar }
       - run: sudo apt-get update && sudo apt-get install -y qemu-utils qemu-system-x86 curl
+      - name: Load the nbd module with partition support
+        run: sudo modprobe nbd max_part=16
       - name: Build appliance image
         run: sudo AMVI_SHA256=$(cut -d' ' -f1 appliance/tools.sha256) appliance/build.sh map-editor-image.tar ${{ needs.meta.outputs.version }}
       - name: Boot test under QEMU
@@ -117,6 +119,9 @@ jobs:
     needs: [meta, docker, appliance, desktop]
     if: always() && needs.meta.result == 'success'
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -146,7 +151,9 @@ jobs:
             echo "Workflow completed: $DONE"
             echo "Workflow duration: ${DUR}s"
           } > notes.md
-          find assets -type f \( -name '*.exe' -o -name 'RELEASES' -o -name '*.nupkg' -o -name '*.ova' -o -name '*.img.xz' -o -name 'SHA256SUMS' -o -name 'image-digest.txt' \) > files.txt
-          mkdir -p assets; touch files.txt
-          gh release create "${{ needs.meta.outputs.tag }}" --target "${{ github.sha }}" --title "Map Editor ${{ needs.meta.outputs.tag }}" --notes-file notes.md $(cat files.txt)
+          mkdir -p assets
+          # Squirrel names every package RELEASES; give each app's feed its own name so both upload.
+          for d in assets/desktop/*/; do [ -f "$d/RELEASES" ] && mv "$d/RELEASES" "$d/RELEASES-$(basename "$d")"; done
+          mapfile -d '' FILES < <(find assets -type f \( -name '*.exe' -o -name 'RELEASES-*' -o -name '*.nupkg' -o -name '*.ova' -o -name '*.img.xz' -o -name 'SHA256SUMS' -o -name 'image-digest.txt' \) -print0)
+          gh release create "${{ needs.meta.outputs.tag }}" --target "${{ github.sha }}" --title "Map Editor ${{ needs.meta.outputs.tag }}" --notes-file notes.md "${FILES[@]}"
           gh release view "${{ needs.meta.outputs.tag }}" --json tagName,isDraft,isPrerelease,targetCommitish,assets --jq '{tag: .tagName, draft: .isDraft, prerelease: .isPrerelease, target: .targetCommitish, assets: [.assets[].name]}'
