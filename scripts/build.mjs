@@ -1,7 +1,7 @@
 // Builds every form from one source tree into dist/.
 import { build } from 'esbuild';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, copyFileSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, copyFileSync, writeFileSync, readFileSync, cpSync } from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
@@ -22,6 +22,10 @@ const common = { bundle: true, sourcemap: true, logLevel: 'info', legalComments:
 await build({ ...common, entryPoints: [path.join(root, 'src/ui/main.ts')], outfile: path.join(dist, 'ui/app.js'), format: 'esm', platform: 'browser', target: 'es2022', minify: true });
 copyFileSync(path.join(root, 'src/ui/index.html'), path.join(dist, 'ui/index.html'));
 copyFileSync(path.join(root, 'src/ui/styles.css'), path.join(dist, 'ui/app.css'));
+// TinyMCE is self-hosted next to the UI (GPL licence key); only the files the editor loads.
+for (const part of ['tinymce.min.js', 'license.md', 'themes', 'models', 'icons', 'skins', 'plugins/lists', 'plugins/link', 'plugins/table', 'plugins/autolink']) {
+  cpSync(path.join(root, 'node_modules/tinymce', part), path.join(dist, 'ui/tinymce', part), { recursive: true });
+}
 await build({ ...common, entryPoints: [path.join(root, 'src/server/server.ts')], outfile: path.join(dist, 'server/server.mjs'), format: 'esm', platform: 'node', target: 'node22',
   banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" } });
 for (const app of ['desktop', 'deploy']) {

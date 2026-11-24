@@ -30,14 +30,6 @@ jobs:
           echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
           echo "date=$(git log -1 --format=%cI)" >> "$GITHUB_OUTPUT"
 
-  dockview:
-    # Pinned build of the dockview fork, fetched with a read-only token kept as a secret.
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: node scripts/fetch-dockview.mjs
-        env:
-          DOCKVIEW_TOKEN: ${{ secrets.DOCKVIEW_READ_TOKEN }}
 
   docker:
     needs: meta

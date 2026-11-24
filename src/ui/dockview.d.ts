@@ -1,0 +1,4 @@
+// The styled bundle of dockview-core exports the same API as the package entry.
+declare module 'dockview-core/dist/dockview-core.js' {
+  export * from 'dockview-core';
+}

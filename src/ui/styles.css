@@ -63,3 +63,44 @@ body { margin: 0; background: var(--md-sys-color-surface); color: var(--md-sys-c
 .toast span { flex: 1; }
 .toast.error { background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); --md-text-button-label-text-color: var(--md-sys-color-on-error-container); }
 @media (max-width: 600px) { .tabs { width: 100%; } .tool { max-width: none; } }
+/* dockview mapped onto Material Design 3 colour roles */
+.dock { height: calc(100vh - 120px); min-height: 560px; }
+.dockview-theme-m3 {
+  --dv-group-view-background-color: var(--md-sys-color-surface-container-low);
+  --dv-tabs-and-actions-container-background-color: var(--md-sys-color-surface-container);
+  --dv-tabs-and-actions-container-height: 48px;
+  --dv-tabs-and-actions-container-font-size: 14px;
+  --dv-activegroup-visiblepanel-tab-background-color: var(--md-sys-color-secondary-container);
+  --dv-activegroup-visiblepanel-tab-color: var(--md-sys-color-on-secondary-container);
+  --dv-activegroup-hiddenpanel-tab-background-color: transparent;
+  --dv-activegroup-hiddenpanel-tab-color: var(--md-sys-color-on-surface-variant);
+  --dv-inactivegroup-visiblepanel-tab-background-color: var(--md-sys-color-surface-container-high);
+  --dv-inactivegroup-visiblepanel-tab-color: var(--md-sys-color-on-surface);
+  --dv-inactivegroup-hiddenpanel-tab-background-color: transparent;
+  --dv-inactivegroup-hiddenpanel-tab-color: var(--md-sys-color-on-surface-variant);
+  --dv-separator-border: var(--md-sys-color-outline-variant);
+  --dv-sash-color: transparent;
+  --dv-active-sash-color: var(--md-sys-color-primary);
+  --dv-drag-over-background-color: color-mix(in srgb, var(--md-sys-color-primary) 16%, transparent);
+  --dv-drag-over-border-color: var(--md-sys-color-primary);
+  --dv-floating-box-shadow: 0 4px 8px 3px rgba(0,0,0,.18), 0 1px 3px rgba(0,0,0,.3);
+  --dv-floating-titlebar-background-color: var(--md-sys-color-surface-container-highest);
+  --dv-icon-hover-background-color: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
+  --dv-context-menu-background-color: var(--md-sys-color-surface-container);
+  --dv-context-menu-color: var(--md-sys-color-on-surface);
+  --dv-border-radius: 28px;
+  --dv-tab-border-radius: 20px;
+  --dv-tab-margin: 4px;
+  color: var(--md-sys-color-on-surface);
+}
+.dock .map { min-height: 0; height: 100%; }
+.dock .map canvas { min-height: 0; height: 100%; }
+.dock .tool, .panel-scroll { height: 100%; overflow: auto; max-width: none; border-radius: 0; }
+.panel-scroll > .card { border-radius: 0; }
+.notes { height: 100%; }
+/* TinyMCE chrome on Material Design 3 surfaces */
+.notes .tox.tox-tinymce { border: 0; border-radius: 0; }
+.notes .tox .tox-editor-header, .notes .tox .tox-toolbar-overlord, .notes .tox .tox-toolbar__primary, .notes .tox .tox-statusbar { background: var(--md-sys-color-surface-container) !important; border-color: var(--md-sys-color-outline-variant) !important; color: var(--md-sys-color-on-surface) !important; }
+.notes .tox .tox-edit-area::before { border-color: var(--md-sys-color-primary) !important; }
+.notes .tox .tox-tbtn, .notes .tox .tox-tbtn svg, .notes .tox .tox-statusbar a { color: var(--md-sys-color-on-surface) !important; fill: var(--md-sys-color-on-surface) !important; }
+.notes .tox .tox-tbtn:hover { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent) !important; }

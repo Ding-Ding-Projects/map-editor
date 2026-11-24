@@ -2,6 +2,8 @@
 import '@material/web/all.js';
 import { styles as typescaleStyles } from '@material/web/typography/md-typescale-styles.js';
 import { t as tr, type I18nState, type Key, type Lang } from './i18n.js';
+import { mountWorkspace } from './workspace.js';
+import { notesPanel as notesPanelImpl } from './notes.js';
 
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
 
@@ -158,20 +160,21 @@ const sel = { x1: 0, y1: 60, z1: 0, x2: 15, y2: 70, z2: 15 };
 let dim = 'overworld';
 async function editorView(view: HTMLElement): Promise<void> {
   if (!world) { prefs.tab = 'worlds'; return render(); }
-  view.innerHTML = `<div class="editor">
+  const root = document.createElement('div');
+  root.innerHTML = `<div class="editor">
     <section class="map card flat"><canvas id="map" role="img" aria-label="Top-down map"></canvas>
       <div class="coords md-typescale-body-small" id="coords">x 0 · z 0</div></section>
     <aside class="card tool">
-      <md-tabs id="ops" aria-label="Tools">${(['fill', 'replace', 'delete', 'clone', 'waterlog'] as const).map((o) => `<md-primary-tab data-op="${o}">${esc(tx(o))}</md-primary-tab>`).join('')}</md-tabs>
+      <md-chip-set id="ops" role="radiogroup" aria-label="Tools">${(['fill', 'replace', 'delete', 'clone', 'waterlog'] as const).map((o, i) => `<md-filter-chip data-op="${o}" label="${esc(tx(o))}" ${i === 0 ? 'selected' : ''}></md-filter-chip>`).join('')}</md-chip-set>
       <div class="coords-grid">${(['x1', 'y1', 'z1', 'x2', 'y2', 'z2'] as const).map((k) => `<md-outlined-text-field type="number" label="${k}" name="${k}" value="${sel[k]}"></md-outlined-text-field>`).join('')}</div>
       <div id="op-fields" class="stack"></div>
       <div class="muted" id="sel-size"></div>
       <md-filled-button id="run"></md-filled-button>
     </aside></div>`;
   let op: 'fill' | 'replace' | 'delete' | 'clone' | 'waterlog' = 'fill';
-  const fields = view.querySelector('#op-fields')!;
-  const runBtn = view.querySelector('#run')!;
-  const size = () => { const n = (a: number, b: number) => Math.abs(b - a) + 1; view.querySelector('#sel-size')!.textContent = tx('selection', { n: (n(sel.x1, sel.x2) * n(sel.y1, sel.y2) * n(sel.z1, sel.z2)).toLocaleString('en') }); };
+  const fields = root.querySelector('#op-fields')!;
+  const runBtn = root.querySelector('#run')!;
+  const size = () => { const n = (a: number, b: number) => Math.abs(b - a) + 1; root.querySelector('#sel-size')!.textContent = tx('selection', { n: (n(sel.x1, sel.x2) * n(sel.y1, sel.y2) * n(sel.z1, sel.z2)).toLocaleString('en') }); };
   const setOp = (o: typeof op) => {
     op = o;
     runBtn.textContent = tx('run', { op: tx(o) });
@@ -180,8 +183,8 @@ async function editorView(view: HTMLElement): Promise<void> {
       : o === 'clone' ? `<md-outlined-text-field name="dest" label="${esc(tx('dest'))}" value="0, 64, 0"></md-outlined-text-field>` : '';
   };
   setOp('fill'); size();
-  view.querySelectorAll<HTMLElement>('[data-op]').forEach((tab) => tab.addEventListener('click', () => setOp(tab.dataset.op as typeof op)));
-  view.querySelectorAll<HTMLInputElement>('.coords-grid md-outlined-text-field').forEach((f) => f.addEventListener('input', () => { (sel as Record<string, number>)[f.getAttribute('name')!] = Math.trunc(Number(f.value)); size(); drawSel(); }));
+  root.querySelectorAll<HTMLElement & { selected: boolean }>('[data-op]').forEach((chip, _i, all) => chip.addEventListener('click', () => { all.forEach((c) => { c.selected = c === chip; }); setOp(chip.dataset.op as typeof op); }));
+  root.querySelectorAll<HTMLInputElement>('.coords-grid md-outlined-text-field').forEach((f) => f.addEventListener('input', () => { (sel as Record<string, number>)[f.getAttribute('name')!] = Math.trunc(Number(f.value)); size(); drawSel(); }));
   runBtn.addEventListener('click', async () => {
     const v = (n: string) => (fields.querySelector(`[name=${n}]`) as HTMLInputElement | null)?.value ?? '';
     const body: Record<string, unknown> = { op, dimension: dim, box: { ...sel } };
@@ -192,12 +195,13 @@ async function editorView(view: HTMLElement): Promise<void> {
     try {
       const r = await api<{ changed: number; skipped: number; ms: number }>('/api/op', { method: 'POST', body });
       notify(tx('opDone', { op: tx(op), n: r.changed.toLocaleString('en'), ms: r.ms }), false, { label: tx('history'), run: () => { prefs.tab = 'history'; render(); } });
+      document.dispatchEvent(new Event('history-changed'));
       if (r.skipped) notify(tx('opSkipped', { n: r.skipped.toLocaleString('en') }), true);
       await drawMap();
     } catch (err) { notify((err as Error).message, true); } finally { runBtn.removeAttribute('disabled'); }
   });
 
-  const canvas = view.querySelector<HTMLCanvasElement>('#map')!;
+  const canvas = root.querySelector<HTMLCanvasElement>('#map')!;
   const ctx = canvas.getContext('2d')!;
   let originX = -64, originZ = -64, scale = 2; // block coordinate of the canvas's top-left, pixels per block
   let image: ImageBitmap | undefined; let imgCx = 0, imgCz = 0;
@@ -234,8 +238,19 @@ async function editorView(view: HTMLElement): Promise<void> {
   });
   canvas.addEventListener('pointerup', () => { const was = drag; drag = undefined; if (was && !was.select) drawMap(); else syncSel?.(); });
   canvas.addEventListener('wheel', (e) => { e.preventDefault(); scale = Math.max(0.5, Math.min(16, scale * (e.deltaY < 0 ? 1.25 : 0.8))); drawMap(); }, { passive: false });
-  syncSel = () => view.querySelectorAll<HTMLInputElement>('.coords-grid md-outlined-text-field').forEach((f) => { f.value = String((sel as Record<string, number>)[f.getAttribute('name')!]); });
+  syncSel = () => root.querySelectorAll<HTMLInputElement>('.coords-grid md-outlined-text-field').forEach((f) => { f.value = String((sel as Record<string, number>)[f.getAttribute('name')!]); });
   new ResizeObserver(() => drawMap()).observe(canvas);
+  const mapEl = root.querySelector<HTMLElement>('.map')!;
+  const toolEl = root.querySelector<HTMLElement>('.tool')!;
+  const histEl = document.createElement('div'); histEl.className = 'panel-scroll';
+  const notesEl = document.createElement('div'); notesEl.className = 'panel-scroll';
+  view.innerHTML = '<div id="dock" class="dock"></div>';
+  mountWorkspace(view.querySelector<HTMLElement>('#dock')!, { map: mapEl, tool: toolEl, history: histEl, notes: notesEl }, {
+    map: tx('editor'), tool: tx('fill'), history: tx('history'), notes: tx('notes'),
+  }, prefs.dark);
+  historyView(histEl);
+  document.addEventListener('history-changed', () => { if (histEl.isConnected) historyView(histEl); });
+  notesPanel(notesEl);
 }
 
 async function historyView(view: HTMLElement): Promise<void> {
@@ -281,6 +296,10 @@ function aboutView(view: HTMLElement) {
     <p class="md-typescale-body-large">${esc(provenance())}</p>
     <p class="muted">Commit ${esc(health?.commit ?? 'unavailable')}</p>
     <p>Map Editor is based on Amulet Map Editor by the Amulet Team, used under the Amulet licence. Minecraft is a trademark of Mojang Synergies AB; this project is not affiliated with Mojang or Microsoft.</p></section>`;
+}
+
+function notesPanel(el: HTMLElement) {
+  notesPanelImpl(el, { api, notify, dark: prefs.dark, label: tx('notes'), saved: tx('notesSaved') });
 }
 
 // ---------- keyboard ----------

@@ -139,6 +139,17 @@ export async function createServer(opts: ServerOptions) {
       if (volume(r.box) > MAX_OPERATION_BLOCKS) throw new HttpError(400, 'Selection is larger than the operation limit.');
       try { return send(200, await session.run(r)); } catch (e) { throw new HttpError(400, (e as Error).message); }
     }
+    if (p === '/api/notes') {
+      const file = path.join(opts.dataDir, 'notes', path.basename(session.history.gitdir).replace(/\.git$/, '') + '.html');
+      if (req.method === 'GET') { let html = ''; try { html = await fs.readFile(file, 'utf8'); } catch { /* none yet */ } return send(200, { html }); }
+      if (req.method === 'PUT') {
+        const { html } = await body(req, 512 * 1024);
+        if (typeof html !== 'string') throw new HttpError(400, 'html must be text');
+        await fs.mkdir(path.dirname(file), { recursive: true });
+        await fs.writeFile(file + '.tmp', html); await fs.rename(file + '.tmp', file);
+        return send(200, { saved: true });
+      }
+    }
     if (p === '/api/history' && req.method === 'GET') return send(200, { entries: await session.history.list() });
     if (p === '/api/history/restore' && req.method === 'POST') {
       const { sha } = await body(req);

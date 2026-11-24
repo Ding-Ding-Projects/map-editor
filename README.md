@@ -33,7 +33,9 @@ On Windows, `host.bat` does the same, with `host.bat --detached` to run in the b
 - Open Java Edition 1.18+ worlds (Anvil regions, palette sections) in all three dimensions.
 - Top-down map with pan, zoom and Shift+drag selection.
 - Fill, replace, delete, clone and waterlog, ported from Amulet's stock operations, with a 16.7 million block safety limit.
+- Editor workspace built on dockview: map, tools, history and notes panels you can dock, tab together, float and rearrange; the layout is remembered.
 - History panel with action filters and roll back to any point.
+- Rich text notes per world (TinyMCE), saved automatically.
 - English, Hong Kong Cantonese and bilingual interface, with separate English and Cantonese funny-level sliders that change wording only.
 - Light and dark Material 3 themes; reduced motion.
 
@@ -57,4 +59,4 @@ The interface is designed first on a design canvas; the source boards are in [`d
 
 ## Licence
 
-Map Editor is derived from Amulet Map Editor and stays under the Amulet Team licence for those parts. See [NOTICE.md](NOTICE.md). Minecraft is a trademark of Mojang Synergies AB; this project is not affiliated with Mojang or Microsoft.
+Map Editor is based on Amulet Map Editor, which is proprietary software of the Amulet Team. Its licence is reproduced in [LICENSE](LICENSE); using Map Editor requires your own Amulet licence from https://www.amuletmc.com/. See [NOTICE.md](NOTICE.md) for this and the third-party licences. Minecraft is a trademark of Mojang Synergies AB; this project is not affiliated with Mojang or Microsoft.

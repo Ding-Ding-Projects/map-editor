@@ -8,7 +8,6 @@
   "type": "module",
   "main": "dist/desktop/main.cjs",
   "scripts": {
-    "fetch:dockview": "node scripts/fetch-dockview.mjs",
     "build": "node scripts/build.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
@@ -18,7 +17,9 @@
     "setup": "node scripts/setup.mjs"
   },
   "dependencies": {
-    "isomorphic-git": "1.44.19"
+    "dockview-core": "8.9.1",
+    "isomorphic-git": "1.44.19",
+    "tinymce": "8.10.2"
   },
   "devDependencies": {
     "@electron/packager": "^18.4.4",

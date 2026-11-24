@@ -48,8 +48,10 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 
 ## Phase 6: required interface features still open
 
-- [ ] dockview workspace (docked panels, floating groups, saved layouts). Waiting on how the private dockview fork may be used from this public repository.
-- [ ] Rich text editing with TinyMCE. Waiting on a licence compatibility decision (TinyMCE is GPL).
+- [x] dockview workspace for the editor (map, tools, history, notes; docking, tabbing, saved layout), checked in headless Chrome.
+- [ ] dockview for every other workspace, floating groups by default on wide screens, and the phone single-group layout.
+- [x] Rich text notes per world with self-hosted TinyMCE, autosaved; typing and saving checked in headless Chrome.
+- [ ] TinyMCE for every other rich text field.
 - [ ] Command palette with live setting controls (Ctrl+Shift+F focuses search today).
 - [ ] Per-element appearance editor, infinite colour picker, logo customization.
 - [ ] Regex builder on every search field.
@@ -61,8 +63,8 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [ ] Built-in tools: file converter, Base64, quicktype, Ollama suite, Minecraft server manager and world generator, virtual disk manager on Windows.
 - [ ] Documentation site on GitHub Pages, tabbed README, screen recording, line counts in releases.
 
-## Known decisions needed
+## Decisions recorded
 
-- Licence: the exact upstream Amulet licence text must be added to `LICENSE`.
-- dockview source for a public repository.
-- TinyMCE licence compatibility.
+- Licence: the upstream Amulet licence is kept unaltered in `LICENSE`; the owner holds an Amulet licence for this work.
+- dockview: the public `dockview-core` package.
+- TinyMCE: included under its GPL licence key.
