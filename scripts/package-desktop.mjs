@@ -3,8 +3,9 @@ import { packager } from '@electron/packager';
 import { createWindowsInstaller } from 'electron-winstaller';
 import { readFileSync, writeFileSync, mkdirSync, cpSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
 const apps = [
   { id: 'MapEditor', name: 'Map Editor', main: 'dist/desktop/main.cjs' },

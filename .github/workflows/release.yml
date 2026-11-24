@@ -59,7 +59,11 @@ jobs:
           MAP_EDITOR_VERSION=${{ needs.meta.outputs.tag }} MAP_EDITOR_WORLDS_DIR=/tmp/worlds docker compose up -d
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8420/api/health && exit 0; sleep 2; done
           docker compose logs; exit 1
-      - run: docker save ${{ env.IMAGE }}:${{ needs.meta.outputs.version }} -o map-editor-image.tar
+      - name: Save the amd64 image for the appliance
+        run: |
+          docker pull --platform linux/amd64 ${{ env.IMAGE }}:${{ needs.meta.outputs.tag }}
+          docker tag ${{ env.IMAGE }}:${{ needs.meta.outputs.tag }} ${{ env.IMAGE }}:${{ needs.meta.outputs.version }}
+          docker save ${{ env.IMAGE }}:${{ needs.meta.outputs.version }} -o map-editor-image.tar
       - uses: actions/upload-artifact@v4
         with: { name: image-tar, path: map-editor-image.tar, retention-days: 3 }
       - run: echo "${{ steps.build.outputs.digest }}" > image-digest.txt
@@ -116,7 +120,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-        with: { path: assets }
+        continue-on-error: true
+        with: { name: desktop, path: assets/desktop }
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with: { name: appliance, path: assets/appliance }
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with: { name: image-digest, path: assets/image }
       - name: Publish one normal release for this commit
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
@@ -136,5 +147,6 @@ jobs:
             echo "Workflow duration: ${DUR}s"
           } > notes.md
           find assets -type f \( -name '*.exe' -o -name 'RELEASES' -o -name '*.nupkg' -o -name '*.ova' -o -name '*.img.xz' -o -name 'SHA256SUMS' -o -name 'image-digest.txt' \) > files.txt
+          mkdir -p assets; touch files.txt
           gh release create "${{ needs.meta.outputs.tag }}" --target "${{ github.sha }}" --title "Map Editor ${{ needs.meta.outputs.tag }}" --notes-file notes.md $(cat files.txt)
           gh release view "${{ needs.meta.outputs.tag }}" --json tagName,isDraft,isPrerelease,targetCommitish,assets --jq '{tag: .tagName, draft: .isDraft, prerelease: .isPrerelease, target: .targetCommitish, assets: [.assets[].name]}'

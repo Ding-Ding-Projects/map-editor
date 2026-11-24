@@ -3,8 +3,9 @@ import { build } from 'esbuild';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, copyFileSync, writeFileSync, readFileSync, cpSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
 let commit = process.env.SOURCE_COMMIT ?? 'unavailable';
 let builtAt = process.env.SOURCE_DATE ?? null;
