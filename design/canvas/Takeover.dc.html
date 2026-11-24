@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Install result takeovers</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,100..125,400..900&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid #FFFFFF;outline-offset:3px}
+</style>
+</helmet>
+<div style="position: relative; min-height: 820px; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 40px; box-sizing: border-box; background: {{bg}}; color: {{fg}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif">
+  <sc-for list="{{shapes}}" as="s" hint-placeholder-count="6">
+    <div aria-hidden="true" style="{{s}}"></div>
+  </sc-for>
+
+  <sc-if value="{{ok}}" hint-placeholder-val="{{ true }}">
+    <section role="alertdialog" aria-labelledby="ok-title" style="position: relative; width: 100%; max-width: 860px; display: flex; flex-direction: column; gap: 24px; align-items: flex-start">
+      <span style="height: 36px; padding: 0 16px; border-radius: 18px; background: {{chip}}; font-size: 14px; font-weight: 700; line-height: 36px">Installed</span>
+      <h1 id="ok-title" style="margin: 0; font-size: 96px; line-height: 92px; font-weight: 900; letter-spacing: -3px; font-variation-settings: 'wdth' 120">It is live.</h1>
+      <p style="margin: 0; font-size: 22px; line-height: 30px; max-width: 680px">map-editor-1 is running in Docker on this PC and answered its health check.</p>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; width: 100%">
+        <div style="padding: 20px; border-radius: 28px 28px 28px 8px; background: {{chip}}"><div style="font-size: 13px; font-weight: 600">Link</div><div style="font-family: 'Roboto Mono', monospace; font-size: 15px; font-weight: 500">192.168.1.42:8420</div></div>
+        <div style="padding: 20px; border-radius: 28px; background: {{chip}}"><div style="font-size: 13px; font-weight: 600">Version</div><div style="font-size: 28px; font-weight: 800">0.1.0</div></div>
+        <div style="padding: 20px; border-radius: 28px; background: {{chip}}"><div style="font-size: 13px; font-weight: 600">Exit code</div><div style="font-size: 28px; font-weight: 800">0</div></div>
+        <div style="padding: 20px; border-radius: 8px 28px 28px 28px; background: {{chip}}"><div style="font-size: 13px; font-weight: 600">Took</div><div style="font-size: 28px; font-weight: 800">42 s</div></div>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap">
+        <button style="height: 64px; padding: 0 32px; border-radius: 32px; border: 0; background: {{fg}}; color: {{bg}}; font-size: 18px; font-weight: 800">Open Map Editor</button>
+        <button style="height: 64px; padding: 0 28px; border-radius: 32px; border: 2px solid {{fg}}; background: transparent; color: {{fg}}; font-size: 18px; font-weight: 700">Copy link</button>
+        <button style="height: 64px; padding: 0 24px; border-radius: 32px; border: 0; background: transparent; color: {{fg}}; font-size: 16px; font-weight: 600">Close (Esc)</button>
+      </div>
+      <span style="font-size: 13px">Closes by itself in 8 s. Turn takeovers off in Settings, Comfort and focus.</span>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{fail}}" hint-placeholder-val="{{ false }}">
+    <section role="alertdialog" aria-labelledby="bad-title" style="position: relative; width: 100%; max-width: 920px; display: flex; flex-direction: column; gap: 20px; align-items: flex-start">
+      <span style="height: 36px; padding: 0 16px; border-radius: 18px; background: {{chip}}; font-size: 14px; font-weight: 700; line-height: 36px">Install failed · stays until you close it</span>
+      <h1 id="bad-title" style="margin: 0; font-size: 88px; line-height: 86px; font-weight: 900; letter-spacing: -3px; font-variation-settings: 'wdth' 120">That did not work.</h1>
+      <p style="margin: 0; font-size: 20px; line-height: 28px">Docker could not start map-editor-1. Port 8420 is already used by another program.</p>
+      <div style="width: 100%; box-sizing: border-box; padding: 20px 24px; border-radius: 24px; background: {{codeBg}}; color: {{codeFg}}; font-family: 'Roboto Mono', monospace; font-size: 14px; line-height: 22px; white-space: pre-wrap">$ docker compose -p map-editor-1 up -d
+Error response from daemon: driver failed programming external connectivity:
+Bind for 0.0.0.0:8420 failed: port is already allocated
+exit code 1 · 16:44:51 EST</div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap">
+        <button style="height: 64px; padding: 0 32px; border-radius: 32px; border: 0; background: {{fg}}; color: {{bg}}; font-size: 18px; font-weight: 800">Try port 8421</button>
+        <button style="height: 64px; padding: 0 28px; border-radius: 32px; border: 2px solid {{fg}}; background: transparent; color: {{fg}}; font-size: 18px; font-weight: 700">View full log</button>
+        <button style="height: 64px; padding: 0 28px; border-radius: 32px; border: 2px solid {{fg}}; background: transparent; color: {{fg}}; font-size: 18px; font-weight: 700">Copy details</button>
+        <button style="height: 64px; padding: 0 24px; border-radius: 32px; border: 0; background: transparent; color: {{fg}}; font-size: 16px; font-weight: 600">Dismiss (Esc)</button>
+      </div>
+    </section>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["success","failure"],"default":"success"},"$preview":{"width":1440,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ok = (this.props.state ?? 'success') === 'success';
+    const bg = ok ? '#1B5220' : '#93000A';
+    const fg = ok ? '#AAF5A4' : '#FFDAD6';
+    const chip = ok ? 'rgba(170,245,164,.16)' : 'rgba(255,218,214,.16)';
+    const shapes = [
+      ['-120px', '-80px', '420px', '420px', '50%'], ['auto', '-60px', '300px', '300px', '80px'],
+      ['60%', '70%', '360px', '360px', '50% 50% 50% 8%'], ['20%', '82%', '160px', '160px', '40px'],
+      ['75%', '-40px', '220px', '220px', '50%'], ['8%', '58%', '120px', '120px', '28px']
+    ].map(([top, left, w, h, r], i) => 'position: absolute; top: ' + top + '; left: ' + left + '; ' + (top === 'auto' ? 'bottom: -80px; right: -60px; left: auto; ' : '') + 'width: ' + w + '; height: ' + h + '; border-radius: ' + r + '; background: ' + fg + '; opacity: ' + (0.06 + (i % 3) * 0.03) + '; transform: rotate(' + (i * 17) + 'deg)');
+    return { ok, fail: !ok, bg, fg, chip, shapes, codeBg: 'rgba(0,0,0,.35)', codeFg: fg };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+# Map Editor web app. Run `node scripts/setup.mjs` (or host.bat on Windows) instead of editing by hand:
+# it writes .env with a free port and your worlds folder, then starts this file.
+services:
+  map-editor:
+    image: ghcr.io/ding-ding-projects/map-editor:${MAP_EDITOR_VERSION:-0.1.0}
+    restart: unless-stopped
+    ports:
+      - "${MAP_EDITOR_PORT:-8420}:8420"
+    volumes:
+      - map-editor-data:/data
+      - "${MAP_EDITOR_WORLDS_DIR:?Run the setup command first so the worlds folder is set}:/worlds"
+volumes:
+  map-editor-data:

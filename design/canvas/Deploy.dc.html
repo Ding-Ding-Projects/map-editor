@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map Editor deploy wizard</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,100..125,400..800&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #8FD88A;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 960px; padding: 24px; box-sizing: border-box; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif; font-size: 14px">
+  <div style="max-width: 1360px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px">
+    <header style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-end; justify-content: space-between; padding: 32px; border-radius: 48px 48px 48px 12px; background: {{t.primaryContainer}}; color: {{t.onPrimaryContainer}}">
+      <div style="display: flex; flex-direction: column; gap: 8px; max-width: 760px">
+        <span style="font-size: 12px; font-weight: 500">Map Editor Deploy · v0.1.0 · updated 2026-11-23 16:45:12 EST (UTC−05:00)</span>
+        <h1 style="margin: 0; font-size: 57px; line-height: 60px; font-weight: 800; letter-spacing: -1.5px; font-variation-settings: 'wdth' 115">Put Map Editor on your network</h1>
+        <p style="margin: 0; font-size: 18px; line-height: 26px">Pick where it runs. One click deploys it and gives you the working link.</p>
+      </div>
+      <div role="group" aria-label="View" style="display: flex; gap: 4px">
+        <sc-for list="{{views}}" as="v" hint-placeholder-count="2">
+          <button onClick="{{v.pick}}" aria-pressed="{{v.on}}" style="{{v.style}}">{{v.label}}</button>
+        </sc-for>
+      </div>
+    </header>
+
+    <sc-if value="{{isDeploy}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start">
+        <section aria-label="Targets" style="flex: 999 1 600px; min-width: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px">
+          <sc-for list="{{targets}}" as="x" hint-placeholder-count="5">
+            <button onClick="{{x.pick}}" aria-pressed="{{x.on}}" style="{{x.style}}">
+              <span style="{{x.badge}}">{{x.initial}}</span>
+              <span style="font-size: 24px; line-height: 30px; font-weight: 700">{{x.name}}</span>
+              <span style="font-size: 14px; line-height: 20px; opacity: .85">{{x.desc}}</span>
+              <span style="margin-top: auto; height: 28px; padding: 0 12px; border-radius: 14px; font-size: 12px; line-height: 28px; font-weight: 600; {{x.statusStyle}}">{{x.status}}</span>
+            </button>
+          </sc-for>
+        </section>
+
+        <aside aria-label="Target settings" style="flex: 1 1 360px; max-width: 460px; display: flex; flex-direction: column; gap: 16px; padding: 28px; border-radius: 32px; background: {{t.surfaceContainerLow}}">
+          <sc-if value="{{isUsb}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-direction: column; gap: 16px">
+              <h2 style="margin: 0; font-size: 32px; line-height: 36px; font-weight: 700">{{sel.name}}</h2>
+              <p style="margin: 0; font-size: 16px; line-height: 24px; color: {{t.onSurfaceVariant}}">Only removable drives are listed. Nothing is chosen for you, and the drive running Windows is never offered.</p>
+              <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: {{t.onSurfaceVariant}}">Drive
+                <select style="height: 56px; padding: 0 16px; border-radius: 4px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-size: 16px"><option>Choose a removable drive</option><option>SanDisk Ultra · 64 GB · E:</option></select>
+              </label>
+              <div style="padding: 20px; border-radius: 24px; background: {{t.errorContainer}}; color: {{t.onErrorContainer}}; display: flex; flex-direction: column; gap: 12px">
+                <span style="font-size: 16px; font-weight: 700">Everything on SanDisk Ultra (64 GB, E:) will be erased.</span>
+                <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px">Type ERASE E: to confirm
+                  <input placeholder="ERASE E:" style="height: 56px; padding: 0 16px; border-radius: 4px; border: 2px solid {{t.error}}; background: transparent; color: {{t.onErrorContainer}}; font-family: 'Roboto Mono', monospace; font-size: 16px">
+                </label>
+              </div>
+              <button disabled="disabled" style="height: 56px; border-radius: 28px; border: 0; background: {{t.disabledBg}}; color: {{t.disabledFg}}; font-size: 16px; font-weight: 700">Erase and flash</button>
+              <span style="font-size: 12px; color: {{t.onSurfaceVariant}}">After writing, the drive is read back and checked before success is shown. Windows asks for admin rights.</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{isOther}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-direction: column; gap: 16px">
+              <h2 style="margin: 0; font-size: 32px; line-height: 36px; font-weight: 700">{{sel.name}}</h2>
+              <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: {{t.onSurfaceVariant}}">Instance name<input value="map-editor-1" style="height: 56px; padding: 0 16px; border-radius: 4px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-size: 16px"></label>
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+                <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: {{t.onSurfaceVariant}}">Port<input value="8420" style="height: 56px; padding: 0 16px; border-radius: 4px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-family: 'Roboto Mono', monospace; font-size: 16px"></label>
+                <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: {{t.onSurfaceVariant}}">Version<select style="height: 56px; padding: 0 16px; border-radius: 4px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-size: 16px"><option>0.1.0 (latest)</option></select></label>
+              </div>
+              <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: {{t.onSurfaceVariant}}">Worlds folder<input value="C:\Users\Alex\AppData\Roaming\.minecraft\saves" style="height: 56px; padding: 0 16px; border-radius: 4px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-family: 'Roboto Mono', monospace; font-size: 13px"></label>
+              <span style="font-size: 14px; color: {{t.onSurfaceVariant}}">Port 8420 is free. The first person to open the link becomes the owner.</span>
+              <button style="height: 64px; border-radius: 32px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; font-size: 18px; font-weight: 800">Deploy</button>
+              <ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: {{t.onSurfaceVariant}}">
+                <li>{{sel.s1}}</li><li>{{sel.s2}}</li><li>Wait for the health check, up to 90 s</li><li>Show the verified LAN link</li>
+              </ol>
+            </div>
+          </sc-if>
+        </aside>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isInstances}}" hint-placeholder-val="{{ false }}">
+      <section aria-label="Instances" style="border-radius: 32px; background: {{t.surfaceContainerLow}}; overflow-x: auto">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 16px 24px">
+          <span style="font-size: 22px; font-weight: 700">3 instances</span>
+          <button style="margin-left: auto; height: 40px; padding: 0 16px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 500">Stop selected</button>
+          <button style="height: 40px; padding: 0 16px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 500">Update selected</button>
+        </div>
+        <table style="width: 100%; min-width: 900px; border-collapse: collapse; font-size: 14px">
+          <thead>
+            <tr style="text-align: left; color: {{t.onSurfaceVariant}}; font-size: 12px">
+              <th style="padding: 12px 24px; font-weight: 500"><input type="checkbox" aria-label="Select all instances"></th>
+              <th style="padding: 12px 8px; font-weight: 500">Name</th><th style="padding: 12px 8px; font-weight: 500">Target</th><th style="padding: 12px 8px; font-weight: 500">Version</th><th style="padding: 12px 8px; font-weight: 500">Health</th><th style="padding: 12px 8px; font-weight: 500">Link</th><th style="padding: 12px 24px; font-weight: 500; text-align: right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{instances}}" as="r" hint-placeholder-count="3">
+              <tr style="border-top: 1px solid {{t.outlineVariant}}">
+                <td style="padding: 16px 24px"><input type="checkbox" aria-label="Select {{r.name}}"></td>
+                <td style="padding: 16px 8px; font-weight: 600">{{r.name}}</td>
+                <td style="padding: 16px 8px; color: {{t.onSurfaceVariant}}">{{r.target}}</td>
+                <td style="padding: 16px 8px; font-family: 'Roboto Mono', monospace">{{r.version}}</td>
+                <td style="padding: 16px 8px"><span style="{{r.pill}}">{{r.health}}</span></td>
+                <td style="padding: 16px 8px; font-family: 'Roboto Mono', monospace; font-size: 13px"><a href="#" style="color: {{t.primary}}">{{r.link}}</a></td>
+                <td style="padding: 16px 24px; text-align: right; white-space: nowrap">
+                  <button style="height: 40px; padding: 0 12px; border-radius: 20px; border: 0; background: transparent; color: {{t.primary}}; font-weight: 500">Open</button>
+                  <button style="height: 40px; padding: 0 12px; border-radius: 20px; border: 0; background: transparent; color: {{t.primary}}; font-weight: 500">Logs</button>
+                  <button style="height: 40px; padding: 0 12px; border-radius: 20px; border: 0; background: transparent; color: {{t.primary}}; font-weight: 500">Update</button>
+                  <button style="height: 40px; padding: 0 12px; border-radius: 20px; border: 0; background: transparent; color: {{t.error}}; font-weight: 500">Remove</button>
+                </td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+        <div style="padding: 16px 24px; font-size: 12px; color: {{t.onSurfaceVariant}}; border-top: 1px solid {{t.outlineVariant}}">Health last checked 16:44:58 EST. Only instances this app created are listed.</div>
+      </section>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? true;
+    const t = dark ? {
+      primary:'#8FD88A', onPrimary:'#00390A', primaryContainer:'#1B5220', onPrimaryContainer:'#AAF5A4',
+      secondaryContainer:'#3B4B38', onSecondaryContainer:'#D6E8CF', tertiaryContainer:'#1F4D53', onTertiaryContainer:'#BCEBF2',
+      error:'#FFB4AB', errorContainer:'#93000A', onErrorContainer:'#FFDAD6',
+      surface:'#10140F', surfaceContainerLow:'#181D17', surfaceContainerHigh:'#262B25', surfaceContainerHighest:'#31362F',
+      onSurface:'#E0E4DA', onSurfaceVariant:'#C2C9BD', outline:'#8C9388', outlineVariant:'#42493F', disabledBg:'#2A2F29', disabledFg:'#8C9388'
+    } : {
+      primary:'#2E6B2C', onPrimary:'#FFFFFF', primaryContainer:'#AFF4A6', onPrimaryContainer:'#002204',
+      secondaryContainer:'#D6E8CF', onSecondaryContainer:'#111F0F', tertiaryContainer:'#BCEBF2', onTertiaryContainer:'#001F23',
+      error:'#BA1A1A', errorContainer:'#FFDAD6', onErrorContainer:'#410002',
+      surface:'#F7FBF1', surfaceContainerLow:'#F1F5EB', surfaceContainerHigh:'#E5EAE0', surfaceContainerHighest:'#E0E4DA',
+      onSurface:'#181D17', onSurfaceVariant:'#42493F', outline:'#72796E', outlineVariant:'#C2C9BD', disabledBg:'#E0E4DA', disabledFg:'#72796E'
+    };
+    const view = this.state.view ?? 'Deploy';
+    const sel = this.state.x ?? 0;
+    const views = ['Deploy', 'Instances'].map((label) => ({ label, on: label === view, style: 'height: 48px; padding: 0 24px; border: 0; font-size: 16px; font-weight: 700; ' + (label === view ? 'border-radius: 14px; background: ' + t.onPrimaryContainer + '; color: ' + t.primaryContainer : 'border-radius: 24px; background: transparent; color: ' + t.onPrimaryContainer + '; box-shadow: inset 0 0 0 1px ' + t.onPrimaryContainer), pick: () => this.setState({ view: label }) }));
+    const defs = [
+      ['Docker', 'This PC, or another machine over SSH. Pulls the published image and starts it with Compose.', 'Docker found', true, 'Pull ghcr.io/ding-ding-projects/map-editor:0.1.0', 'Start with docker compose up -d', '28px 28px 28px 8px'],
+      ['VirtualBox', 'Imports the appliance image as a VM with bridged networking so your LAN can reach it.', 'VirtualBox 7.1 found', true, 'Import map-editor-appliance.ova', 'Start the VM on a bridged adapter', '28px'],
+      ['VMware', 'The same appliance image in VMware Workstation or Player.', 'VMware not found', false, 'Import map-editor-appliance.ova', 'Start it with vmrun', '8px 28px 28px 28px'],
+      ['USB drive', 'Writes the appliance image to a USB stick. A spare PC boots straight into Map Editor.', '2 removable drives', true, '', '', '28px 8px 28px 28px'],
+      ['Raspberry Pi', 'Writes the arm64 image to an SD card or USB drive for a Pi 4 or 5.', 'Image not built yet', false, '', '', '28px 28px 8px 28px']
+    ];
+    const tones = [[t.secondaryContainer, t.onSecondaryContainer], [t.tertiaryContainer, t.onTertiaryContainer], [t.surfaceContainerHigh, t.onSurface], [t.secondaryContainer, t.onSecondaryContainer], [t.surfaceContainerHigh, t.onSurface]];
+    const targets = defs.map(([name, desc, status, ok, , , radius], i) => ({
+      name, desc, status, on: i === sel, initial: name.slice(0, 1),
+      style: 'min-height: 220px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; padding: 24px; border-radius: ' + radius + '; text-align: left; border: 0; background: ' + (i === sel ? t.primary : tones[i][0]) + '; color: ' + (i === sel ? t.onPrimary : tones[i][1]) + '; transition: border-radius .25s',
+      badge: 'width: 48px; height: 48px; border-radius: ' + (i === sel ? '14px' : '24px') + '; display: grid; place-items: center; font-size: 22px; font-weight: 800; background: ' + (i === sel ? t.onPrimary : t.surface) + '; color: ' + (i === sel ? t.primary : t.onSurface),
+      statusStyle: ok ? 'background: ' + (i === sel ? t.onPrimary : t.primaryContainer) + '; color: ' + (i === sel ? t.primary : t.onPrimaryContainer) : 'background: ' + t.surface + '; color: ' + t.onSurfaceVariant,
+      pick: () => this.setState({ x: i })
+    }));
+    const instances = [
+      ['map-editor-1', 'Docker · this PC', '0.1.0', 'Healthy', 'http://192.168.1.42:8420/', true],
+      ['map-editor-vm', 'VirtualBox', '0.1.0', 'Healthy', 'http://192.168.1.77:8420/', true],
+      ['survival-test', 'Docker · nas.local over SSH', '0.1.0', 'Stopped', 'http://192.168.1.10:8421/', false]
+    ].map(([name, target, version, health, link, ok]) => ({
+      name, target, version, health, link,
+      pill: 'height: 28px; padding: 0 12px; border-radius: 8px; font-size: 12px; line-height: 28px; font-weight: 600; ' + (ok ? 'background: ' + t.primaryContainer + '; color: ' + t.onPrimaryContainer : 'background: ' + t.surfaceContainerHighest + '; color: ' + t.onSurfaceVariant)
+    }));
+    return {
+      t, views, targets, instances,
+      isDeploy: view === 'Deploy', isInstances: view === 'Instances',
+      isUsb: sel === 3 || sel === 4, isOther: !(sel === 3 || sel === 4),
+      sel: { name: defs[sel][0], s1: defs[sel][4], s2: defs[sel][5] }
+    };
+  }
+}
+</script>
+</body>
+</html>

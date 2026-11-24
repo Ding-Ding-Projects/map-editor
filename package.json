@@ -1,0 +1,34 @@
+{
+  "name": "map-editor",
+  "productName": "Map Editor",
+  "version": "0.1.0",
+  "description": "Minecraft world editor based on Amulet Map Editor: desktop app, Docker-hosted web app and appliance OS image",
+  "license": "SEE LICENSE IN LICENSE",
+  "private": true,
+  "type": "module",
+  "main": "dist/desktop/main.cjs",
+  "scripts": {
+    "fetch:dockview": "node scripts/fetch-dockview.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "start:server": "node dist/server/server.mjs",
+    "start:desktop": "electron .",
+    "start:deploy": "electron dist/deploy/main.cjs",
+    "setup": "node scripts/setup.mjs"
+  },
+  "dependencies": {
+    "isomorphic-git": "1.44.19"
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.4.4",
+    "@material/web": "2.5.0",
+    "@types/node": "^22.10.0",
+    "electron": "45.4.1",
+    "electron-winstaller": "^5.4.4",
+    "esbuild": "0.28.2",
+    "sass": "^1.83.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

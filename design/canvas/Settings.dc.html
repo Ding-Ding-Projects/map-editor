@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map Editor settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,100..125,400..800&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #8FD88A;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 900px; padding: 24px; box-sizing: border-box; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif; font-size: 14px">
+  <div style="max-width: 1360px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start">
+    <nav aria-label="Settings sections" style="width: 260px; flex: none; display: flex; flex-direction: column; gap: 4px; padding: 16px 12px; border-radius: 32px; background: {{t.surfaceContainerLow}}">
+      <span style="padding: 8px 16px 4px; font-size: 32px; line-height: 40px; font-weight: 800; letter-spacing: -0.5px">Settings</span>
+      <span style="padding: 0 16px 12px; font-size: 12px; color: {{t.onSurfaceVariant}}">v0.1.0 · updated 2026-11-23 16:45:12 EST</span>
+      <div style="display: flex; align-items: center; gap: 8px; height: 48px; margin: 0 4px 8px; padding: 0 8px 0 16px; border-radius: 24px; background: {{t.surfaceContainerHigh}}">
+        <label for="ss" style="position: absolute; left: -9999px">Search settings</label>
+        <input id="ss" placeholder="Search settings" style="flex: 1; min-width: 0; border: 0; background: transparent; color: {{t.onSurface}}; font-size: 14px; outline: none">
+        <button aria-label="Open regex builder" style="height: 28px; padding: 0 8px; border-radius: 8px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurfaceVariant}}; font-family: 'Roboto Mono', monospace">.*</button>
+      </div>
+      <div role="tablist" aria-orientation="vertical" style="display: flex; flex-direction: column; gap: 2px">
+        <sc-for list="{{sections}}" as="s" hint-placeholder-count="9">
+          <div style="{{s.style}}">
+            <button role="tab" aria-selected="{{s.on}}" onClick="{{s.pick}}" style="flex: 1; height: 52px; padding: 0 16px; border: 0; background: transparent; color: inherit; text-align: left; font-size: 14px; font-weight: 600">{{s.label}}</button>
+            <sc-if value="{{s.on}}" hint-placeholder-val="{{ false }}">
+              <button style="height: 32px; padding: 0 12px; margin-right: 10px; border-radius: 16px; border: 1px solid {{t.outline}}; background: transparent; color: inherit; font-size: 12px">Close</button>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </nav>
+
+    <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+      <section style="padding: 28px; border-radius: 32px 32px 8px 8px; background: {{t.surfaceContainerLow}}; display: flex; flex-direction: column; gap: 16px">
+        <h2 style="margin: 0; font-size: 28px; line-height: 36px; font-weight: 700">Language and voice</h2>
+        <div role="group" aria-label="Language" style="display: flex; gap: 4px; flex-wrap: wrap">
+          <sc-for list="{{langs}}" as="l" hint-placeholder-count="3">
+            <button onClick="{{l.pick}}" aria-pressed="{{l.on}}" style="{{l.style}}">{{l.label}}</button>
+          </sc-for>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+          <sc-for list="{{sliders}}" as="v" hint-placeholder-count="2">
+            <label style="display: flex; flex-direction: column; gap: 10px; padding: 20px; border-radius: 24px; background: {{t.surfaceContainerHigh}}">
+              <span style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 16px; font-weight: 600">{{v.label}}</span><span style="font-size: 28px; font-weight: 800; color: {{t.primary}}">{{v.value}}</span></span>
+              <input type="range" min="1" max="5" value="{{v.value}}" style="accent-color: {{t.primary}}; height: 16px">
+              <span style="font-size: 13px; line-height: 18px; color: {{t.onSurfaceVariant}}">{{v.preview}}</span>
+              <span style="font-size: 12px; color: {{t.onSurfaceVariant}}">Default 5. Changes wording only; facts and warnings stay identical. <button style="height: 24px; padding: 0 8px; border-radius: 12px; border: 0; background: transparent; color: {{t.primary}}; font-weight: 600">Reset</button></span>
+            </label>
+          </sc-for>
+        </div>
+      </section>
+
+      <section style="padding: 28px; border-radius: 8px; background: {{t.surfaceContainerLow}}; display: flex; flex-direction: column; gap: 8px">
+        <h2 style="margin: 0 0 8px; font-size: 28px; line-height: 36px; font-weight: 700">Appearance</h2>
+        <sc-for list="{{toggles}}" as="g" hint-placeholder-count="5">
+          <div style="display: flex; align-items: center; gap: 16px; min-height: 72px; padding: 0 4px; border-bottom: 1px solid {{t.outlineVariant}}">
+            <span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 600">{{g.t}}</span><span style="font-size: 13px; color: {{t.onSurfaceVariant}}">{{g.d}}</span></span>
+            <button role="switch" aria-checked="{{g.on}}" aria-label="{{g.t}}" onClick="{{g.flip}}" style="{{g.track}}"><span style="{{g.thumb}}"></span></button>
+          </div>
+        </sc-for>
+        <div style="display: flex; align-items: center; gap: 12px; padding-top: 12px; flex-wrap: wrap">
+          <span style="font-size: 16px; font-weight: 600">Seed colour</span>
+          <sc-for list="{{seeds}}" as="c" hint-placeholder-count="5">
+            <button aria-label="{{c.n}}" onClick="{{c.pick}}" style="{{c.style}}"></button>
+          </sc-for>
+          <button style="height: 40px; padding: 0 16px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 600">Custom colour…</button>
+        </div>
+      </section>
+
+      <section style="padding: 28px; border-radius: 8px 8px 32px 32px; background: {{t.surfaceContainerLow}}; display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
+        <div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 4px">
+          <h2 style="margin: 0; font-size: 28px; line-height: 36px; font-weight: 700">Your settings, saved locally</h2>
+          <span style="font-size: 14px; color: {{t.onSurfaceVariant}}">Every change is in history and can be undone. Export to move them to another computer.</span>
+        </div>
+        <button style="height: 40px; padding: 0 20px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 600">Export settings</button>
+        <button style="height: 40px; padding: 0 20px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 600">Import</button>
+        <button style="height: 40px; padding: 0 20px; border-radius: 20px; border: 0; background: {{t.secondaryContainer}}; color: {{t.onSecondaryContainer}}; font-weight: 600">Settings history</button>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? true;
+    const t = dark ? {
+      primary:'#8FD88A', onPrimary:'#00390A', primaryContainer:'#1B5220', onPrimaryContainer:'#AAF5A4',
+      secondaryContainer:'#3B4B38', onSecondaryContainer:'#D6E8CF',
+      surface:'#10140F', surfaceContainerLow:'#181D17', surfaceContainerHigh:'#262B25', surfaceContainerHighest:'#31362F',
+      onSurface:'#E0E4DA', onSurfaceVariant:'#C2C9BD', outline:'#8C9388', outlineVariant:'#42493F'
+    } : {
+      primary:'#2E6B2C', onPrimary:'#FFFFFF', primaryContainer:'#AFF4A6', onPrimaryContainer:'#002204',
+      secondaryContainer:'#D6E8CF', onSecondaryContainer:'#111F0F',
+      surface:'#F7FBF1', surfaceContainerLow:'#F1F5EB', surfaceContainerHigh:'#E5EAE0', surfaceContainerHighest:'#E0E4DA',
+      onSurface:'#181D17', onSurfaceVariant:'#42493F', outline:'#72796E', outlineVariant:'#C2C9BD'
+    };
+    const sec = this.state.sec ?? 'Language and voice';
+    const sections = ['Language and voice', 'Appearance', 'Comfort and focus', 'Sounds and narration', 'Schedules', 'Locks', 'Extensions', 'Worlds and history', 'About'].map((label) => ({
+      label, on: label === sec,
+      style: 'display: flex; align-items: center; border-radius: 26px; ' + (label === sec ? 'background: ' + t.secondaryContainer + '; color: ' + t.onSecondaryContainer : 'color: ' + t.onSurfaceVariant),
+      pick: () => this.setState({ sec: label })
+    }));
+    const lang = this.state.lang ?? 'en';
+    const langs = [['en','English'],['yue','粵語'],['both','English + 粵語']].map(([id, label]) => ({ label, on: id === lang, pick: () => this.setState({ lang: id }), style: 'height: 48px; padding: 0 24px; border: 0; font-size: 15px; font-weight: 700; transition: border-radius .2s; ' + (id === lang ? 'border-radius: 14px; background: ' + t.primary + '; color: ' + t.onPrimary : 'border-radius: 24px; background: ' + t.surfaceContainerHigh + '; color: ' + t.onSurface) }));
+    const sliders = [
+      { label: 'English funny level', value: 5, preview: 'All 1,204 chunks showed up on time.' },
+      { label: '廣東話 funny level', value: 5, preview: '1,204 個區塊全部準時報到。' }
+    ];
+    const on = this.state.on ?? { Dark: dark, 'Reduce motion': false, 'Large text': false, 'Dim sum surprise': true, 'Emoji in dialogs': true };
+    const desc = { Dark: 'Follows the system unless you choose', 'Reduce motion': 'Replaces animations with instant changes', 'Large text': 'Scales every label by 125%', 'Dim sum surprise': 'A 1 in 10 chance at launch. Never during setup or errors', 'Emoji in dialogs': 'Off removes emoji from every dialog' };
+    const toggles = Object.keys(on).map((k) => ({
+      t: k, d: desc[k], on: on[k],
+      track: 'flex: none; width: 52px; height: 32px; padding: 0; border-radius: 16px; position: relative; ' + (on[k] ? 'border: 0; background: ' + t.primary : 'border: 2px solid ' + t.outline + '; background: ' + t.surfaceContainerHighest),
+      thumb: 'position: absolute; top: 50%; transform: translateY(-50%); border-radius: 50%; transition: left .2s; ' + (on[k] ? 'left: 24px; width: 24px; height: 24px; background: ' + t.onPrimary : 'left: 6px; width: 16px; height: 16px; background: ' + t.outline),
+      flip: () => this.setState({ on: { ...on, [k]: !on[k] } })
+    }));
+    const seed = this.state.seed ?? 0;
+    const seeds = [['Grass','#4C8C4A'],['Ocean','#2F6DA3'],['Amber','#B7791F'],['Cherry','#C2567A'],['Deepslate','#5A5F66']].map(([n, c], i) => ({ n, pick: () => this.setState({ seed: i }), style: 'width: 40px; height: 40px; padding: 0; background: ' + c + '; border: ' + (i === seed ? '3px solid ' + t.onSurface : '0') + '; border-radius: ' + (i === seed ? '12px' : '20px') }));
+    return { t, sections, langs, sliders, toggles, seeds };
+  }
+}
+</script>
+</body>
+</html>

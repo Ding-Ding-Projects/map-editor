@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map Editor edit history</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400;8..144,500;8..144,600;8..144,700&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 860px; padding: 24px; box-sizing: border-box; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif; font-size: 14px">
+  <div style="max-width: 1360px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px">
+    <header style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+      <div style="display: flex; flex-direction: column; gap: 4px; max-width: 680px">
+        <span style="font-size: 12px; color: {{t.onSurfaceVariant}}">Survival Island · v0.1.0 · updated 2026-11-23 16:45:12 EST (UTC−05:00)</span>
+        <h1 style="margin: 0; font-size: 36px; line-height: 44px; font-weight: 500">Edit history</h1>
+        <p style="margin: 0; font-size: 16px; line-height: 24px; color: {{t.onSurfaceVariant}}">Every edit is recorded in a private Git repository kept in the app's own data folder, never inside your world. Rolling back adds a new point, so a rollback can be undone too. Nothing is uploaded.</p>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center">
+        <div style="display: flex; align-items: center; gap: 8px; width: 340px; max-width: 100%; height: 56px; padding: 0 8px 0 16px; border-radius: 28px; background: {{t.surfaceContainerHigh}}">
+          <label for="hs" style="position: absolute; left: -9999px">Search history</label>
+          <input id="hs" placeholder="Search edits, blocks, chunks" style="flex: 1; min-width: 0; border: 0; background: transparent; color: {{t.onSurface}}; font-size: 16px; outline: none">
+          <button aria-label="Open regex builder" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurfaceVariant}}; font-family: 'Roboto Mono', monospace">.*</button>
+        </div>
+        <button style="height: 40px; padding: 0 24px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 500">Export history</button>
+      </div>
+    </header>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+      <button style="height: 32px; padding: 0 16px; border-radius: 8px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurfaceVariant}}; font-weight: 500">Dates: 2026-11-16 to 2026-11-23</button>
+      <sc-for list="{{actions}}" as="a" hint-placeholder-count="6">
+        <button onClick="{{a.pick}}" aria-pressed="{{a.on}}" style="{{a.style}}">{{a.label}} · {{a.n}}</button>
+      </sc-for>
+      <span style="margin-left: auto; font-size: 14px; color: {{t.onSurfaceVariant}}">{{count}} saved points</span>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start">
+      <section aria-label="Timeline" style="flex: 999 1 560px; min-width: 0; border-radius: 28px; background: {{t.surfaceContainerLow}}; padding: 8px 0">
+        <ol style="list-style: none; margin: 0; padding: 0">
+          <sc-for list="{{commits}}" as="c" hint-placeholder-count="7">
+            <li style="{{c.row}}">
+              <span aria-hidden="true" style="{{c.dot}}"></span>
+              <button onClick="{{c.pick}}" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 0; border: 0; background: transparent; color: inherit; text-align: left">
+                <span style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+                  <span style="font-size: 16px; font-weight: 500">{{c.title}}</span>
+                  <sc-if value="{{c.head}}" hint-placeholder-val="{{ false }}"><span style="height: 24px; padding: 0 8px; border-radius: 8px; background: {{t.primaryContainer}}; color: {{t.onPrimaryContainer}}; font-size: 12px; line-height: 24px; font-weight: 500">Current</span></sc-if>
+                </span>
+                <span style="font-size: 14px; color: {{t.onSurfaceVariant}}">{{c.meta}} · <span style="font-family: 'Roboto Mono', monospace">{{c.sha}}</span></span>
+              </button>
+              <button onClick="{{c.pick}}" style="height: 40px; padding: 0 16px; border-radius: 20px; border: 0; background: transparent; color: {{t.primary}}; font-weight: 500">Roll back here</button>
+            </li>
+          </sc-for>
+        </ol>
+      </section>
+
+      <aside aria-label="Selected point" style="flex: 1 1 340px; max-width: 420px; display: flex; flex-direction: column; gap: 16px; padding: 24px; border-radius: 28px; background: {{t.surfaceContainerLow}}">
+        <span style="font-size: 12px; font-weight: 500; color: {{t.onSurfaceVariant}}">Selected point</span>
+        <h2 style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 500">{{sel.title}}</h2>
+        <span style="font-size: 14px; color: {{t.onSurfaceVariant}}">{{sel.meta}} · <span style="font-family: 'Roboto Mono', monospace">{{sel.sha}}</span></span>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+          <div style="padding: 16px; border-radius: 16px; background: {{t.surfaceContainerHigh}}"><div style="font-size: 12px; color: {{t.onSurfaceVariant}}">Chunks</div><div style="font-size: 24px; font-weight: 500">16</div></div>
+          <div style="padding: 16px; border-radius: 16px; background: {{t.surfaceContainerHigh}}"><div style="font-size: 12px; color: {{t.onSurfaceVariant}}">Files</div><div style="font-size: 24px; font-weight: 500">2</div></div>
+          <div style="padding: 16px; border-radius: 16px; background: {{t.surfaceContainerHigh}}"><div style="font-size: 12px; color: {{t.onSurfaceVariant}}">Blocks</div><div style="font-size: 24px; font-weight: 500">53,248</div></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px; font-family: 'Roboto Mono', monospace; font-size: 13px; color: {{t.onSurfaceVariant}}">
+          <span>M region/r.0.-1.mca</span><span>M level.dat</span>
+        </div>
+        <div style="padding: 16px; border-radius: 16px; background: {{t.tertiaryContainer}}; color: {{t.onTertiaryContainer}}; font-size: 14px; line-height: 20px">Rolling back keeps every later point. You can roll forward again from this list.</div>
+        <button style="height: 56px; border-radius: 28px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; font-size: 16px; font-weight: 600">Roll back to this point</button>
+        <button style="height: 40px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 500">Open as a copy</button>
+      </aside>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? true;
+    const t = dark ? {
+      primary:'#8FD88A', onPrimary:'#00390A', primaryContainer:'#1B5220', onPrimaryContainer:'#AAF5A4',
+      secondaryContainer:'#3B4B38', onSecondaryContainer:'#D6E8CF', tertiaryContainer:'#1F4D53', onTertiaryContainer:'#BCEBF2',
+      surface:'#10140F', surfaceContainerLow:'#181D17', surfaceContainerHigh:'#262B25', surfaceContainerHighest:'#31362F',
+      onSurface:'#E0E4DA', onSurfaceVariant:'#C2C9BD', outline:'#8C9388', outlineVariant:'#42493F'
+    } : {
+      primary:'#2E6B2C', onPrimary:'#FFFFFF', primaryContainer:'#AFF4A6', onPrimaryContainer:'#002204',
+      secondaryContainer:'#D6E8CF', onSecondaryContainer:'#111F0F', tertiaryContainer:'#BCEBF2', onTertiaryContainer:'#001F23',
+      surface:'#F7FBF1', surfaceContainerLow:'#F1F5EB', surfaceContainerHigh:'#E5EAE0', surfaceContainerHighest:'#E0E4DA',
+      onSurface:'#181D17', onSurfaceVariant:'#42493F', outline:'#72796E', outlineVariant:'#C2C9BD'
+    };
+    const sel = this.state.sel ?? 0;
+    const raw = [
+      ['Filled 64×13×64 with stone_bricks', 'a41c9e2', 'Today 16:41:07 · 16 chunks'],
+      ['Replaced water with air', '9f03b71', 'Today 16:38:52 · 9 chunks'],
+      ['Cloned lighthouse to 210, 70, −40', '5d2e0aa', 'Today 16:30:19 · 4 chunks'],
+      ['Set biome to cherry_grove', '71b8c40', 'Today 16:22:03 · 25 chunks'],
+      ['Deleted blocks in selection', 'e0c4d19', 'Today 16:15:46 · 2 chunks'],
+      ['Cloned tower to 300, 64, 12', '3aa71fd', 'Yesterday 21:04:11 · 6 chunks'],
+      ['World opened · baseline', '0b5f2e8', 'Yesterday 20:58:30 · 1,204 chunks']
+    ];
+    const commits = raw.map(([title, sha, meta], i) => ({
+      title, sha, meta, head: i === 0,
+      row: 'display: flex; gap: 16px; align-items: center; min-height: 72px; padding: 0 16px 0 24px; ' + (i === sel ? 'background: ' + t.secondaryContainer + '; color: ' + t.onSecondaryContainer : ''),
+      dot: 'width: 12px; height: 12px; flex: none; border-radius: 6px; ' + (i === 0 ? 'background: ' + t.primary : 'border: 2px solid ' + t.outline),
+      pick: () => this.setState({ sel: i })
+    }));
+    const on = this.state.on ?? [];
+    const actions = [['Filled', 1], ['Replaced', 1], ['Cloned', 2], ['Biome set', 1], ['Deleted', 1], ['Restored', 0]].map(([label, n]) => ({
+      label, n, on: on.includes(label),
+      style: 'height: 32px; padding: 0 16px; border-radius: 8px; font-weight: 500; ' + (on.includes(label) ? 'border: 0; background: ' + t.secondaryContainer + '; color: ' + t.onSecondaryContainer : 'border: 1px solid ' + t.outline + '; background: transparent; color: ' + t.onSurfaceVariant),
+      pick: () => this.setState({ on: on.includes(label) ? on.filter((x) => x !== label) : on.concat([label]) })
+    }));
+    return { t, commits, actions, count: raw.length, sel: { title: raw[sel][0], sha: raw[sel][1], meta: raw[sel][2] } };
+  }
+}
+</script>
+</body>
+</html>

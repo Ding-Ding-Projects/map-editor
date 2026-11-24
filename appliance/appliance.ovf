@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Envelope xmlns="http://schemas.dmtf.org/ovf/envelope/1" xmlns:ovf="http://schemas.dmtf.org/ovf/envelope/1" xmlns:rasd="http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData" xmlns:vssd="http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData">
+  <References><File ovf:id="file1" ovf:href="map-editor-appliance-x86_64.vmdk" ovf:size="@VMDK_SIZE@"/></References>
+  <DiskSection><Info>Disks</Info><Disk ovf:diskId="vmdisk1" ovf:fileRef="file1" ovf:capacity="4294967296" ovf:format="http://www.vmware.com/interfaces/specifications/vmdk.html#streamOptimized"/></DiskSection>
+  <NetworkSection><Info>Networks</Info><Network ovf:name="Bridged"><Description>Bridged so the web app is reachable on your network</Description></Network></NetworkSection>
+  <VirtualSystem ovf:id="map-editor">
+    <Info>Map Editor appliance @VERSION@</Info>
+    <Name>map-editor</Name>
+    <OperatingSystemSection ovf:id="101"><Info>Linux 64-bit</Info></OperatingSystemSection>
+    <VirtualHardwareSection>
+      <Info>2 CPUs, 2 GB memory</Info>
+      <System><vssd:ElementName>Virtual Hardware Family</vssd:ElementName><vssd:InstanceID>0</vssd:InstanceID><vssd:VirtualSystemType>vmx-14 virtualbox-2.2</vssd:VirtualSystemType></System>
+      <Item><rasd:ElementName>2 virtual CPUs</rasd:ElementName><rasd:InstanceID>1</rasd:InstanceID><rasd:ResourceType>3</rasd:ResourceType><rasd:VirtualQuantity>2</rasd:VirtualQuantity></Item>
+      <Item><rasd:AllocationUnits>byte * 2^20</rasd:AllocationUnits><rasd:ElementName>2048 MB memory</rasd:ElementName><rasd:InstanceID>2</rasd:InstanceID><rasd:ResourceType>4</rasd:ResourceType><rasd:VirtualQuantity>2048</rasd:VirtualQuantity></Item>
+      <Item><rasd:ElementName>SATA controller</rasd:ElementName><rasd:InstanceID>3</rasd:InstanceID><rasd:ResourceSubType>AHCI</rasd:ResourceSubType><rasd:ResourceType>20</rasd:ResourceType></Item>
+      <Item><rasd:AddressOnParent>0</rasd:AddressOnParent><rasd:ElementName>disk</rasd:ElementName><rasd:HostResource>ovf:/disk/vmdisk1</rasd:HostResource><rasd:InstanceID>4</rasd:InstanceID><rasd:Parent>3</rasd:Parent><rasd:ResourceType>17</rasd:ResourceType></Item>
+      <Item><rasd:AutomaticAllocation>true</rasd:AutomaticAllocation><rasd:Connection>Bridged</rasd:Connection><rasd:ElementName>Ethernet</rasd:ElementName><rasd:InstanceID>5</rasd:InstanceID><rasd:ResourceSubType>E1000</rasd:ResourceSubType><rasd:ResourceType>10</rasd:ResourceType></Item>
+    </VirtualHardwareSection>
+  </VirtualSystem>
+</Envelope>

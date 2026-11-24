@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map Editor on a phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,100..125,400..800&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid #8FD88A;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; display: flex; flex-direction: column; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif">
+  <header style="display: flex; align-items: center; gap: 8px; padding: 12px 12px 8px 16px">
+    <span style="flex: 1; display: flex; flex-direction: column">
+      <span style="font-size: 24px; line-height: 28px; font-weight: 800">Survival Island</span>
+      <span style="font-size: 11px; color: {{t.onSurfaceVariant}}">v0.1.0 · updated 2026-11-23 16:45:12 EST</span>
+    </span>
+    <button aria-label="Search" style="width: 48px; height: 48px; border-radius: 24px; border: 0; background: {{t.surfaceContainerHigh}}; color: {{t.onSurface}}; display: grid; place-items: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+    </button>
+  </header>
+  <div role="tablist" aria-label="Panels in this group" style="display: flex; gap: 8px; padding: 4px 12px 8px; overflow-x: auto">
+    <sc-for list="{{panels}}" as="p" hint-placeholder-count="5">
+      <button role="tab" aria-selected="{{p.on}}" onClick="{{p.pick}}" style="{{p.style}}">{{p.label}}</button>
+    </sc-for>
+  </div>
+  <div style="flex: 1; margin: 0 8px; border-radius: 28px; overflow: hidden; position: relative">
+    <div role="img" aria-label="Top-down map" style="position: absolute; inset: 0; display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 1px">
+      <sc-for list="{{cells}}" as="c" hint-placeholder-count="140">
+        <div style="{{c}}"></div>
+      </sc-for>
+    </div>
+    <div style="position: absolute; left: 30%; top: 30%; width: 40%; height: 22%; border: 2px solid {{t.primary}}; border-radius: 4px; background: rgba(143,216,138,.16)"></div>
+  </div>
+  <section aria-label="Fill" style="margin: 8px; padding: 16px; border-radius: 28px 28px 8px 8px; background: {{t.surfaceContainerLow}}; display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 22px; font-weight: 800">Fill · 53,248 blocks</span>
+    <span style="height: 48px; padding: 0 16px; border-radius: 4px; border: 1px solid {{t.outline}}; font-family: 'Roboto Mono', monospace; font-size: 14px; line-height: 48px">minecraft:stone_bricks</span>
+    <button style="height: 56px; border-radius: 28px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; font-size: 16px; font-weight: 800">Run fill</button>
+  </section>
+  <nav aria-label="Destinations" style="display: flex; justify-content: space-around; padding: 12px 0 20px; background: {{t.surfaceContainer}}">
+    <sc-for list="{{dests}}" as="d" hint-placeholder-count="4">
+      <button onClick="{{d.pick}}" aria-current="{{d.cur}}" style="display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: transparent; color: {{t.onSurface}}; font-size: 12px; font-weight: 600">
+        <span style="{{d.pill}}"></span>{{d.label}}
+      </button>
+    </sc-for>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? true;
+    const t = dark ? {
+      primary:'#8FD88A', onPrimary:'#00390A', secondaryContainer:'#3B4B38', onSecondaryContainer:'#D6E8CF',
+      surface:'#10140F', surfaceContainerLow:'#181D17', surfaceContainer:'#1C211B', surfaceContainerHigh:'#262B25',
+      onSurface:'#E0E4DA', onSurfaceVariant:'#C2C9BD', outline:'#8C9388'
+    } : {
+      primary:'#2E6B2C', onPrimary:'#FFFFFF', secondaryContainer:'#D6E8CF', onSecondaryContainer:'#111F0F',
+      surface:'#F7FBF1', surfaceContainerLow:'#F1F5EB', surfaceContainer:'#EBEFE5', surfaceContainerHigh:'#E5EAE0',
+      onSurface:'#181D17', onSurfaceVariant:'#42493F', outline:'#72796E'
+    };
+    const p = this.state.p ?? 'Map';
+    const panels = ['Map', 'Tools', 'Block palette', 'Selection', 'History'].map((label) => ({ label, on: label === p, pick: () => this.setState({ p: label }), style: 'flex: none; height: 32px; padding: 0 14px; border-radius: 8px; font-size: 13px; font-weight: 600; ' + (label === p ? 'border: 0; background: ' + t.secondaryContainer + '; color: ' + t.onSecondaryContainer : 'border: 1px solid ' + t.outline + '; background: transparent; color: ' + t.onSurfaceVariant) }));
+    const d = this.state.d ?? 'Editor';
+    const dests = ['Worlds', 'Editor', 'History', 'Settings'].map((label) => ({ label, cur: label === d ? 'page' : 'false', pick: () => this.setState({ d: label }), pill: 'width: 56px; height: 32px; border-radius: 16px; ' + (label === d ? 'background: ' + t.secondaryContainer : 'background: transparent; box-shadow: inset 0 0 0 1px ' + t.outline) }));
+    const pal = ['#3e6b30','#4a7a38','#567f3f','#6f8a4a','#2c5a86','#356a9a','#6a6f72','#c8bf98'];
+    const cells = Array.from({ length: 140 }, (_, i) => { const x = i % 10, z = Math.floor(i / 10); const dd = Math.abs(x - (4 + Math.round(2 * Math.sin(z / 2)))); const n = (x * 7 + z * 13) % 9; return 'background: ' + (dd < 1 ? pal[4] : dd === 1 ? pal[7] : pal[n % 4]); });
+    return { t, panels, dests, cells };
+  }
+}
+</script>
+</body>
+</html>

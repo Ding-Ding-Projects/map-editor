@@ -1,0 +1,65 @@
+/* Material Design 3 colour roles, generated from a grass-green seed. */
+:root, [data-theme="light"] {
+  --md-sys-color-primary: #2E6B2C; --md-sys-color-on-primary: #FFFFFF;
+  --md-sys-color-primary-container: #AFF4A6; --md-sys-color-on-primary-container: #002204;
+  --md-sys-color-secondary: #52634F; --md-sys-color-on-secondary: #FFFFFF;
+  --md-sys-color-secondary-container: #D6E8CF; --md-sys-color-on-secondary-container: #111F0F;
+  --md-sys-color-tertiary: #38656B; --md-sys-color-tertiary-container: #BCEBF2; --md-sys-color-on-tertiary-container: #001F23;
+  --md-sys-color-error: #BA1A1A; --md-sys-color-on-error: #FFFFFF; --md-sys-color-error-container: #FFDAD6; --md-sys-color-on-error-container: #410002;
+  --md-sys-color-surface: #F7FBF1; --md-sys-color-on-surface: #181D17; --md-sys-color-on-surface-variant: #42493F;
+  --md-sys-color-surface-container-lowest: #FFFFFF; --md-sys-color-surface-container-low: #F1F5EB; --md-sys-color-surface-container: #EBEFE5;
+  --md-sys-color-surface-container-high: #E5EAE0; --md-sys-color-surface-container-highest: #E0E4DA;
+  --md-sys-color-outline: #72796E; --md-sys-color-outline-variant: #C2C9BD;
+  --md-sys-color-inverse-surface: #2D322B; --md-sys-color-inverse-on-surface: #EEF2E8; --md-sys-color-inverse-primary: #8FD88A;
+  --md-ref-typeface-brand: 'Roboto Flex', Roboto, system-ui, sans-serif; --md-ref-typeface-plain: 'Roboto Flex', Roboto, system-ui, sans-serif;
+  color-scheme: light;
+}
+[data-theme="dark"] {
+  --md-sys-color-primary: #8FD88A; --md-sys-color-on-primary: #00390A;
+  --md-sys-color-primary-container: #1B5220; --md-sys-color-on-primary-container: #AAF5A4;
+  --md-sys-color-secondary: #BACCB4; --md-sys-color-on-secondary: #253423;
+  --md-sys-color-secondary-container: #3B4B38; --md-sys-color-on-secondary-container: #D6E8CF;
+  --md-sys-color-tertiary: #A0CFD6; --md-sys-color-tertiary-container: #1F4D53; --md-sys-color-on-tertiary-container: #BCEBF2;
+  --md-sys-color-error: #FFB4AB; --md-sys-color-on-error: #690005; --md-sys-color-error-container: #93000A; --md-sys-color-on-error-container: #FFDAD6;
+  --md-sys-color-surface: #10140F; --md-sys-color-on-surface: #E0E4DA; --md-sys-color-on-surface-variant: #C2C9BD;
+  --md-sys-color-surface-container-lowest: #0B0F0A; --md-sys-color-surface-container-low: #181D17; --md-sys-color-surface-container: #1C211B;
+  --md-sys-color-surface-container-high: #262B25; --md-sys-color-surface-container-highest: #31362F;
+  --md-sys-color-outline: #8C9388; --md-sys-color-outline-variant: #42493F;
+  --md-sys-color-inverse-surface: #E0E4DA; --md-sys-color-inverse-on-surface: #2D322B; --md-sys-color-inverse-primary: #2E6B2C;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface); font-family: var(--md-ref-typeface-plain); }
+.reduce-motion * { transition: none !important; animation: none !important; }
+.muted { color: var(--md-sys-color-on-surface-variant); }
+.top { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 16px; }
+.brand { display: flex; gap: 12px; align-items: center; flex: 1 1 280px; }
+.logo { width: 40px; height: 40px; border-radius: 12px; background: var(--md-sys-color-primary-container); }
+.title { font-weight: 700; letter-spacing: -0.5px; }
+.search { flex: 1 1 280px; max-width: 520px; }
+.search md-outlined-text-field { width: 100%; }
+.body { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 12px 12px; }
+.tabs { width: 300px; flex: none; border-radius: 28px; padding: 12px 8px; background: var(--md-sys-color-surface-container-low); }
+.tabs md-list { background: transparent; }
+.tabs md-list-item { border-radius: 24px; --md-list-item-label-text-line-height: 20px; white-space: normal; }
+.tabs md-list-item.active { background: var(--md-sys-color-secondary-container); --md-list-item-label-text-color: var(--md-sys-color-on-secondary-container); }
+.view { flex: 999 1 560px; min-width: 0; }
+.card { border-radius: 28px; padding: 24px; background: var(--md-sys-color-surface-container-low); }
+.card.flat { padding: 0; overflow: hidden; }
+.card.narrow { max-width: 480px; margin: 48px auto; }
+.stack { display: flex; flex-direction: column; gap: 16px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 56px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.world { all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 20px; border-radius: 24px; background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+.world:focus-visible { outline: 3px solid var(--md-sys-color-primary); }
+.editor { display: flex; flex-wrap: wrap; gap: 8px; }
+.map { flex: 999 1 520px; min-height: 560px; position: relative; background: var(--md-sys-color-surface-container-lowest); }
+.map canvas { width: 100%; height: 100%; min-height: 560px; display: block; cursor: grab; touch-action: none; }
+.coords { position: absolute; left: 16px; bottom: 16px; padding: 8px 16px; border-radius: 20px; background: var(--md-sys-color-surface-container-high); font-family: 'Roboto Mono', monospace; }
+.tool { flex: 1 1 320px; max-width: 380px; display: flex; flex-direction: column; gap: 16px; }
+.coords-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.toasts { position: fixed; left: 24px; bottom: 24px; display: flex; flex-direction: column; gap: 8px; z-index: 10; max-width: min(560px, calc(100vw - 48px)); }
+.toast { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 4px 8px 4px 16px; border-radius: 4px; background: var(--md-sys-color-inverse-surface); color: var(--md-sys-color-inverse-on-surface); --md-text-button-label-text-color: var(--md-sys-color-inverse-primary); }
+.toast span { flex: 1; }
+.toast.error { background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); --md-text-button-label-text-color: var(--md-sys-color-on-error-container); }
+@media (max-width: 600px) { .tabs { width: 100%; } .tool { max-width: none; } }

@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map Editor workspace</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400;8..144,500;8..144,600;8..144,700&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #8FD88A;outline-offset:2px}
+</style>
+</helmet>
+<div style="position: relative; min-height: 900px; display: flex; flex-direction: column; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif; font-size: 14px">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px; background: {{t.surface}}">
+    <div style="display: flex; align-items: center; gap: 12px; flex: 1 1 280px">
+      <div aria-hidden="true" style="width: 40px; height: 40px; border-radius: 12px; background: {{t.primaryContainer}}; color: {{t.onPrimaryContainer}}; display: grid; place-items: center">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7l8-4 8 4-8 4-8-4z"></path><path d="M4 7v10l8 4 8-4V7"></path><path d="M12 11v10"></path></svg>
+      </div>
+      <div style="display: flex; flex-direction: column">
+        <span style="font-size: 32px; line-height: 36px; font-weight: 700; letter-spacing: -0.5px; font-variation-settings: 'wdth' 110">Survival Island</span>
+        <span style="font-size: 12px; line-height: 16px; color: {{t.onSurfaceVariant}}">v0.1.0 · updated 2026-11-23 16:45:12 EST (UTC−05:00)</span>
+      </div>
+    </div>
+    <div style="flex: 1 1 360px; max-width: 560px; display: flex; align-items: center; gap: 8px; height: 56px; padding: 0 8px 0 16px; border-radius: 28px; background: {{t.surfaceContainerHigh}}">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{t.onSurfaceVariant}}" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      <label for="cmd" style="position: absolute; left: -9999px">Search commands, blocks and settings</label>
+      <input id="cmd" placeholder="Search commands, blocks and settings" style="flex: 1; min-width: 0; border: 0; background: transparent; color: {{t.onSurface}}; font-size: 16px; outline: none">
+      <button aria-label="Open regex builder" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurfaceVariant}}; font-family: 'Roboto Mono', monospace; font-size: 13px">.*</button>
+      <span style="padding: 0 8px; font-size: 12px; color: {{t.onSurfaceVariant}}">Ctrl+Shift+F</span>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+      <div role="group" aria-label="Language" style="display: flex; border: 1px solid {{t.outline}}; border-radius: 20px; overflow: hidden">
+        <sc-for list="{{langs}}" as="l" hint-placeholder-count="3">
+          <button onClick="{{l.pick}}" aria-pressed="{{l.active}}" style="{{l.style}}">{{l.label}}</button>
+        </sc-for>
+      </div>
+      <button aria-label="Notifications, 2 unread" style="position: relative; width: 48px; height: 48px; border-radius: 24px; border: 0; background: transparent; color: {{t.onSurfaceVariant}}; display: grid; place-items: center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10 21h4"></path></svg>
+        <span style="position: absolute; top: 8px; right: 8px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: {{t.error}}; color: {{t.onError}}; font-size: 11px; line-height: 16px">2</span>
+      </button>
+      <button style="height: 40px; padding: 0 16px; border-radius: 20px; border: 0; background: {{t.secondaryContainer}}; color: {{t.onSecondaryContainer}}; font-weight: 500">Undo</button>
+      <div role="group" aria-label="Save" style="display: flex; gap: 2px">
+        <button style="height: 56px; padding: 0 24px 0 28px; border-radius: 28px 8px 8px 28px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; font-size: 16px; font-weight: 700">Save world</button>
+        <button aria-label="More save options" style="width: 48px; height: 56px; border-radius: 8px 28px 28px 8px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; display: grid; place-items: center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div style="flex: 1; display: flex; flex-wrap: wrap; gap: 8px; padding: 0 12px 12px; min-height: 0">
+    <nav aria-label="Tabs" style="width: 220px; flex: none; display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 28px; background: {{t.surfaceContainerLow}}">
+      <span style="padding: 4px 12px 8px; font-size: 14px; font-weight: 500; color: {{t.onSurfaceVariant}}">Tabs · {{tabCount}} open</span>
+      <div role="tablist" aria-orientation="vertical" style="display: flex; flex-direction: column; gap: 2px">
+        <sc-for list="{{tabs}}" as="tab" hint-placeholder-count="9">
+          <div style="{{tab.style}}">
+            <button role="tab" aria-selected="{{tab.active}}" onClick="{{tab.pick}}" style="flex: 1; min-width: 0; height: 48px; padding: 0 8px 0 16px; text-align: left; border: 0; background: transparent; color: inherit; font-size: 14px; font-weight: 500">{{tab.label}}</button>
+            <sc-if value="{{tab.active}}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{tab.close}}" style="height: 32px; padding: 0 12px; margin-right: 8px; border-radius: 16px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSecondaryContainer}}; font-size: 12px; font-weight: 500">Close</button>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <div style="height: 1px; background: {{t.outlineVariant}}; margin: 8px 12px"></div>
+      <button onClick="{{openAll}}" style="height: 40px; padding: 0 16px; border-radius: 20px; border: 0; background: transparent; color: {{t.primary}}; text-align: left; font-weight: 500">Open every tab</button>
+      <button style="height: 40px; padding: 0 16px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; text-align: left; font-weight: 500">+ New tab</button>
+    </nav>
+
+    <section aria-label="Map" style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; border-radius: 28px; overflow: hidden; background: {{t.surfaceContainerLowest}}; position: relative">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; background: {{t.surfaceContainer}}">
+        <span role="tab" aria-selected="true" style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 8px 0 16px; border-radius: 20px; background: {{t.secondaryContainer}}; color: {{t.onSecondaryContainer}}; font-weight: 500">Map · Overworld
+          <button style="height: 28px; padding: 0 10px; border-radius: 14px; border: 1px solid {{t.outline}}; background: transparent; color: inherit; font-size: 12px">Close</button>
+        </span>
+        <span role="tab" aria-selected="false" style="display: flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 20px; color: {{t.onSurfaceVariant}}; font-weight: 500">Map · Nether</span>
+        <div role="group" aria-label="View" style="margin-left: auto; display: flex; border: 1px solid {{t.outline}}; border-radius: 20px; overflow: hidden">
+          <sc-for list="{{views}}" as="v" hint-placeholder-count="3">
+            <button onClick="{{v.pick}}" aria-pressed="{{v.active}}" style="{{v.style}}">{{v.label}}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex: 1; min-height: 560px; position: relative; overflow: hidden">
+        <div role="img" aria-label="Top-down map of loaded chunks around the spawn" style="position: absolute; inset: 0; display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); gap: 1px">
+          <sc-for list="{{cells}}" as="c" hint-placeholder-count="360">
+            <div style="{{c.style}}"></div>
+          </sc-for>
+        </div>
+        <div style="position: absolute; left: 32%; top: 28%; width: 24%; height: 26%; border-radius: 4px; border: 2px solid {{t.primary}}; background: rgba(143,216,138,.16)"></div>
+        <span style="position: absolute; left: calc(32% + 8px); top: calc(28% - 36px); height: 28px; padding: 0 12px; border-radius: 8px; background: {{t.inverseSurface}}; color: {{t.inverseOnSurface}}; font-family: 'Roboto Mono', monospace; font-size: 12px; line-height: 28px">64 × 13 × 64</span>
+        <sc-if value="{{showDrop}}" hint-placeholder-val="{{ true }}">
+          <div aria-hidden="true" style="position: absolute; top: 12px; right: 12px; bottom: 12px; width: 38%; border-radius: 20px; border: 2px dashed {{t.primary}}; background: rgba(143,216,138,.14); display: grid; place-items: center; color: {{t.primary}}; font-weight: 600">Drop to dock right</div>
+        </sc-if>
+        <div style="position: absolute; left: 16px; bottom: 16px; display: flex; gap: 8px; align-items: center; height: 40px; padding: 0 16px; border-radius: 20px; background: {{t.surfaceContainerHigh}}; color: {{t.onSurfaceVariant}}; font-family: 'Roboto Mono', monospace; font-size: 12px">x 128 · y 64 · z −64 · chunk 8, −4</div>
+      </div>
+    </section>
+
+    <aside aria-label="Fill tool" style="flex: 1 1 320px; max-width: 360px; display: flex; flex-direction: column; gap: 16px; padding: 20px; border-radius: 28px; background: {{t.surfaceContainerLow}}">
+      <div role="tablist" aria-label="Tools" style="display: flex; flex-wrap: wrap; gap: 8px">
+        <sc-for list="{{tools}}" as="tool" hint-placeholder-count="9">
+          <button role="tab" aria-selected="{{tool.active}}" onClick="{{tool.pick}}" style="{{tool.style}}">{{tool.label}}</button>
+        </sc-for>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px">
+        <div aria-hidden="true" style="width: 56px; height: 56px; border-radius: 18px 18px 18px 4px; background: {{t.tertiaryContainer}}; color: {{t.onTertiaryContainer}}; display: grid; place-items: center">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 11l-8-8-8 8 8 8 8-8z"></path><path d="M21 15s-2 2.5-2 4a2 2 0 004 0c0-1.5-2-4-2-4z"></path></svg>
+        </div>
+        <h2 style="margin: 0; font-size: 36px; line-height: 40px; font-weight: 700; letter-spacing: -0.5px">{{tool}}</h2>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+        <sc-for list="{{coords}}" as="k" hint-placeholder-count="6">
+          <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: {{t.onSurfaceVariant}}">{{k.n}}
+            <input value="{{k.v}}" style="height: 48px; padding: 0 12px; border-radius: 4px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-family: 'Roboto Mono', monospace; font-size: 14px">
+          </label>
+        </sc-for>
+      </div>
+      <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: {{t.onSurfaceVariant}}">Block
+        <input value="minecraft:stone_bricks" style="height: 56px; padding: 0 16px; border-radius: 4px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-family: 'Roboto Mono', monospace; font-size: 14px">
+      </label>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <sc-for list="{{recent}}" as="r" hint-placeholder-count="4">
+          <button style="height: 32px; padding: 0 16px; border-radius: 8px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurfaceVariant}}; font-size: 14px">{{r}}</button>
+        </sc-for>
+      </div>
+      <span style="font-size: 14px; color: {{t.onSurfaceVariant}}">dx=64, dy=13, dz=64 · 53,248 blocks</span>
+      <button style="height: 56px; border-radius: 28px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; font-size: 16px; font-weight: 600">Run {{tool}}</button>
+      <div style="display: flex; gap: 8px">
+        <button style="flex: 1; height: 40px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 500">Copy</button>
+        <button style="flex: 1; height: 40px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 500">Cut</button>
+        <button style="flex: 1; height: 40px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 500">Paste</button>
+      </div>
+    </aside>
+  </div>
+
+  <sc-if value="{{showFloat}}" hint-placeholder-val="{{ true }}">
+    <section aria-label="Floating group: Block palette" style="position: absolute; left: 260px; top: 200px; width: 300px; border-radius: 28px; background: {{t.surfaceContainerHigh}}; box-shadow: 0 4px 8px 3px rgba(0,0,0,.18), 0 1px 3px rgba(0,0,0,.3); overflow: hidden">
+      <div style="display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 20px; background: {{t.surfaceContainerHighest}}">
+        <span style="flex: 1; font-weight: 500">Block palette</span>
+        <button style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-size: 12px">Dock</button>
+        <button style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-size: 12px">Close</button>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 16px">
+        <sc-for list="{{swatches}}" as="s" hint-placeholder-count="8">
+          <button aria-label="{{s.n}}" title="{{s.n}}" style="{{s.style}}"></button>
+        </sc-for>
+      </div>
+    </section>
+  </sc-if>
+
+  <div role="toolbar" aria-label="Map tools" style="position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; padding: 8px; border-radius: 32px; background: {{t.primaryContainer}}; color: {{t.onPrimaryContainer}}; box-shadow: 0 6px 10px 4px rgba(0,0,0,.2), 0 2px 3px rgba(0,0,0,.3)">
+    <sc-for list="{{bar}}" as="b" hint-placeholder-count="5">
+      <button onClick="{{b.pick}}" aria-pressed="{{b.on}}" style="{{b.style}}">{{b.label}}</button>
+    </sc-for>
+    <span aria-hidden="true" style="width: 1px; height: 32px; margin: 0 4px; background: {{t.onPrimaryContainer}}; opacity: .3"></span>
+    <span style="display: flex; align-items: center; gap: 8px; padding: 0 12px; font-size: 14px; font-weight: 500">
+      <svg width="40" height="12" viewBox="0 0 40 12" aria-hidden="true"><path d="M0 6 Q 5 0 10 6 T 20 6 T 30 6 T 40 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path></svg>
+      Rendering 342 of 1,204 chunks
+    </span>
+  </div>
+
+  <div role="status" style="position: absolute; left: 24px; bottom: 112px; max-width: 560px; display: flex; align-items: center; gap: 16px; min-height: 48px; padding: 4px 8px 4px 16px; border-radius: 4px; background: {{t.inverseSurface}}; color: {{t.inverseOnSurface}}; box-shadow: 0 4px 8px 3px rgba(0,0,0,.18)">
+    <span style="flex: 1; font-size: 14px">Fill finished: 53,248 blocks in 1.4 s. Saved to history.</span>
+    <button style="height: 40px; padding: 0 12px; border-radius: 20px; border: 0; background: transparent; color: {{t.inversePrimary}}; font-weight: 500">Undo</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"showFloat":{"editor":"boolean","default":true},"showDrop":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? true;
+    const t = dark ? {
+      primary:'#8FD88A', onPrimary:'#00390A', primaryContainer:'#1B5220', onPrimaryContainer:'#AAF5A4', inversePrimary:'#2E6B2C',
+      secondaryContainer:'#3B4B38', onSecondaryContainer:'#D6E8CF', tertiaryContainer:'#1F4D53', onTertiaryContainer:'#BCEBF2', error:'#FFB4AB', onError:'#690005',
+      surface:'#10140F', surfaceContainerLowest:'#0B0F0A', surfaceContainerLow:'#181D17', surfaceContainer:'#1C211B', surfaceContainerHigh:'#262B25', surfaceContainerHighest:'#31362F',
+      onSurface:'#E0E4DA', onSurfaceVariant:'#C2C9BD', outline:'#8C9388', outlineVariant:'#42493F', inverseSurface:'#E0E4DA', inverseOnSurface:'#2D322B'
+    } : {
+      primary:'#2E6B2C', onPrimary:'#FFFFFF', primaryContainer:'#AFF4A6', onPrimaryContainer:'#002204', inversePrimary:'#8FD88A',
+      secondaryContainer:'#D6E8CF', onSecondaryContainer:'#111F0F', tertiaryContainer:'#BCEBF2', onTertiaryContainer:'#001F23', error:'#BA1A1A', onError:'#FFFFFF',
+      surface:'#F7FBF1', surfaceContainerLowest:'#FFFFFF', surfaceContainerLow:'#F1F5EB', surfaceContainer:'#EBEFE5', surfaceContainerHigh:'#E5EAE0', surfaceContainerHighest:'#E0E4DA',
+      onSurface:'#181D17', onSurfaceVariant:'#42493F', outline:'#72796E', outlineVariant:'#C2C9BD', inverseSurface:'#2D322B', inverseOnSurface:'#EEF2E8'
+    };
+    const seg = (on) => 'height: 40px; padding: 0 16px; border: 0; font-size: 14px; font-weight: 500; ' + (on ? 'background: ' + t.secondaryContainer + '; color: ' + t.onSecondaryContainer : 'background: transparent; color: ' + t.onSurface);
+    const lang = this.state.lang ?? 'en';
+    const langs = [['en','English'],['yue','粵語'],['both','EN + 粵']].map(([id, label]) => ({ label, active: id === lang, style: seg(id === lang), pick: () => this.setState({ lang: id }) }));
+    const view = this.state.view ?? 'Top-down';
+    const views = ['Top-down', 'Slice', '3D'].map((label) => ({ label, active: label === view, style: seg(label === view), pick: () => this.setState({ view: label }) }));
+    const all = ['Worlds', 'Editor', 'Convert', 'History', 'Exports', 'Extensions', 'Settings', 'Changelog', 'About'];
+    const closed = this.state.closed ?? [];
+    const tab = this.state.tab ?? 'Editor';
+    const tabs = all.filter((x) => !closed.includes(x)).map((label) => ({
+      label, active: label === tab,
+      style: 'display: flex; align-items: center; border-radius: 24px; ' + (label === tab ? 'background: ' + t.secondaryContainer + '; color: ' + t.onSecondaryContainer : 'color: ' + t.onSurfaceVariant),
+      pick: () => this.setState({ tab: label }),
+      close: () => this.setState({ closed: closed.concat([label]), tab: all.find((x) => x !== label && !closed.includes(x)) })
+    }));
+    const mode = this.state.mode ?? 'Select';
+    const bar = ['Pan', 'Select', 'Pick block', 'Measure', 'Go to'].map((label) => ({
+      label, on: label === mode,
+      style: 'height: 48px; padding: 0 18px; border: 0; font-size: 14px; font-weight: 600; transition: border-radius .2s; ' + (label === mode ? 'border-radius: 14px; background: ' + t.primary + '; color: ' + t.onPrimary : 'border-radius: 24px; background: transparent; color: ' + t.onPrimaryContainer),
+      pick: () => this.setState({ mode: label })
+    }));
+    const tool = this.state.tool ?? 'Fill';
+    const tools =['Select','Fill','Replace','Clone','Biome','Waterlog','Import','Export','Chunks'].map((label) => ({
+      label, active: label === tool,
+      style: 'height: 32px; padding: 0 12px; border-radius: 8px; font-size: 14px; font-weight: 500; ' + (label === tool ? 'border: 0; background: ' + t.secondaryContainer + '; color: ' + t.onSecondaryContainer : 'border: 1px solid ' + t.outline + '; background: transparent; color: ' + t.onSurfaceVariant),
+      pick: () => this.setState({ tool: label })
+    }));
+    const coords = [['x1','96'],['y1','60'],['z1','-96'],['x2','159'],['y2','72'],['z2','-33']].map(([n, v]) => ({ n, v }));
+    const swatches = [['stone_bricks','#7a7a7a'],['oak_planks','#a2834f'],['grass_block','#5d8f3a'],['water','#3f68c9'],['sand','#dbcfa3'],['glass','#c9e4ea'],['deepslate','#4d4d50'],['cherry_leaves','#e7a9c3']].map(([n, c]) => ({ n, style: 'height: 48px; border-radius: 12px; border: 1px solid ' + t.outlineVariant + '; background: ' + c }));
+    const pal = ['#3e6b30','#4a7a38','#567f3f','#6f8a4a','#2c5a86','#356a9a','#6a6f72','#c8bf98','#7c6a4a'];
+    const cells = Array.from({ length: 360 }, (_, i) => {
+      const x = i % 24, z = Math.floor(i / 24);
+      const d = Math.abs(x - (10 + Math.round(3 * Math.sin(z / 2.2))));
+      const n = (x * 31 + z * 17 + x * z) % 13;
+      const c = d < 2 ? pal[4 + (n % 2)] : d === 2 ? pal[7] : n === 0 ? pal[6] : n === 1 ? pal[8] : pal[n % 4];
+      return { style: 'background: ' + c + '; min-height: 40px' };
+    });
+    return {
+      t, bar, langs, views, tabs, tabCount: tabs.length, openAll: () => this.setState({ closed: [] }),
+      tools, tool, coords, recent: ['oak_planks', 'glass', 'water', 'air'], swatches, cells,
+      showFloat: this.props.showFloat ?? true, showDrop: this.props.showDrop ?? false
+    };
+  }
+}
+</script>
+</body>
+</html>

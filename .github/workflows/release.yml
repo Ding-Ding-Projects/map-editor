@@ -1,0 +1,148 @@
+name: Build and release
+on:
+  push:
+    branches: ['**']
+    tags-ignore: ['**']
+  workflow_dispatch:
+permissions:
+  contents: write
+  packages: write
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+env:
+  IMAGE: ghcr.io/ding-ding-projects/map-editor
+jobs:
+  meta:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      tag: ${{ steps.v.outputs.tag }}
+      started: ${{ steps.v.outputs.started }}
+      date: ${{ steps.v.outputs.date }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          V=$(node -p "require('./package.json').version")
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "tag=v$V-build.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+          echo "date=$(git log -1 --format=%cI)" >> "$GITHUB_OUTPUT"
+
+  dockview:
+    # Pinned build of the dockview fork, fetched with a read-only token kept as a secret.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node scripts/fetch-dockview.mjs
+        env:
+          DOCKVIEW_TOKEN: ${{ secrets.DOCKVIEW_READ_TOKEN }}
+
+  docker:
+    needs: meta
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with: { registry: ghcr.io, username: '${{ github.actor }}', password: '${{ secrets.GITHUB_TOKEN }}' }
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            SOURCE_COMMIT=${{ github.sha }}
+            SOURCE_DATE=${{ needs.meta.outputs.date }}
+          tags: |
+            ${{ env.IMAGE }}:${{ needs.meta.outputs.version }}
+            ${{ env.IMAGE }}:${{ needs.meta.outputs.tag }}
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+      - name: Compose smoke test against the pushed image
+        run: |
+          mkdir -p /tmp/worlds
+          MAP_EDITOR_VERSION=${{ needs.meta.outputs.tag }} MAP_EDITOR_WORLDS_DIR=/tmp/worlds docker compose up -d
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8420/api/health && exit 0; sleep 2; done
+          docker compose logs; exit 1
+      - run: docker save ${{ env.IMAGE }}:${{ needs.meta.outputs.version }} -o map-editor-image.tar
+      - uses: actions/upload-artifact@v4
+        with: { name: image-tar, path: map-editor-image.tar, retention-days: 3 }
+      - run: echo "${{ steps.build.outputs.digest }}" > image-digest.txt
+      - uses: actions/upload-artifact@v4
+        with: { name: image-digest, path: image-digest.txt }
+
+  appliance:
+    needs: [meta, docker]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: image-tar }
+      - run: sudo apt-get update && sudo apt-get install -y qemu-utils qemu-system-x86 curl
+      - name: Build appliance image
+        run: sudo AMVI_SHA256=$(cut -d' ' -f1 appliance/tools.sha256) appliance/build.sh map-editor-image.tar ${{ needs.meta.outputs.version }}
+      - name: Boot test under QEMU
+        run: sudo appliance/boot-test.sh appliance/out/map-editor-appliance-x86_64.img
+      - run: sudo xz -T0 -k appliance/out/map-editor-appliance-x86_64.img
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appliance
+          path: |
+            appliance/out/map-editor-appliance-x86_64.img.xz
+            appliance/out/map-editor-appliance-x86_64.ova
+            appliance/out/SHA256SUMS
+
+  desktop:
+    needs: meta
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --no-audit --no-fund
+      - run: node scripts/build.mjs
+        env: { SOURCE_COMMIT: '${{ github.sha }}', SOURCE_DATE: '${{ needs.meta.outputs.date }}' }
+      - run: node scripts/package-desktop.mjs
+      - name: Installers must be unsigned
+        shell: pwsh
+        run: |
+          Get-ChildItem out/installers -Recurse -Filter *.exe | ForEach-Object {
+            $s = (Get-AuthenticodeSignature $_.FullName).Status
+            if ($s -ne 'NotSigned') { throw "$($_.Name) reports $s, expected NotSigned" }
+            "$($_.Name): $s"
+          }
+      - uses: actions/upload-artifact@v4
+        with: { name: desktop, path: out/installers/** }
+
+  release:
+    needs: [meta, docker, appliance, desktop]
+    if: always() && needs.meta.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { path: assets }
+      - name: Publish one normal release for this commit
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          DONE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          DUR=$(( $(date -u -d "$DONE" +%s) - $(date -u -d "${{ needs.meta.outputs.started }}" +%s) ))
+          {
+            echo "Map Editor ${{ needs.meta.outputs.version }} built from ${{ github.sha }}."
+            echo
+            echo "Jobs: docker=${{ needs.docker.result }}, appliance=${{ needs.appliance.result }}, desktop=${{ needs.desktop.result }}. Assets are attached only for jobs that succeeded."
+            echo
+            echo "Docker image: ${{ env.IMAGE }}:${{ needs.meta.outputs.version }} (digest in image-digest.txt)."
+            echo "The Windows installers are not code-signed, so Windows SmartScreen may warn before running them."
+            echo
+            echo "Workflow started: ${{ needs.meta.outputs.started }}"
+            echo "Workflow completed: $DONE"
+            echo "Workflow duration: ${DUR}s"
+          } > notes.md
+          find assets -type f \( -name '*.exe' -o -name 'RELEASES' -o -name '*.nupkg' -o -name '*.ova' -o -name '*.img.xz' -o -name 'SHA256SUMS' -o -name 'image-digest.txt' \) > files.txt
+          gh release create "${{ needs.meta.outputs.tag }}" --target "${{ github.sha }}" --title "Map Editor ${{ needs.meta.outputs.tag }}" --notes-file notes.md $(cat files.txt)
+          gh release view "${{ needs.meta.outputs.tag }}" --json tagName,isDraft,isPrerelease,targetCommitish,assets --jq '{tag: .tagName, draft: .isDraft, prerelease: .isPrerelease, target: .targetCommitish, assets: [.assets[].name]}'

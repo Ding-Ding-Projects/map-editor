@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Command palette and notifications</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,100..125,400..800&amp;family=Roboto+Mono:wght@400;500&amp;family=Noto+Sans+HK:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offset:2px}
+</style>
+</helmet>
+<div style="position: relative; min-height: 900px; padding: 24px; box-sizing: border-box; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', 'Noto Sans HK', Roboto, system-ui, sans-serif; font-size: 14px; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; justify-content: center">
+
+  <section role="dialog" aria-label="Command palette" style="flex: 1 1 620px; max-width: 720px; border-radius: 32px; background: {{t.surfaceContainerHigh}}; box-shadow: 0 8px 12px 6px rgba(0,0,0,.2), 0 4px 4px rgba(0,0,0,.3); overflow: hidden">
+    <div style="display: flex; align-items: center; gap: 12px; height: 72px; padding: 0 16px 0 24px; border-bottom: 1px solid {{t.outlineVariant}}">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{t.onSurfaceVariant}}" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      <label for="pq" style="position: absolute; left: -9999px">Command palette</label>
+      <input id="pq" value="dark" style="flex: 1; min-width: 0; border: 0; background: transparent; color: {{t.onSurface}}; font-size: 22px; outline: none">
+      <button aria-label="Open regex builder" style="height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurfaceVariant}}; font-family: 'Roboto Mono', monospace">.*</button>
+    </div>
+    <div style="padding: 8px">
+      <span style="display: block; padding: 8px 16px; font-size: 12px; font-weight: 600; color: {{t.onSurfaceVariant}}">Settings, live</span>
+      <div style="display: flex; align-items: center; gap: 16px; min-height: 64px; padding: 0 16px; border-radius: 20px; background: {{t.secondaryContainer}}; color: {{t.onSecondaryContainer}}">
+        <span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 600">Dark theme</span><span style="font-size: 12px">Settings › Appearance</span></span>
+        <span role="switch" aria-checked="true" aria-label="Dark theme" style="position: relative; width: 52px; height: 32px; border-radius: 16px; background: {{t.primary}}"><span style="position: absolute; left: 24px; top: 4px; width: 24px; height: 24px; border-radius: 50%; background: {{t.onPrimary}}"></span></span>
+      </div>
+      <span style="display: block; padding: 12px 16px 8px; font-size: 12px; font-weight: 600; color: {{t.onSurfaceVariant}}">Commands</span>
+      <sc-for list="{{cmds}}" as="c" hint-placeholder-count="4">
+        <div style="display: flex; align-items: center; gap: 16px; min-height: 56px; padding: 0 16px; border-radius: 20px">
+          <span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 500">{{c.n}}</span><span style="font-size: 12px; color: {{t.onSurfaceVariant}}">{{c.where}}</span></span>
+          <span style="font-family: 'Roboto Mono', monospace; font-size: 12px; color: {{t.onSurfaceVariant}}">{{c.k}}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display: flex; gap: 16px; padding: 12px 24px; border-top: 1px solid {{t.outlineVariant}}; font-size: 12px; color: {{t.onSurfaceVariant}}">
+      <span>Enter to run</span><span>Alt+Enter to go to it</span><span>Esc to close</span>
+    </div>
+  </section>
+
+  <aside aria-label="Notifications" style="flex: 1 1 380px; max-width: 440px; display: flex; flex-direction: column; gap: 12px">
+    <section style="padding: 20px; border-radius: 32px 32px 8px 8px; background: {{t.tertiaryContainer}}; color: {{t.onTertiaryContainer}}; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 12px; font-weight: 700">Update coming soon</span>
+      <span style="font-size: 22px; line-height: 28px; font-weight: 800">Build 0.1.1 #57 is being made</span>
+      <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px">
+        <span>✓ Tests · 1 m 12 s</span><span>✓ Desktop installer · 3 m 40 s</span><span>● Docker image · running 1 m 05 s</span><span>○ Appliance image · waiting</span>
+      </div>
+      <div role="progressbar" aria-label="Build progress" aria-valuenow="55" aria-valuemin="0" aria-valuemax="100" style="height: 8px; border-radius: 4px; background: rgba(0,0,0,.2); overflow: hidden"><div style="width: 55%; height: 8px; border-radius: 4px; background: {{t.onTertiaryContainer}}"></div></div>
+      <span style="font-size: 12px">Started 16:38:02 EST · estimate about 6 min left · nothing installs until it is published</span>
+    </section>
+
+    <section style="padding: 20px; border-radius: 8px; background: {{t.surfaceContainerLow}}; display: flex; flex-direction: column; gap: 4px">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px">
+        <span style="flex: 1; font-size: 22px; font-weight: 800">Notifications</span>
+        <button style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 600; font-size: 12px">Dismiss all</button>
+      </div>
+      <sc-for list="{{notes}}" as="n" hint-placeholder-count="3">
+        <div style="display: flex; gap: 12px; padding: 12px; border-radius: 16px; background: {{t.surfaceContainerHigh}}">
+          <span aria-hidden="true" style="{{n.dot}}"></span>
+          <span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">{{n.title}}</span><span style="font-size: 13px; color: {{t.onSurfaceVariant}}">{{n.body}}</span></span>
+          <span style="font-size: 12px; color: {{t.onSurfaceVariant}}">{{n.time}}</span>
+        </div>
+      </sc-for>
+    </section>
+
+    <section role="status" style="display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: 8px 8px 32px 32px; background: {{t.primaryContainer}}; color: {{t.onPrimaryContainer}}">
+      <div aria-hidden="true" style="width: 72px; height: 72px; flex: none; border-radius: 50% 50% 50% 12px; background: #F3E3C3; display: grid; place-items: center">
+        <svg width="44" height="44" viewBox="0 0 48 48"><ellipse cx="24" cy="28" rx="16" ry="11" fill="#E9CFA0"></ellipse><path d="M10 26 q14 -16 28 0" fill="#F6E7C8" stroke="#C9A46A" stroke-width="2"></path><circle cx="24" cy="17" r="3" fill="#E07A3F"></circle></svg>
+      </div>
+      <span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 12px; font-weight: 700">Dim sum surprise</span><span style="font-size: 20px; font-weight: 800">Siu mai · 燒賣</span><span style="font-size: 12px">Picture: placeholder until the public dish photo is wired</span></span>
+    </section>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? true;
+    const t = dark ? {
+      primary:'#8FD88A', onPrimary:'#00390A', primaryContainer:'#1B5220', onPrimaryContainer:'#AAF5A4',
+      secondaryContainer:'#3B4B38', onSecondaryContainer:'#D6E8CF', tertiaryContainer:'#1F4D53', onTertiaryContainer:'#BCEBF2', error:'#FFB4AB',
+      surface:'#10140F', surfaceContainerLow:'#181D17', surfaceContainerHigh:'#262B25', surfaceContainerHighest:'#31362F',
+      onSurface:'#E0E4DA', onSurfaceVariant:'#C2C9BD', outline:'#8C9388', outlineVariant:'#42493F'
+    } : {
+      primary:'#2E6B2C', onPrimary:'#FFFFFF', primaryContainer:'#AFF4A6', onPrimaryContainer:'#002204',
+      secondaryContainer:'#D6E8CF', onSecondaryContainer:'#111F0F', tertiaryContainer:'#BCEBF2', onTertiaryContainer:'#001F23', error:'#BA1A1A',
+      surface:'#F7FBF1', surfaceContainerLow:'#F1F5EB', surfaceContainerHigh:'#E5EAE0', surfaceContainerHighest:'#E0E4DA',
+      onSurface:'#181D17', onSurfaceVariant:'#42493F', outline:'#72796E', outlineVariant:'#C2C9BD'
+    };
+    const cmds = [
+      { n: 'Switch map to dark render style', where: 'Editor › View', k: 'Ctrl+Alt+D' },
+      { n: 'Fill selection', where: 'Editor › Tools', k: 'F' },
+      { n: 'Roll back last edit', where: 'History', k: 'Ctrl+Z' },
+      { n: 'Deploy to Docker', where: 'Deploy', k: '' }
+    ];
+    const dot = (c) => 'width: 10px; height: 10px; margin-top: 6px; flex: none; border-radius: 5px; background: ' + c;
+    const notes = [
+      { title: 'Fill finished', body: '53,248 blocks set to stone_bricks.', time: '16:41', dot: dot(t.primary) },
+      { title: 'Could not read 2 chunks', body: 'r.3.-2.mca has 2 damaged entries. They were skipped, not changed.', time: '16:20', dot: dot(t.error) },
+      { title: 'History saved', body: 'Baseline recorded for Survival Island.', time: '15:58', dot: dot(t.onSurfaceVariant) }
+    ];
+    return { t, cmds, notes };
+  }
+}
+</script>
+</body>
+</html>
