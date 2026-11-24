@@ -39,7 +39,7 @@ rm -f "$RAW"
 truncate -s 4G "$RAW"
 echo 'start=2048, type=83, bootable' | sfdisk -q "$RAW"
 LOOP=$(losetup --find --show --partscan "$RAW")
-cleanup() { umount "$OUT/mnt/dev" 2>/dev/null || true; umount "$OUT/mnt" 2>/dev/null || true; losetup -d "$LOOP" 2>/dev/null || true; }
+cleanup() { for fs in sys proc dev; do umount "$OUT/mnt/$fs" 2>/dev/null || true; done; umount "$OUT/mnt" 2>/dev/null || true; losetup -d "$LOOP" 2>/dev/null || true; }
 trap cleanup EXIT
 for i in 1 2 3 4 5; do [ -b "${LOOP}p1" ] && break; partprobe "$LOOP" 2>/dev/null || true; sleep 1; done
 mkfs.ext4 -q -L map-editor -O ^64bit "${LOOP}p1"
@@ -58,9 +58,9 @@ LABEL map-editor
   APPEND root=LABEL=map-editor rootfstype=ext4 modules=ext4 quiet console=tty0 console=ttyS0,115200
 CFG
 # Use the image's own extlinux so the installer matches its boot modules.
-mount --bind /dev "$OUT/mnt/dev"
+for fs in dev proc sys; do mount --bind "/$fs" "$OUT/mnt/$fs"; done
 chroot "$OUT/mnt" /sbin/extlinux --install /boot/syslinux
-umount "$OUT/mnt/dev"
+for fs in sys proc dev; do umount "$OUT/mnt/$fs"; done
 umount "$OUT/mnt"
 dd if="$ROOT/usr/share/syslinux/mbr.bin" of="$LOOP" bs=440 count=1 conv=notrunc status=none
 losetup -d "$LOOP"
