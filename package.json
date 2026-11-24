@@ -17,6 +17,7 @@
     "setup": "node scripts/setup.mjs"
   },
   "dependencies": {
+    "@material/material-color-utilities": "0.3.0",
     "dockview-core": "8.9.1",
     "isomorphic-git": "1.44.19",
     "tinymce": "8.10.2"

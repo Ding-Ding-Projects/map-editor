@@ -48,6 +48,9 @@ const S = {
   reduceMotion: { en: 'Reduce motion', yue: '減少動畫' },
   errorTitle: { en: 'That did not work', yue: '做唔到' },
   notes: { en: 'Notes', yue: '筆記' },
+  seed: { en: 'Theme colour', yue: '主題顏色' },
+  rainbow: { en: 'Animated rainbow', yue: '動態彩虹' },
+  reset: { en: 'Reset', yue: '重設' },
   notesSaved: { en: 'Notes saved.', yue: '筆記已儲存。' },
   signedOut: { en: 'Sign in first.', yue: '請先登入。' },
 } satisfies Record<string, Entry>;

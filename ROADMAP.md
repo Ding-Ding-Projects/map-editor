@@ -53,7 +53,8 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Rich text notes per world with self-hosted TinyMCE, autosaved; typing and saving checked in headless Chrome.
 - [ ] TinyMCE for every other rich text field.
 - [ ] Command palette with live setting controls (Ctrl+Shift+F focuses search today).
-- [ ] Per-element appearance editor, infinite colour picker, logo customization.
+- [x] Infinite colour picker: continuous field, hue and opacity, any-notation translator (name, HEX, HEX8, RGB, HSL, HSV, HWB, LAB, LCH, OKLab, OKLCH, CMYK), gamut and contrast notes, copy, recent colours, animated rainbow marker with one global speed. Drives the theme seed live; checked in headless Chrome and unit tested.
+- [ ] Colour picker on every other colour control; per-element appearance editor; logo customization.
 - [ ] Regex builder on every search field.
 - [ ] ADHD modes, narration, school mode, scheduled settings, personal vocabulary upload.
 - [ ] Notification centre with search; install success and failure takeovers in the desktop app.

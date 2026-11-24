@@ -37,7 +37,7 @@ On Windows, `host.bat` does the same, with `host.bat --detached` to run in the b
 - History panel with action filters and roll back to any point.
 - Rich text notes per world (TinyMCE), saved automatically.
 - English, Hong Kong Cantonese and bilingual interface, with separate English and Cantonese funny-level sliders that change wording only.
-- Light and dark Material 3 themes; reduced motion.
+- Light and dark Material 3 themes generated from any theme colour, picked with a colour picker that reads names, HEX, RGB, HSL, HSV, HWB, LAB, LCH, OKLab, OKLCH and CMYK; reduced motion.
 
 See [ROADMAP.md](ROADMAP.md) for what is verified, what is built but unverified, and what is still to do.
 

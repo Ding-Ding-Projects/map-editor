@@ -3,14 +3,18 @@ import '@material/web/all.js';
 import { styles as typescaleStyles } from '@material/web/typography/md-typescale-styles.js';
 import { t as tr, type I18nState, type Key, type Lang } from './i18n.js';
 import { mountWorkspace } from './workspace.js';
+import { colorPicker, applyRainbowSpeed } from './colorpicker.js';
+import { RAINBOW } from './color.js';
+import { argbFromHex, themeFromSourceColor, applyTheme as applyM3Theme } from '@material/material-color-utilities';
 import { notesPanel as notesPanelImpl } from './notes.js';
 
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
 
 // ---------- state ----------
-interface Prefs extends I18nState { dark: boolean; reduceMotion: boolean; closedTabs: string[]; tab: string }
+interface Prefs extends I18nState { dark: boolean; reduceMotion: boolean; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number }
 const PREFS_KEY = 'map-editor.prefs.v1';
-const defaults: Prefs = { lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, closedTabs: [], tab: 'worlds' };
+const DEFAULT_SEED = '#4c8c4a';
+const defaults: Prefs = { lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3 };
 function loadPrefs(): Prefs { try { return { ...defaults, ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') }; } catch { return { ...defaults }; } }
 let prefs = loadPrefs();
 function savePrefs() { try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch { /* storage blocked: keep in memory */ } }
@@ -54,7 +58,19 @@ function notify(text: string, error = false, action?: { label: string; run: () =
 }
 
 // ---------- theme ----------
+function applySeed() {
+  const root = document.documentElement;
+  // The hand-tuned default palette lives in the stylesheet; any other seed generates every M3 colour role.
+  for (const p of Array.from({ length: root.style.length }, (_, i) => root.style.item(i))) if (p.startsWith('--md-sys-color-')) root.style.removeProperty(p);
+  root.classList.toggle('seed-rainbow', prefs.seed === RAINBOW);
+  if (prefs.seed !== DEFAULT_SEED && prefs.seed !== RAINBOW && /^#[0-9a-f]{6}$/i.test(prefs.seed)) {
+    applyM3Theme(themeFromSourceColor(argbFromHex(prefs.seed)), { target: root, dark: prefs.dark });
+  }
+  applyRainbowSpeed(prefs.rainbowSpeed);
+}
+
 function applyTheme() {
+  applySeed();
   document.documentElement.dataset.theme = prefs.dark ? 'dark' : 'light';
   document.documentElement.classList.toggle('reduce-motion', prefs.reduceMotion);
   document.documentElement.lang = prefs.lang === 'yue' ? 'zh-Hant-HK' : 'en';
@@ -283,12 +299,22 @@ function settingsView(view: HTMLElement) {
       <p class="muted">${esc(tx('funnyNote'))}</p>
       <label class="row"><span>${esc(tx('dark'))}</span><md-switch id="dark" ${prefs.dark ? 'selected' : ''}></md-switch></label>
       <label class="row"><span>${esc(tx('reduceMotion'))}</span><md-switch id="rm" ${prefs.reduceMotion ? 'selected' : ''}></md-switch></label>
+      <div class="row"><span>${esc(tx('seed'))}</span><span class="seed-now"><span class="seed-swatch ${prefs.seed === RAINBOW ? 'rainbow' : ''}" style="background:${prefs.seed === RAINBOW ? 'none' : esc(prefs.seed)}"></span><code>${esc(prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed)}</code><md-text-button id="seed-reset">${esc(tx('reset'))}</md-text-button></span></div>
+      <div id="seed-picker"></div>
     </div></section>`;
   const num = (id: string) => Number((view.querySelector(id) as HTMLInputElement).value);
   view.querySelector('#fen')!.addEventListener('change', () => { prefs.funnyEn = num('#fen'); savePrefs(); });
   view.querySelector('#fyue')!.addEventListener('change', () => { prefs.funnyYue = num('#fyue'); savePrefs(); });
   view.querySelector('#dark')!.addEventListener('change', (e) => { prefs.dark = (e.target as HTMLInputElement & { selected: boolean }).selected; savePrefs(); applyTheme(); });
   view.querySelector('#rm')!.addEventListener('change', (e) => { prefs.reduceMotion = (e.target as HTMLInputElement & { selected: boolean }).selected; savePrefs(); applyTheme(); });
+  const showSeed = () => { const sw = view.querySelector<HTMLElement>('.seed-swatch')!; sw.classList.toggle('rainbow', prefs.seed === RAINBOW); sw.style.background = prefs.seed === RAINBOW ? '' : prefs.seed; view.querySelector('.seed-now code')!.textContent = prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed; };
+  colorPicker(view.querySelector<HTMLElement>('#seed-picker')!, {
+    value: prefs.seed, label: tx('seed'), allowRainbow: true, rainbowSpeed: prefs.rainbowSpeed,
+    surface: getComputedStyle(document.documentElement).getPropertyValue('--md-sys-color-surface').trim() || '#10140f',
+    onChange: (v) => { prefs.seed = v.length === 9 ? v.slice(0, 7) : v; savePrefs(); applySeed(); showSeed(); },
+    onSpeed: (lv) => { prefs.rainbowSpeed = lv; savePrefs(); applyRainbowSpeed(lv); },
+  });
+  view.querySelector('#seed-reset')!.addEventListener('click', () => { prefs.seed = DEFAULT_SEED; savePrefs(); render(); });
 }
 
 function aboutView(view: HTMLElement) {
