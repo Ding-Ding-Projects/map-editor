@@ -1,16 +1,21 @@
-// dockview workspace for the editor: panels can be docked, tabbed together, floated and rearranged.
-// The layout is saved per browser and restored next time.
+// dockview workspaces: panels can be docked, tabbed together, floated and rearranged.
+// Each screen has its own layout, saved per browser and restored next time.
 import { createDockview, type DockviewApi } from 'dockview-core/dist/dockview-core.js';
 
 const LAYOUT_KEY = 'map-editor.layout.v1';
 // On a phone every panel is one tab in a single group, so nothing is squeezed side by side.
 export const PHONE = '(max-width: 720px)';
-let api: DockviewApi | undefined;
+const live = new Map<HTMLElement, DockviewApi>();
 
-export function mountWorkspace(host: HTMLElement, panels: Record<string, HTMLElement>, titles: Record<string, string>, dark: boolean) {
-  api?.dispose();
+/** Default arrangement: each entry is [panel id, position relative to an earlier panel, size]. */
+export type Arrangement = Array<[string, { ref: string; dir: 'right' | 'below' | 'within' }?, number?]>;
+
+export function mountWorkspace(host: HTMLElement, panels: Record<string, HTMLElement>, titles: Record<string, string>, dark: boolean, screen?: { key: string; arrange: Arrangement; active?: string }) {
+  // Several workspaces can be on screen at once (a panel may hold another screen), so each host
+  // keeps its own; ones whose host has left the page are cleaned up here.
+  for (const [h, a] of live) if (h === host || !h.isConnected) { a.dispose(); live.delete(h); }
   host.classList.add('dockview-theme-m3');
-  api = createDockview(host, {
+  const api = createDockview(host, {
     theme: { name: 'material', className: 'dockview-theme-m3', colorScheme: dark ? 'dark' : 'light', gap: 8, dndTabIndicator: 'fill' },
     createComponent: ({ name }) => {
       const element = panels[name] ?? Object.assign(document.createElement('div'), { textContent: name });
@@ -18,14 +23,22 @@ export function mountWorkspace(host: HTMLElement, panels: Record<string, HTMLEle
     },
   });
   const phone = matchMedia(PHONE).matches;
-  const key = phone ? `${LAYOUT_KEY}.phone` : LAYOUT_KEY;
+  const base = screen ? `map-editor.layout.${screen.key}.v1` : LAYOUT_KEY;
+  const key = phone ? `${base}.phone` : base;
   host.classList.toggle('phone-dock', phone);
   let restored = false;
   try {
     const saved = localStorage.getItem(key);
-    if (saved) { api.fromJSON(JSON.parse(saved)); restored = Object.keys(panels).every((id) => api!.getPanel(id)); }
+    if (saved) { api.fromJSON(JSON.parse(saved)); restored = Object.keys(panels).every((id) => api.getPanel(id)); }
   } catch { restored = false; }
-  if (!restored) {
+  if (!restored && screen) {
+    api.clear();
+    for (const [id, pos, size] of screen.arrange) {
+      const dir = phone ? 'within' : pos?.dir;
+      api.addPanel({ id, component: id, title: titles[id], ...(pos ? { position: { referencePanel: pos.ref, direction: dir === 'right' ? 'right' : dir === 'below' ? 'below' : 'within' } } : {}), ...(size && !phone && dir === 'right' ? { initialWidth: size } : {}), ...(size && !phone && dir === 'below' ? { initialHeight: size } : {}) });
+    }
+    api.getPanel(screen.active ?? screen.arrange[0][0])?.api.setActive();
+  } else if (!restored) {
     api.clear();
     api.addPanel({ id: 'map', component: 'map', title: titles.map });
     api.addPanel({ id: 'tool', component: 'tool', title: titles.tool, position: phone ? { referencePanel: 'map', direction: 'within' } : { referencePanel: 'map', direction: 'right' }, initialWidth: phone ? undefined : 380 });
@@ -34,8 +47,9 @@ export function mountWorkspace(host: HTMLElement, panels: Record<string, HTMLEle
     api.getPanel(phone ? 'map' : 'tool')?.api.setActive();
   }
   for (const id of Object.keys(titles)) api.getPanel(id)?.api.setTitle(titles[id]);
-  api.onDidLayoutChange(() => { try { localStorage.setItem(key, JSON.stringify(api!.toJSON())); } catch { /* storage blocked */ } });
+  api.onDidLayoutChange(() => { try { localStorage.setItem(key, JSON.stringify(api.toJSON())); } catch { /* storage blocked */ } });
+  live.set(host, api);
   return api;
 }
 
-export function resetLayout() { try { localStorage.removeItem(LAYOUT_KEY); localStorage.removeItem(`${LAYOUT_KEY}.phone`); } catch { /* ignore */ } }
+export function resetLayout() { try { for (const k of Object.keys(localStorage)) if (k.startsWith('map-editor.layout.')) localStorage.removeItem(k); } catch { /* ignore */ } }

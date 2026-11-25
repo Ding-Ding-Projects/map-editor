@@ -2,7 +2,7 @@
 import '@material/web/all.js';
 import { styles as typescaleStyles } from '@material/web/typography/md-typescale-styles.js';
 import { t as tr, type I18nState, type Key, type Lang } from './i18n.js';
-import { mountWorkspace, PHONE } from './workspace.js';
+import { mountWorkspace, PHONE, resetLayout } from './workspace.js';
 import { searchBox, type RegexText } from './regex.js';
 import { enableClearControls } from './clearable.js';
 import { configureSounds, play } from './sounds.js';
@@ -186,6 +186,7 @@ function paletteCommands(): Command[] {
   cmds.push({ id: 'sounds', label: tx('soundEffects'), where: `${tx('settings')} › ${tx('secSounds')}`, toggle: { get: () => prefs.sounds, set: (v) => { prefs.sounds = v; savePrefs(); applyTheme(); } } });
   cmds.push({ id: 'tour', label: tx('tourTake'), where: tx('help'), run: () => takeTour('app') });
   cmds.push({ id: 'tour-page', label: tx('tourThisPage'), where: `${tx('help')} › ${tx(prefs.tab as Key)}`, run: () => takeTour(prefs.tab as Tab) });
+  cmds.push({ id: 'reset-layouts', label: tx('resetLayouts'), where: `${tx('settings')} › ${tx('secAppearance')}`, run: () => { resetLayout(); notify(tx('resetLayoutsDone')); render(); } });
   cmds.push({ id: 'check-updates', label: tx('updCheck'), where: `${tx('about')}`, run: () => { void checkForUpdates(); } });
   for (const e of extCache) if (e.enabled) for (const c of e.commands) cmds.push({ id: `ext-${e.id}-${c.id}`, label: c.title, where: `${tx('secExtensions')} › ${e.name}`, run: () => { void runExtension(e.id, c.id); } });
   cmds.push({ id: 'dim-sum', label: tx('dimSumNow'), where: `${tx('settings')} › ${tx('secAppearance')}`, run: () => { void dimSumSurprise(true); } });
@@ -616,14 +617,27 @@ async function editorView(view: HTMLElement): Promise<void> {
   mountWorkspace(view.querySelector<HTMLElement>('#dock')!, { map: mapEl, tool: toolEl, history: histEl, notes: notesEl }, {
     map: tx('editor'), tool: tx('fill'), history: tx('history'), notes: tx('notes'),
   }, prefs.dark);
-  historyView(histEl);
-  document.addEventListener('history-changed', () => { if (histEl.isConnected) historyView(histEl); });
+  historyView(histEl, true);
+  document.addEventListener('history-changed', () => { if (histEl.isConnected) historyView(histEl, true); });
   notesPanel(notesEl);
 }
 
-async function historyView(view: HTMLElement): Promise<void> {
+async function historyView(view: HTMLElement, embedded = false): Promise<void> {
   if (!world) { prefs.tab = 'worlds'; return render(); }
-  view.innerHTML = `<section class="card"><h1 class="md-typescale-display-small">${esc(tx('history'))}</h1><p class="muted">${esc(tx('historyNote'))}</p><div id="h"><md-linear-progress indeterminate aria-label="Loading"></md-linear-progress></div></section>`;
+  // Two docked panels: the filterable list of edits, and the details of the selected edit.
+  view.innerHTML = embedded ? '' : '<div id="dock" class="dock"></div>';
+  const listEl = document.createElement('section');
+  listEl.className = 'card panel-scroll';
+  listEl.innerHTML = `<h1 class="md-typescale-display-small">${esc(tx('history'))}</h1><p class="muted">${esc(tx('historyNote'))}</p><div id="h"><md-linear-progress indeterminate aria-label="Loading"></md-linear-progress></div>`;
+  const detailEl = document.createElement('section');
+  detailEl.className = 'card panel-scroll h-detail';
+  detailEl.innerHTML = `<p class="muted">${esc(tx('hPick'))}</p>`;
+  // Inside the editor's own History panel the list stands alone; the History tab docks list and details.
+  if (embedded) { listEl.className = 'card'; view.append(listEl); }
+  else mountWorkspace(view.querySelector<HTMLElement>('#dock')!, { edits: listEl, details: detailEl }, { edits: tx('hEdits'), details: tx('hDetails') }, document.documentElement.dataset.theme === 'dark',
+    { key: 'history', arrange: [['edits'], ['details', { ref: 'edits', dir: 'right' }, 420]], active: 'edits' });
+  const outer = view;
+  view = listEl;
   try {
     const { entries } = await api<{ entries: Array<{ sha: string; message: string; action: string; time: number }> }>('/api/history');
     const counts = new Map<string, number>(); for (const e of entries) counts.set(e.action, (counts.get(e.action) ?? 0) + 1);
@@ -633,6 +647,22 @@ async function historyView(view: HTMLElement): Promise<void> {
       <md-list>${entries.map((e, i) => `<md-list-item data-row="${esc(e.action)}" data-t="${e.time}" data-text="${esc((e.message + ' ' + e.sha).toLowerCase())}"><div slot="headline">${esc(e.message)}</div>
         <div slot="supporting-text">${esc(new Date(e.time * 1000).toLocaleString('en-GB'))} · <code>${esc(e.sha.slice(0, 7))}</code></div>
         ${i > 0 ? `<md-text-button slot="end" data-sha="${esc(e.sha)}">${esc(tx('rollBack'))}</md-text-button>` : ''}</md-list-item>`).join('')}</md-list>`;
+    // Selecting an edit shows its details in the other panel.
+    const showDetail = (i: number) => {
+      const e = entries[i]; if (!e) return;
+      view.querySelectorAll('[data-row].picked').forEach((r) => r.classList.remove('picked'));
+      view.querySelectorAll<HTMLElement>('[data-row]')[i]?.classList.add('picked');
+      detailEl.innerHTML = `<small class="h-kind">${esc(e.action)}</small><h2>${esc(e.message)}</h2>
+        <dl><dt>${esc(tx('hWhen'))}</dt><dd>${esc(new Date(e.time * 1000).toLocaleString('en-GB'))}</dd><dt>${esc(tx('hCommit'))}</dt><dd><code>${esc(e.sha)}</code></dd><dt>${esc(tx('hPosition'))}</dt><dd>${esc(tx('hPositionValue', { n: i + 1, m: entries.length }))}</dd></dl>
+        <div class="row-actions">${i > 0 ? `<md-filled-tonal-button id="hd-roll">${esc(tx('rollBack'))}</md-filled-tonal-button>` : `<span class="muted">${esc(tx('hLatest'))}</span>`}<md-outlined-button id="hd-copy">${esc(tx('hCopySha'))}</md-outlined-button></div>`;
+      detailEl.querySelector('#hd-copy')!.addEventListener('click', () => navigator.clipboard?.writeText(e.sha).then(() => notify(tx('copied'))));
+      detailEl.querySelector('#hd-roll')?.addEventListener('click', () => (view.querySelector(`[data-sha="${CSS.escape(e.sha)}"]`) as HTMLElement | null)?.click());
+    };
+    view.querySelectorAll<HTMLElement>('[data-row]').forEach((r, i) => {
+      r.setAttribute('type', 'button');
+      r.addEventListener('click', (ev) => { if (!(ev.target as HTMLElement).closest('[data-sha]')) showDetail(i); });
+    });
+    showDetail(0);
     const active = new Set<string>();
     const val = (id: string) => (view.querySelector(id) as HTMLInputElement).value;
     const hq = searchBox('history-search', tx('searchHistory'), rx);
@@ -661,7 +691,7 @@ async function historyView(view: HTMLElement): Promise<void> {
     filter();
     view.querySelectorAll<HTMLElement>('[data-sha]').forEach((b) => b.addEventListener('click', async () => {
       if (prefs.editLock) { notify(tx('editLocked'), true); return; }
-      try { await api('/api/history/restore', { method: 'POST', body: { sha: b.dataset.sha } }); notify(tx('restored')); play('undo'); historyView(view); }
+      try { await api('/api/history/restore', { method: 'POST', body: { sha: b.dataset.sha } }); notify(tx('restored')); play('undo'); historyView(outer, embedded); }
       catch (err) { notify((err as Error).message, true); }
     }));
   } catch (err) { notify((err as Error).message, true); }
@@ -789,6 +819,7 @@ function settingsView(view: HTMLElement) {
     appearance: `${sw('dark', 'dark', 'darkNote', prefs.dark)}${sw('dsched', 'darkSchedule', 'darkScheduleNote', prefs.darkSchedule)}
       <div class="set-times" data-find="${esc(tx('darkSchedule'))} ${esc(tx('darkFrom'))} ${esc(tx('darkTo'))}"><md-outlined-text-field id="dfrom" type="time" label="${esc(tx('darkFrom'))}" value="${prefs.darkFrom}"></md-outlined-text-field><md-outlined-text-field id="dto" type="time" label="${esc(tx('darkTo'))}" value="${prefs.darkTo}"></md-outlined-text-field></div>${sw('ds', 'dimSum', 'dimSumNote', prefs.dimSum)}
       <div class="set-row seed-row" data-find="${esc(tx('seed'))}"><span><b>${esc(tx('seed'))}</b></span><span class="seed-now"><span class="seed-swatch ${prefs.seed === RAINBOW ? 'rainbow' : ''}" style="background:${prefs.seed === RAINBOW ? 'none' : esc(prefs.seed)}"></span><code>${esc(prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed)}</code><md-text-button id="seed-reset">${esc(tx('reset'))}</md-text-button></span></div>
+      <div class="row-actions" data-find="${esc(tx('resetLayouts'))} dockview panels"><md-outlined-button id="reset-layouts">${esc(tx('resetLayouts'))}</md-outlined-button></div>
       <div id="seed-picker" data-find="${esc(tx('seed'))} colour color"></div>`,
     comfort: `<div class="row-actions" data-find="${esc(tx('tourTake'))} ${esc(tx('tourThisPage'))}"><md-filled-tonal-button id="set-tour">${esc(tx('tourTake'))}</md-filled-tonal-button></div>${sw('rm', 'reduceMotion', 'reduceMotionNote', prefs.reduceMotion)}${sw('lt', 'largeText', 'largeTextNote', prefs.largeText)}${sw('elock', 'editLock', 'editLockNote', prefs.editLock)}${sw('tko', 'takeovers', 'takeoversNote', prefs.takeovers)}`,
     backup: `<p data-find="${esc(tx('exportSettings'))} ${esc(tx('importSettings'))}">${esc(tx('settingsSaved'))}</p>
@@ -853,6 +884,7 @@ function settingsView(view: HTMLElement) {
   view.querySelector('#nar-try')!.addEventListener('click', () => narrate(tx('narrateSample'), true));
   view.querySelector('#dsched')!.addEventListener('change', (e) => { prefs.darkSchedule = sel(e); savePrefs(); applyTheme(); });
   for (const [id, k] of [['#dfrom', 'darkFrom'], ['#dto', 'darkTo']] as const) view.querySelector(id)!.addEventListener('change', () => { const v = (view.querySelector(id) as HTMLInputElement).value; if (/^([01]\d|2[0-3]):[0-5]\d$/.test(v)) { prefs[k] = v; savePrefs(); applyTheme(); } });
+  view.querySelector('#reset-layouts')!.addEventListener('click', () => { resetLayout(); notify(tx('resetLayoutsDone')); });
   view.querySelector('#tko')!.addEventListener('change', (e) => { prefs.takeovers = sel(e); savePrefs(); });
   view.querySelector('#elock')!.addEventListener('change', (e) => { prefs.editLock = sel(e); savePrefs(); applyTheme(); notify(tx(prefs.editLock ? 'editLockOn' : 'editLockOff')); });
   const showSeed = () => { const s = view.querySelector<HTMLElement>('.seed-swatch')!; s.classList.toggle('rainbow', prefs.seed === RAINBOW); s.style.background = prefs.seed === RAINBOW ? '' : prefs.seed; view.querySelector('.seed-now code')!.textContent = prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed; };
@@ -898,6 +930,17 @@ async function aboutView(view: HTMLElement): Promise<void> {
     <section class="changelog"><div class="cl-head"><h2>${esc(tx('changelog'))}</h2>
       <div id="cl-q-host"></div></div>
       <ol id="cl" aria-live="polite"><li class="muted">${esc(tx('loading'))}</li></ol></section></div>`;
+  // The about card and the changelog are docked panels like the editor's, with their own saved layout.
+  {
+    const wrap = view.querySelector<HTMLElement>('.about')!;
+    const card = wrap.querySelector<HTMLElement>('.about-card')!, log = wrap.querySelector<HTMLElement>('.changelog')!;
+    card.classList.add('panel-scroll'); log.classList.add('panel-scroll');
+    const dock = Object.assign(document.createElement('div'), { id: 'dock', className: 'dock' });
+    view.append(dock);
+    mountWorkspace(dock, { about: card, changes: log }, { about: tx('about'), changes: tx('changelog') }, document.documentElement.dataset.theme === 'dark',
+      { key: 'about', arrange: [['about'], ['changes', { ref: 'about', dir: 'right' }, 820]], active: 'about' });
+    wrap.remove();
+  }
   view.querySelector('#upd-check')?.addEventListener('click', () => checkForUpdates());
   view.querySelector('#copy-ver')!.addEventListener('click', () => navigator.clipboard?.writeText(`Map Editor ${health?.version} ${health?.commit} ${health?.builtAt ?? ''}`).then(() => notify(tx('copied')), () => notify(tx('copyFailed'), true)));
   const listEl = view.querySelector<HTMLElement>('#cl')!;
