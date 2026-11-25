@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('deploy', {
   activity: () => ipcRenderer.invoke('activity'),
   disks: () => ipcRenderer.invoke('disks'),
   platform: process.platform,
+  preflight: () => ipcRenderer.invoke('preflight'),
   buildInfo: () => ipcRenderer.invoke('build-info'),
   vdisks: () => ipcRenderer.invoke('vdisks'),
   vdiskJob: (job: unknown) => ipcRenderer.invoke('vdisk-job', job),

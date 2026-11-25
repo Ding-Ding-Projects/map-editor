@@ -255,6 +255,7 @@ async function render() {
   app.querySelector('#v-disks')!.addEventListener('click', () => { view = 'disks'; render(); });
   app.querySelector('#tour')!.addEventListener('click', () => deployTour());
   const main = app.querySelector('#main')!;
+  if (!obState().done) return onboarding(main);
   if (view === 'disks') return virtualDisks(main);
   if (view === 'instances') {
     const list: Instance[] = await d.instances();
@@ -287,7 +288,8 @@ async function render() {
       <md-outlined-text-field id="version" label="Version" value="latest" supporting-text="latest follows every release; Update pulls it again"></md-outlined-text-field>
       <md-outlined-button id="worlds">Choose worlds folder</md-outlined-button><span class="muted" id="wpath">No folder chosen</span>
       <md-filled-button id="go">Deploy</md-filled-button><div id="steps"></div>`;
-    let worlds = '';
+    let worlds = savedWorlds();
+    if (worlds) form.querySelector('#wpath')!.textContent = worlds;
     form.querySelector('#worlds')!.addEventListener('click', async () => { worlds = (await d.pickFolder()) ?? ''; form.querySelector('#wpath')!.textContent = worlds || 'No folder chosen'; });
     const deployNow = async (): Promise<void> => {
       if (!worlds) return toast('Choose the worlds folder first.', true);
@@ -436,6 +438,51 @@ document.addEventListener('click', (e) => {
   if (t?.dataset.setLang) setLang(t.dataset.setLang as Lang);
   else if (t?.id === 'snd') { soundsOn = !soundsOn; configureSounds(soundsOn, 0.4); try { localStorage.setItem('map-editor-deploy.sounds', soundsOn ? 'on' : 'off'); } catch { /* not kept */ } t.setAttribute('aria-pressed', String(soundsOn)); if (soundsOn) play('success'); }
 });
+// ---------- First run: three short steps that each do something real ----------
+const OB_KEY = 'map-editor-deploy.onboarding';
+const savedWorlds = () => { try { return localStorage.getItem('map-editor-deploy.worlds') ?? ''; } catch { return ''; } };
+const obState = (): { step: number; done: boolean } => { try { const v = JSON.parse(localStorage.getItem(OB_KEY) ?? ''); return { step: Math.max(0, Math.min(2, Number(v.step) || 0)), done: Boolean(v.done) }; } catch { return { step: 0, done: false }; } };
+const obSave = (v: { step: number; done: boolean }) => { try { localStorage.setItem(OB_KEY, JSON.stringify(v)); } catch { /* not kept */ } };
+function onboarding(main: Element) {
+  const st = obState();
+  const names = ['Language and sound', 'Check this computer', 'Worlds folder'];
+  main.innerHTML = `<section class="card ob" aria-labelledby="ob-h"><p class="muted" id="ob-count">Step ${st.step + 1} of 3</p>
+    <ol class="ob-steps">${names.map((n, i) => `<li class="${i === st.step ? 'on' : i < st.step ? 'past' : ''}"${i === st.step ? ' aria-current="step"' : ''}><span>${i + 1}</span>${n}</li>`).join('')}</ol>
+    <div id="ob-body"></div>
+    <div class="row-actions ob-nav"><md-text-button id="ob-back" ${st.step === 0 ? 'disabled' : ''}>Back</md-text-button><md-text-button id="ob-skip">Skip setup</md-text-button><span style="flex:1"></span><md-filled-button id="ob-next">${st.step === 2 ? 'Finish' : 'Next'}</md-filled-button></div>
+    <p class="muted">Progress is saved. You can close the app and carry on later.</p></section>`;
+  const body = main.querySelector('#ob-body')!;
+  if (st.step === 0) {
+    body.innerHTML = `<h1 id="ob-h" class="md-typescale-display-small">Welcome to Map Editor Deploy</h1><p>Choose how this app talks to you. You can change both later from the top bar.</p>${langSwitch()}
+      <p><label class="check"><input type="checkbox" id="ob-snd" ${soundsOn ? 'checked' : ''}> Play a short sound when something finishes or fails</label></p>`;
+    body.querySelector('#ob-snd')!.addEventListener('change', (e) => { if ((e.target as HTMLInputElement).checked !== soundsOn) document.querySelector<HTMLElement>('#snd')?.click(); });
+  } else if (st.step === 1) {
+    body.innerHTML = `<h1 id="ob-h" class="md-typescale-display-small">Check this computer</h1><p>This looks for the tools each deploy target needs. Nothing is installed or changed.</p>
+      <md-filled-tonal-button id="ob-check">Check now</md-filled-tonal-button><ul class="ob-results" id="ob-results" role="status" aria-live="polite"></ul>`;
+    const check = async () => {
+      const list = body.querySelector('#ob-results')!; list.innerHTML = '<li class="muted">Checking…</li>';
+      try {
+        const res: Array<{ name: string; ok: boolean; detail: string }> = await d.preflight();
+        list.innerHTML = res.map((r) => `<li class="${r.ok ? 'ok' : 'no'}"><b>${esc(r.name)}</b><span class="pill-state">${r.ok ? 'Found' : 'Not found'}</span><small>${esc(r.detail)}</small></li>`).join('') + '<li><b>USB drive and Raspberry Pi</b><span class="pill-state">Ready</span><small>These only need the appliance image file, which you choose when you deploy.</small></li>';
+      } catch (e) { list.innerHTML = `<li class="no"><b>The check could not run</b><small>${esc((e as Error).message)}</small></li>`; }
+    };
+    body.querySelector('#ob-check')!.addEventListener('click', () => void check());
+    void check();
+  } else {
+    const w = savedWorlds();
+    body.innerHTML = `<h1 id="ob-h" class="md-typescale-display-small">Worlds folder</h1><p>Choose the folder that holds your Minecraft worlds. Deploy will offer it every time, so you only pick it once. This step is optional.</p>
+      <div class="row-actions"><md-filled-tonal-button id="ob-pick">Choose worlds folder</md-filled-tonal-button><md-text-button id="ob-clear">Forget this folder</md-text-button></div><p id="ob-w" role="status" aria-live="polite"><code>${esc(w || 'No folder chosen')}</code></p>`;
+    const show = (v: string) => { body.querySelector('#ob-w')!.innerHTML = `<code>${esc(v || 'No folder chosen')}</code>`; };
+    body.querySelector('#ob-pick')!.addEventListener('click', async () => { const f = await d.pickFolder(); if (!f) return; try { localStorage.setItem('map-editor-deploy.worlds', f); } catch { /* not kept */ } show(f); toast('Worlds folder saved.'); });
+    body.querySelector('#ob-clear')!.addEventListener('click', () => { try { localStorage.removeItem('map-editor-deploy.worlds'); } catch { /* nothing kept */ } show(''); });
+  }
+  const move = (step: number, done = false) => { obSave({ step: Math.max(0, Math.min(2, step)), done }); void render(); };
+  main.querySelector('#ob-back')!.addEventListener('click', () => move(st.step - 1));
+  main.querySelector('#ob-skip')!.addEventListener('click', () => move(st.step, true));
+  main.querySelector('#ob-next')!.addEventListener('click', () => (st.step === 2 ? move(2, true) : move(st.step + 1)));
+  body.querySelector<HTMLElement>('h1')?.setAttribute('tabindex', '-1'); body.querySelector<HTMLElement>('h1')?.focus();
+}
+
 // Command palette (Ctrl+Shift+F): every view, target and switch of this app, with live toggles.
 function deployCommands(): Command[] {
   const go = (v: typeof view) => () => { view = v; void render(); };
@@ -445,6 +492,7 @@ function deployCommands(): Command[] {
     { id: 'v-disks', label: 'Virtual disks', where: 'Views', run: go('disks'), goto: go('disks') },
     ...TARGETS.map((x) => ({ id: `t-${x.id}`, label: `Deploy to: ${x.name}`, where: 'Targets', run: () => { view = 'deploy'; target = x.id; void render(); } })),
     { id: 'tour', label: 'Take a tour', where: 'Help', run: () => deployTour() },
+    { id: 'setup', label: 'Run first-time setup again', where: 'Help', run: () => { obSave({ step: 0, done: false }); void render(); } },
     { id: 'snd', label: 'Sound effects', where: 'Settings, live', toggle: { get: () => soundsOn, set: (v) => { if (v !== soundsOn) document.querySelector<HTMLElement>('#snd')?.click(); } } },
     ...(['en', 'yue', 'both'] as const).map((l) => ({ id: `lang-${l}`, label: `Language: ${l === 'en' ? 'English' : l === 'yue' ? '粵語' : 'English + 粵語'}`, where: 'Settings', run: () => setLang(l) })),
   ];
@@ -453,4 +501,4 @@ const paletteText = (k: string, v?: Record<string, string | number>) => tr({ lan
 const showPalette = () => openPalette(deployCommands, { title: paletteText('palette'), hint: paletteText('paletteHint'), none: paletteText('noMatches') }, paletteText);
 document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); showPalette(); } });
 document.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('#cmd')) showPalette(); });
-render().then(() => { let t: string | null = null; try { t = localStorage.getItem('map-editor-deploy.tour'); } catch { /* ignore */ } if (t === null) setTimeout(() => deployTour(), 800); });
+render().then(() => { let t: string | null = null; try { t = localStorage.getItem('map-editor-deploy.tour'); } catch { /* ignore */ } if (t === null && obState().done) setTimeout(() => deployTour(), 800); });

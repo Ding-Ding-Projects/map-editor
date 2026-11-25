@@ -549,3 +549,21 @@ export async function vdiskJob(job: VdiskJob): Promise<{ ok: boolean; message: s
     return { ok: true, message: `Detached ${job.file}. The file is kept.` };
   } finally { await fs.rm(dir, { recursive: true, force: true }); }
 }
+
+// ---------- First-run check: what this computer can deploy to ----------
+export interface Preflight { id: 'docker' | 'virtualbox' | 'vmware'; name: string; ok: boolean; detail: string }
+
+/** Looks for each deploy tool and says what it found. Nothing is installed or changed. */
+export async function preflight(): Promise<Preflight[]> {
+  const first = (s: string) => s.trim().split(/\r?\n/)[0]?.slice(0, 80) ?? '';
+  const tryRun = async (cmd: string, args: string[]) => { try { return await run(cmd, args, { timeoutMs: 20_000 }); } catch (e) { return { code: 1, stdout: '', stderr: (e as Error).message }; } };
+  const compose = await tryRun('docker', ['compose', 'version']);
+  const daemon = compose.code === 0 ? await tryRun('docker', ['info', '--format', '{{.ServerVersion}}']) : compose;
+  const vb = await tryRun(vboxManage(), ['--version']);
+  const vm = await tryRun(ovftool(), ['--version']);
+  return [
+    { id: 'docker', name: 'Docker', ok: compose.code === 0 && daemon.code === 0, detail: compose.code !== 0 ? 'Docker with Compose was not found. Install Docker Desktop (or Docker Engine) to deploy on this computer.' : daemon.code !== 0 ? 'Docker is installed but not running. Start Docker, then check again.' : `Ready: Docker ${first(daemon.stdout)}` },
+    { id: 'virtualbox', name: 'VirtualBox', ok: vb.code === 0, detail: vb.code === 0 ? `Ready: VirtualBox ${first(vb.stdout)}` : 'VirtualBox was not found. It is only needed for the VirtualBox target.' },
+    { id: 'vmware', name: 'VMware', ok: vm.code === 0, detail: vm.code === 0 ? `Ready: ${first(vm.stdout)}` : 'VMware Workstation or Player with OVF Tool was not found. It is only needed for the VMware target.' },
+  ];
+}

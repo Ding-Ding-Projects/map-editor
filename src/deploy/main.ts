@@ -46,6 +46,7 @@ ipcMain.handle('build-info', async () => {
 });
 ipcMain.handle('instances', () => targets.loadInstances(dataDir()));
 ipcMain.handle('lan', () => targets.lanAddress());
+ipcMain.handle('preflight', () => targets.preflight());
 ipcMain.handle('pick-folder', async () => (await dialog.showOpenDialog(win!, { properties: ['openDirectory'] })).filePaths[0]);
 ipcMain.handle('pick-file', async (_e, exts: string[]) => (await dialog.showOpenDialog(win!, { properties: ['openFile'], filters: [{ name: 'Image', extensions: exts }] })).filePaths[0]);
 ipcMain.handle('deploy-docker', async (_e, o) => record(o?.sshHost ? 'Deployed to Docker over SSH' : 'Deployed to Docker', await track(targets.deployDocker(dataDir(), o, progress))));

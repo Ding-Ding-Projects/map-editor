@@ -207,3 +207,12 @@ describe('virtual disks (Windows)', () => {
     if (process.platform !== 'win32') expect(await vdiskJob({ action: 'detach', file: 'C:\\w.vhdx' })).toEqual({ ok: false, message: 'Virtual disks are managed on Windows only.' });
   });
 });
+
+describe('first-run check', () => {
+  it('reports each tool with a plain sentence and never throws', async () => {
+    const { preflight } = await import('../src/deploy/targets.js');
+    const res = await preflight();
+    expect(res.map((r) => r.id)).toEqual(['docker', 'virtualbox', 'vmware']);
+    for (const r of res) { expect(typeof r.ok).toBe('boolean'); expect(r.detail.length).toBeGreaterThan(10); expect(r.detail.startsWith('Ready') === r.ok).toBe(true); }
+  }, 90_000);
+});
