@@ -12,13 +12,15 @@ const live = new Map<HTMLElement, DockviewApi>();
 /** Default arrangement: each entry is [panel id, position relative to an earlier panel, size]. */
 export type Arrangement = Array<[string, { ref: string; dir: 'right' | 'below' | 'within' }?, number?]>;
 
-export function mountWorkspace(host: HTMLElement, panels: Record<string, HTMLElement>, titles: Record<string, string>, dark: boolean, screen?: { key: string; arrange: Arrangement; active?: string }) {
+export function mountWorkspace(host: HTMLElement, panels: Record<string, HTMLElement>, titles: Record<string, string>, dark: boolean, screen?: { key: string; arrange: Arrangement; active?: string }, locked = false) {
   // Several workspaces can be on screen at once (a panel may hold another screen), so each host
   // keeps its own; ones whose host has left the page are cleaned up here.
   for (const [h, a] of live) if (h === host || !h.isConnected) { a.dispose(); live.delete(h); }
   host.classList.add('dockview-theme-m3');
   const api = createDockview(host, {
     theme: { name: 'material', className: 'dockview-theme-m3', colorScheme: dark ? 'dark' : 'light', gap: 8, dndTabIndicator: 'fill' },
+    // A locked layout cannot be dragged, dropped into, floated or closed.
+    disableDnd: locked, disableFloatingGroups: locked,
     createComponent: ({ name }) => {
       const element = panels[name] ?? Object.assign(document.createElement('div'), { textContent: name });
       return { element, init: () => undefined };
@@ -55,6 +57,8 @@ export function mountWorkspace(host: HTMLElement, panels: Record<string, HTMLEle
   }
   for (const id of Object.keys(titles)) api.getPanel(id)?.api.setTitle(titles[id]);
   api.onDidLayoutChange(() => { try { localStorage.setItem(key, JSON.stringify(api.toJSON())); } catch { /* storage blocked */ } });
+  host.classList.toggle('layout-locked', locked);
+  if (locked) for (const g of api.groups) g.locked = true;
   live.set(host, api);
   return api;
 }

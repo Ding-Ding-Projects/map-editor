@@ -30,16 +30,16 @@ import { notesPanel as notesPanelImpl } from './notes.js';
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
 
 // ---------- state ----------
-interface Prefs extends I18nState { dark: boolean; reduceMotion: boolean; largeText: boolean; dimSum: boolean; takeovers: boolean; lockedSettings: string[]; quietHours: boolean; quietFrom: string; quietTo: string; narrate: boolean; narrateRate: number; darkSchedule: boolean; darkFrom: string; darkTo: string; editLock: boolean; tourOffered: boolean; tourResume: { name: string; step: number } | null; sounds: boolean; soundVolume: number; settingsSection: string; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
+interface Prefs extends I18nState { dark: boolean; reduceMotion: boolean; largeText: boolean; dimSum: boolean; takeovers: boolean; lockedSettings: string[]; layoutLocked: boolean; tabsLocked: boolean; settingsLocked: boolean; quietHours: boolean; quietFrom: string; quietTo: string; narrate: boolean; narrateRate: number; darkSchedule: boolean; darkFrom: string; darkTo: string; editLock: boolean; tourOffered: boolean; tourResume: { name: string; step: number } | null; sounds: boolean; soundVolume: number; settingsSection: string; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
 const PREFS_KEY = 'map-editor.prefs.v1';
 const DEFAULT_SEED = '#4c8c4a';
-const defaults: Prefs = { lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, largeText: false, dimSum: true, takeovers: true, lockedSettings: [], quietHours: false, quietFrom: '22:00', quietTo: '07:00', narrate: false, narrateRate: 10, darkSchedule: false, darkFrom: '19:00', darkTo: '07:00', editLock: false, tourOffered: false, tourResume: null, sounds: true, soundVolume: 40, settingsSection: 'language', closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
+const defaults: Prefs = { lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, largeText: false, dimSum: true, takeovers: true, lockedSettings: [], layoutLocked: false, tabsLocked: false, settingsLocked: false, quietHours: false, quietFrom: '22:00', quietTo: '07:00', narrate: false, narrateRate: 10, darkSchedule: false, darkFrom: '19:00', darkTo: '07:00', editLock: false, tourOffered: false, tourResume: null, sounds: true, soundVolume: 40, settingsSection: 'language', closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
 function loadPrefs(): Prefs { try { return { ...defaults, ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') }; } catch { return { ...defaults }; } }
 let prefs = loadPrefs();
 // Settings history: every saved change to a user-facing setting keeps the previous values,
 // newest first, so any change can be restored (and the restore is recorded too).
 const HISTORY_KEY = 'map-editor.settings-history.v1';
-const TRACKED = ['lang', 'funnyEn', 'funnyYue', 'dark', 'reduceMotion', 'largeText', 'takeovers', 'lockedSettings', 'quietHours', 'quietFrom', 'quietTo', 'dimSum', 'narrate', 'narrateRate', 'darkSchedule', 'darkFrom', 'darkTo', 'editLock', 'sounds', 'soundVolume', 'seed', 'rainbowSpeed'] as const;
+const TRACKED = ['lang', 'funnyEn', 'funnyYue', 'dark', 'reduceMotion', 'largeText', 'takeovers', 'lockedSettings', 'layoutLocked', 'tabsLocked', 'settingsLocked', 'quietHours', 'quietFrom', 'quietTo', 'dimSum', 'narrate', 'narrateRate', 'darkSchedule', 'darkFrom', 'darkTo', 'editLock', 'sounds', 'soundVolume', 'seed', 'rainbowSpeed'] as const;
 type Tracked = typeof TRACKED[number];
 interface SettingsChange { at: string; keys: Tracked[]; before: Partial<Prefs>; after: Partial<Prefs> }
 let lastSaved: Partial<Prefs> = pick(prefs);
@@ -202,7 +202,7 @@ function paletteCommands(): Command[] {
   const SWITCH_OF: Record<string, string> = { dark: 'dark', motion: 'rm', 'large-text': 'lt', sounds: 'snd', 'edit-lock': 'elock', narrate: 'nar', 'dim-sum-toggle': 'ds' };
   for (const c of cmds) {
     const sid = SWITCH_OF[c.id];
-    if (c.toggle && sid && prefs.lockedSettings.includes(sid)) { c.where = `${c.where} · ${tx('lockedSettings')}`; c.toggle = { get: c.toggle.get, set: () => notify(tx('settingLocked'), true) }; }
+    if (c.toggle && ((sid && prefs.lockedSettings.includes(sid)) || prefs.settingsLocked)) { c.where = `${c.where} · ${tx('lockedSettings')}`; c.toggle = { get: c.toggle.get, set: () => notify(tx('settingLocked'), true) }; }
   }
   return cmds;
 }
@@ -412,7 +412,7 @@ function shell() {
     <div class="body">
       ${user && prefs.onboarded ? `<nav class="tabs" aria-label="Tabs"><md-list role="tablist" aria-orientation="vertical">
         ${open.map((x) => `<md-list-item type="button" role="tab" aria-selected="${x === prefs.tab}" data-tab="${x}" class="${x === prefs.tab ? 'active' : ''}">${esc(tx(x as Key))}
-          ${x === prefs.tab ? `<md-outlined-button slot="end" data-close="${x}">${esc(tx('close'))}</md-outlined-button>` : ''}</md-list-item>`).join('')}
+          ${x === prefs.tab && !prefs.tabsLocked ? `<md-outlined-button slot="end" data-close="${x}">${esc(tx('close'))}</md-outlined-button>` : ''}</md-list-item>`).join('')}
         </md-list>
         ${prefs.closedTabs.length ? `<md-text-button id="open-all">${esc(tx('openEveryTab'))}</md-text-button>` : ''}
       </nav>` : ''}
@@ -625,7 +625,7 @@ async function editorView(view: HTMLElement): Promise<void> {
   view.innerHTML = '<div id="dock" class="dock"></div>';
   mountWorkspace(view.querySelector<HTMLElement>('#dock')!, { map: mapEl, tool: toolEl, history: histEl, notes: notesEl }, {
     map: tx('editor'), tool: tx('fill'), history: tx('history'), notes: tx('notes'),
-  }, prefs.dark);
+  }, prefs.dark, undefined, prefs.layoutLocked);
   historyView(histEl, true);
   document.addEventListener('history-changed', () => { if (histEl.isConnected) historyView(histEl, true); });
   notesPanel(notesEl);
@@ -644,7 +644,7 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
   // Inside the editor's own History panel the list stands alone; the History tab docks list and details.
   if (embedded) { listEl.className = 'card'; view.append(listEl); }
   else mountWorkspace(view.querySelector<HTMLElement>('#dock')!, { edits: listEl, details: detailEl }, { edits: tx('hEdits'), details: tx('hDetails') }, document.documentElement.dataset.theme === 'dark',
-    { key: 'history', arrange: [['edits'], ['details', { ref: 'edits', dir: 'right' }, 420]], active: 'edits' });
+    { key: 'history', arrange: [['edits'], ['details', { ref: 'edits', dir: 'right' }, 420]], active: 'edits' }, prefs.layoutLocked);
   const outer = view;
   view = listEl;
   try {
@@ -834,7 +834,7 @@ function settingsView(view: HTMLElement) {
       <div class="set-row seed-row" data-find="${esc(tx('seed'))}"><span><b>${esc(tx('seed'))}</b></span><span class="seed-now"><span class="seed-swatch ${prefs.seed === RAINBOW ? 'rainbow' : ''}" style="background:${prefs.seed === RAINBOW ? 'none' : esc(prefs.seed)}"></span><code>${esc(prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed)}</code><md-text-button id="seed-reset">${esc(tx('reset'))}</md-text-button></span></div>
       <div class="row-actions" data-find="${esc(tx('resetLayouts'))} dockview panels"><md-outlined-button id="reset-layouts">${esc(tx('resetLayouts'))}</md-outlined-button></div>
       <div id="seed-picker" data-find="${esc(tx('seed'))} colour color"></div>`,
-    comfort: `<div class="row-actions" data-find="${esc(tx('tourTake'))} ${esc(tx('tourThisPage'))}"><md-filled-tonal-button id="set-tour">${esc(tx('tourTake'))}</md-filled-tonal-button></div>${sw('rm', 'reduceMotion', 'reduceMotionNote', prefs.reduceMotion)}${sw('lt', 'largeText', 'largeTextNote', prefs.largeText)}${sw('elock', 'editLock', 'editLockNote', prefs.editLock)}${sw('tko', 'takeovers', 'takeoversNote', prefs.takeovers)}`,
+    comfort: `<div class="row-actions" data-find="${esc(tx('tourTake'))} ${esc(tx('tourThisPage'))}"><md-filled-tonal-button id="set-tour">${esc(tx('tourTake'))}</md-filled-tonal-button></div>${sw('rm', 'reduceMotion', 'reduceMotionNote', prefs.reduceMotion)}${sw('lt', 'largeText', 'largeTextNote', prefs.largeText)}${sw('elock', 'editLock', 'editLockNote', prefs.editLock)}${sw('tko', 'takeovers', 'takeoversNote', prefs.takeovers)}${sw('llock', 'layoutLocked', 'layoutLockedNote', prefs.layoutLocked)}${sw('tlock', 'tabsLocked', 'tabsLockedNote', prefs.tabsLocked)}${sw('slock', 'settingsLocked', 'settingsLockedNote', prefs.settingsLocked)}`,
     backup: `<p data-find="${esc(tx('exportSettings'))} ${esc(tx('importSettings'))}">${esc(tx('settingsSaved'))}</p>
       <div class="row-actions"><md-filled-tonal-button id="exp">${esc(tx('exportSettings'))}</md-filled-tonal-button><md-outlined-button id="imp">${esc(tx('importSettings'))}</md-outlined-button><input id="imp-file" type="file" accept="application/json,.json" hidden></div>
       <h3 data-find="${esc(tx('settingsHistory'))}">${esc(tx('settingsHistory'))}</h3><ol class="set-history" id="sh"></ol>`,
@@ -855,6 +855,16 @@ function settingsView(view: HTMLElement) {
       <div role="tablist" aria-orientation="vertical">${SECTIONS.map(([id, k]) => `<button role="tab" class="set-tab${id === sec ? ' on' : ''}" aria-selected="${id === sec}" data-sec="${id}">${esc(tx(k))}</button>`).join('')}</div></nav>
     <main class="set-main" id="set-main">${SECTIONS.map(([id, k]) => `<section class="set-sec" data-sec-body="${id}" ${id === sec ? '' : 'hidden'}><h2>${esc(tx(k))}</h2>${body[id]}</section>`).join('')}
       <p class="muted" id="ss-none" hidden></p></main></div>`;
+  // A locked Settings screen can be read but not changed, until it is unlocked here (which asks first).
+  if (prefs.settingsLocked) {
+    const main = view.querySelector<HTMLElement>('#set-main')!;
+    main.querySelectorAll('.set-sec').forEach((sec) => { sec.setAttribute('inert', ''); sec.classList.add('screen-locked'); });
+    const bar = document.createElement('div');
+    bar.className = 'banner lock-banner'; bar.setAttribute('role', 'status');
+    bar.innerHTML = `<div><b>${esc(tx('settingsLocked'))}</b><p>${esc(tx('settingsLockedBanner'))}</p></div><md-filled-button id="unlock-settings">${esc(tx('unlockScreen'))}</md-filled-button>`;
+    main.prepend(bar);
+    bar.querySelector('#unlock-settings')!.addEventListener('click', () => { if (!confirm(tx('unlockAsk'))) return; prefs.settingsLocked = false; savePrefs(); render(); notify(tx('settingUnlockedMsg')); });
+  }
   view.querySelectorAll<HTMLElement>('[data-sec]').forEach((b) => b.addEventListener('click', () => { prefs.settingsSection = b.dataset.sec!; savePrefs(); render(); }));
   view.querySelector('[role=tablist]')!.addEventListener('keydown', (e) => {
     const ke = e as KeyboardEvent; if (ke.key !== 'ArrowDown' && ke.key !== 'ArrowUp') return;
@@ -909,6 +919,9 @@ function settingsView(view: HTMLElement) {
   view.querySelector('#dsched')!.addEventListener('change', (e) => { prefs.darkSchedule = sel(e); savePrefs(); applyTheme(); });
   for (const [id, k] of [['#dfrom', 'darkFrom'], ['#dto', 'darkTo']] as const) view.querySelector(id)!.addEventListener('change', () => { const v = (view.querySelector(id) as HTMLInputElement).value; if (/^([01]\d|2[0-3]):[0-5]\d$/.test(v)) { prefs[k] = v; savePrefs(); applyTheme(); } });
   view.querySelector('#reset-layouts')!.addEventListener('click', () => { resetLayout(); notify(tx('resetLayoutsDone')); });
+  view.querySelector('#llock')!.addEventListener('change', (e) => { prefs.layoutLocked = sel(e); savePrefs(); notify(tx(prefs.layoutLocked ? 'layoutLockedOn' : 'layoutLockedOff')); });
+  view.querySelector('#tlock')!.addEventListener('change', (e) => { prefs.tabsLocked = sel(e); savePrefs(); render(); });
+  view.querySelector('#slock')!.addEventListener('change', (e) => { prefs.settingsLocked = sel(e); savePrefs(); render(); });
   view.querySelector('#tko')!.addEventListener('change', (e) => { prefs.takeovers = sel(e); savePrefs(); });
   view.querySelector('#elock')!.addEventListener('change', (e) => { prefs.editLock = sel(e); savePrefs(); applyTheme(); notify(tx(prefs.editLock ? 'editLockOn' : 'editLockOff')); });
   const showSeed = () => { const s = view.querySelector<HTMLElement>('.seed-swatch')!; s.classList.toggle('rainbow', prefs.seed === RAINBOW); s.style.background = prefs.seed === RAINBOW ? '' : prefs.seed; view.querySelector('.seed-now code')!.textContent = prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed; };
@@ -934,7 +947,7 @@ function settingsView(view: HTMLElement) {
   const sh = view.querySelector<HTMLElement>('#sh')!;
   const hist = loadSettingsHistory();
   const fmt = (k: Tracked, v: unknown) => k === 'seed' && v === RAINBOW ? tx('rainbow') : typeof v === 'boolean' ? (v ? 'on' : 'off') : String(v);
-  const name: Record<Tracked, string> = { lockedSettings: tx('lockedSettings'), quietHours: tx('quietHours'), quietFrom: tx('quietFrom'), quietTo: tx('quietTo'), takeovers: tx('takeovers'), narrate: tx('narrate'), narrateRate: tx('narrateRate'), darkSchedule: tx('darkSchedule'), darkFrom: tx('darkFrom'), darkTo: tx('darkTo'), editLock: tx('editLock'), dimSum: tx('dimSum'), sounds: tx('soundEffects'), soundVolume: tx('soundVolume'), lang: tx('secLanguage'), funnyEn: tx('funnyEn'), funnyYue: tx('funnyYue'), dark: tx('dark'), reduceMotion: tx('reduceMotion'), largeText: tx('largeText'), seed: tx('seed'), rainbowSpeed: tx('rainbow') };
+  const name: Record<Tracked, string> = { layoutLocked: tx('layoutLocked'), tabsLocked: tx('tabsLocked'), settingsLocked: tx('settingsLocked'), lockedSettings: tx('lockedSettings'), quietHours: tx('quietHours'), quietFrom: tx('quietFrom'), quietTo: tx('quietTo'), takeovers: tx('takeovers'), narrate: tx('narrate'), narrateRate: tx('narrateRate'), darkSchedule: tx('darkSchedule'), darkFrom: tx('darkFrom'), darkTo: tx('darkTo'), editLock: tx('editLock'), dimSum: tx('dimSum'), sounds: tx('soundEffects'), soundVolume: tx('soundVolume'), lang: tx('secLanguage'), funnyEn: tx('funnyEn'), funnyYue: tx('funnyYue'), dark: tx('dark'), reduceMotion: tx('reduceMotion'), largeText: tx('largeText'), seed: tx('seed'), rainbowSpeed: tx('rainbow') };
   sh.innerHTML = hist.length ? hist.slice(0, 50).map((h, i) => `<li data-find="${esc(h.keys.map((k) => name[k]).join(' '))}"><span><b>${h.keys.map((k) => `${esc(name[k])}: ${esc(fmt(k, h.before[k]))} → ${esc(fmt(k, h.after[k]))}`).join(' · ')}</b><small>${esc(new Date(h.at).toLocaleString())}</small></span><md-text-button data-restore="${i}">${esc(tx('restore'))}</md-text-button></li>`).join('') : `<li class="muted">${esc(tx('noSettingsHistory'))}</li>`;
   sh.querySelectorAll<HTMLElement>('[data-restore]').forEach((b) => b.addEventListener('click', () => {
     const h = hist[Number(b.dataset.restore)]; if (!h) return;
@@ -962,7 +975,7 @@ async function aboutView(view: HTMLElement): Promise<void> {
     const dock = Object.assign(document.createElement('div'), { id: 'dock', className: 'dock' });
     view.append(dock);
     mountWorkspace(dock, { about: card, changes: log }, { about: tx('about'), changes: tx('changelog') }, document.documentElement.dataset.theme === 'dark',
-      { key: 'about', arrange: [['about'], ['changes', { ref: 'about', dir: 'right' }, 820]], active: 'about' });
+      { key: 'about', arrange: [['about'], ['changes', { ref: 'about', dir: 'right' }, 820]], active: 'about' }, prefs.layoutLocked);
     wrap.remove();
   }
   view.querySelector('#upd-check')?.addEventListener('click', () => checkForUpdates());

@@ -63,7 +63,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] dockview on History (Edits and Details panels: pick an edit to see its time, full commit id and position, Roll back or Copy commit id) and About (About and Changelog panels), each with its own saved layout and the phone single-group fallback; Reset panel layouts in Settings and the palette; several workspaces can now be on screen at once. Checked in headless Chrome.
 - [x] On wide screens (1600 px and over) the editor's Notes start as a floating group in the lower left of the map; checked in headless Chrome.
 - [x] A lock on every settings switch: a locked switch is disabled, its row says so, the palette refuses to change it, unlocking asks first; and Quiet hours silence sounds and reading aloud between two times. Both in settings history and export; checked in headless Chrome.
-- [ ] Locks on whole panels or screens.
+- [x] Locks on whole panels and screens: Lock panel layout (no dragging, floating, dropping or closing panels on any screen), Keep every tab open (no Close buttons), and Lock the Settings screen (read-only, palette switches refused, a banner with Unlock that asks first). Checked in headless Chrome.
 - [x] Rich text notes per world with self-hosted TinyMCE, autosaved; typing and saving checked in headless Chrome.
 - [ ] TinyMCE for every other rich text field.
 - [x] Command palette on Ctrl+Shift+F: every tab, tool, undo, language and appearance setting, with settings as live switches in the result row; checked in headless Chrome.
