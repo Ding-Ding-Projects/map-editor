@@ -83,5 +83,5 @@ above). These checks still need a person, a browser session or hardware:
   - per-element appearance and logo customization, and TinyMCE in other fields;
   - ADHD and school modes, exports in every format, the element unlock ladder, and an authenticator;
   - interactive diagrams on the site;
-  - a tabbed README and a screen recording.
+  - a screen recording in the README.
 - Code-signed extension sources are not planned: this project does not sign code.

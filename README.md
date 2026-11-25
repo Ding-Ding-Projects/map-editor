@@ -42,15 +42,43 @@ On Windows, `host.bat` does the same, with `host.bat --detached` to run in the b
 
 ## What it can do today
 
-- Open Java Edition 1.18+ worlds (Anvil regions, palette sections) in all three dimensions; upload a world as a .zip, download it again, or start a new flat world.
-- Top-down map with pan, zoom and Shift+drag selection.
-- Fill, replace, delete, clone and waterlog, ported from Amulet's stock operations, with a 16.7 million block safety limit.
-- Editor workspace built on dockview: map, tools, history and notes panels you can dock, tab together, float and rearrange; the layout is remembered.
-- History panel with action filters and roll back to any point; Undo and Ctrl+Z.
-- Command palette on Ctrl+Shift+F with live setting switches, a notification centre, and a first-run wizard.
+Choose a part; each opens like a tab.
+
+<details open><summary><b>Editing</b></summary>
+
+- Open Java Edition 1.18+ worlds (Anvil regions, palette sections) in all three dimensions; upload a world as a .zip, download it again, or start a new flat world from six presets in four sizes.
+- Top-down map with a floating toolbar (Pan, Select, Pick block, Measure, Go to), zoom and Shift+drag selection, and a Side view panel that cuts vertically through the selection.
+- Fill, replace, delete, clone and waterlog, ported from Amulet's stock operations, plus a Biome tool, with a 16.7 million block safety limit; a Blocks panel of colour swatches.
+- Structure files (.nbt) in and out, with chest contents, sign text, mobs and item frames.
 - Rich text notes per world (TinyMCE), saved automatically.
-- English, Hong Kong Cantonese and bilingual interface, with separate English and Cantonese funny-level sliders that change wording only.
-- Light and dark Material 3 themes generated from any theme colour, picked with a colour picker that reads names, HEX, RGB, HSL, HSV, HWB, LAB, LCH, OKLab, OKLCH and CMYK; reduced motion.
+
+</details>
+
+<details><summary><b>History and accounts</b></summary>
+
+- Every edit in a private Git history: filters, search, per-edit change counts, roll back, Open as a copy, Undo and Ctrl+Z.
+- An Activity panel for sign-ins, settings, extensions and worlds; passwords are never recorded.
+- The first person to open it becomes the owner; passkeys as well as the password.
+
+</details>
+
+<details><summary><b>Workspace and comfort</b></summary>
+
+- Editor, History and About built on dockview: panels you can dock, tab together, float and rearrange; on phones, panel chips above one group.
+- Command palette on Ctrl+Shift+F with live setting switches and a jump to any setting; Find tabs with close by text; a regex builder beside every search.
+- English, Hong Kong Cantonese and bilingual interface with funny-level sliders; Material 3 themes from any colour; reduced motion, large text, sounds, read aloud, locks, and a guided tour on every screen.
+- A Tools tab with Base64, JSON to TypeScript and a coordinates helper.
+
+</details>
+
+<details><summary><b>Ways to run it</b></summary>
+
+- A Windows desktop app that updates itself (unsigned Squirrel installers).
+- A Docker web app, an appliance image for VirtualBox, VMware or a USB drive, and a Raspberry Pi 4 and 5 image; the appliance updates itself daily.
+- Map Editor Deploy: one click to Docker (here or over SSH), VirtualBox, VMware or a drive, then manage, duplicate and follow the log.
+- Extensions in any language, each only with the permissions you allow.
+
+</details>
 
 See [ROADMAP.md](ROADMAP.md) for what is verified, what is built but unverified, and what is still to do.
 
