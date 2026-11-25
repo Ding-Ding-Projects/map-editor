@@ -6,7 +6,7 @@ lands; anything not rechecked keeps its last audited status.
 
 Re-audited on 2026-11-25 after the changes of that day.
 
-Counts (126 features): built 14 / partial 79 / unbuilt 19 / not applicable 14
+Counts (126 features): built 14 / partial 80 / unbuilt 18 / not applicable 14
 
 
 ## Language, voice, and personalization
@@ -72,7 +72,7 @@ Counts (126 features): built 14 / partial 79 / unbuilt 19 / not applicable 14
 
 `local-history` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/core/history.ts (isomorphic-git, append-only restore), main.ts `historyView` (search, dates, action chips with counts), src/server/activity.ts, settings history | MISSING: diff view, labels, prune; settings history is a 200-entry localStorage list, not Git; password-protected secret/display-name mutation history; Deploy app history panel parity
 `exports` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/ui/exporter.ts (CSV, JSON, Markdown, HTML), world .zip/.mcworld, .nbt, settings JSON, tests/exporter.test.ts | MISSING: export of notifications, changelog, notes, tabs; loss statement before export; stated encoding/line endings/schema version; re-import for history exports; 7z with encrypted headers
-`bulk-actions` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: tabsearch.ts close-by-text with preview, main.ts "Switch off all shown" extensions, Dismiss all | MISSING: multi-select (click, shift-click, keyboard), select-all scope, inverse selection in worlds, history, activity, notifications, extensions, instances; skipped-item report; bulk delete/export
+`bulk-actions` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: tabsearch.ts close-by-text with preview, main.ts "Switch off all shown" extensions, Dismiss all, src/ui/select.ts and worlds.ts (Worlds: Select mode with click, Shift+click range, Ctrl+A, Select all, Invert, Download selected), tests/select.test.ts | MISSING: the same selection in history, activity, notifications, extensions and instances; skipped-item report; bulk delete
 `changelog` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: scripts/build.mjs (commit log into build-info.json), server.ts `/api/changelog`, main.ts `aboutView` (regex search, added/fixed/changed chips, short hash linked to the commit on GitHub) | MISSING: grouping by released version; checking each linked commit exists before shipping; calendar date filter with typed dates; export/copy of the filtered view; Deploy app; site changelog is only a link to GitHub commits
 `offline-docs` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/ui/docs.ts (Guide tab bundling site/content.mjs and the Cantonese text, own regex search, related links, palette rows), tests/docs.test.ts | MISSING: links written inside article text are not clickable, the deploy wizard has no guide, no print view in the app
 `rendered-provider-text` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: release notes are an external link (updater.ts `notes`); changelog shows plain commit subjects | MISSING: shared isolated Markdown renderer, emoji map, base for relative links, empty "no notes" state

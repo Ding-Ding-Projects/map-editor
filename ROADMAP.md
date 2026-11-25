@@ -144,6 +144,8 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 
 - [x] Guide tab: the whole guide (13 articles) is bundled in the app and opens without a network, in English, Cantonese or both, with its own search and regex builder, related links, and a palette row per article. Unit tested for completeness against the site content; checked in headless Chrome at desktop and phone width with no outside requests.
 
+- [x] Worlds: Select mode. Click or tick worlds, Shift+click for a range, Ctrl+A or Select all, Invert, then Download selected saves each one in turn; Esc or Done leaves. Unit tested; checked in headless Chrome at desktop and phone width.
+
 ## Decisions recorded
 
 - Licence: the upstream Amulet licence is kept unaltered in `LICENSE`; the owner holds an Amulet licence for this work.

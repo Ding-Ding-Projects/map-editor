@@ -2,6 +2,7 @@
 // Matches the "Worlds" design board.
 import type { Key } from './i18n.js';
 import { showTakeover } from './takeover.js';
+import { invert, pickItem, selectAll } from './select.js';
 
 /** A file size people can read: small files in kB, the rest in MB. */
 const sizeText = (n: number) => n < 1e5 ? `${Math.max(1, Math.round(n / 1e3))} kB` : `${(n / 1e6).toFixed(1)} MB`;
@@ -43,7 +44,10 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
         <label class="btn-primary shape-tl" tabindex="0" role="button" id="upload-label">${esc(tx('uploadZip'))}<input type="file" id="upload" accept=".zip,.mcworld,application/zip" hidden></label>
         <md-filled-tonal-button id="new">${esc(tx('newFlat'))}</md-filled-tonal-button>
         ${c.browse ? `<md-outlined-button id="browse">${esc(tx('browse'))}</md-outlined-button>` : ''}
+        <md-outlined-button id="sel-mode" aria-pressed="false" hidden>${esc(tx('selectMode'))}</md-outlined-button>
       </div></header>
+    <div id="sel-bar" class="sel-bar" role="toolbar" aria-label="${esc(tx('selectMode'))}" hidden><b id="sel-count" role="status"></b><span class="muted sel-hint">${esc(tx('selectHint'))}</span><span class="sel-acts">
+      <md-text-button id="sel-all">${esc(tx('selectAll'))}</md-text-button><md-text-button id="sel-inv">${esc(tx('selectInvert'))}</md-text-button><md-filled-tonal-button id="sel-dl">${esc(tx('downloadSelected'))}</md-filled-tonal-button></span></div>
     <div id="upload-status"></div>
     <div id="list" class="world-grid" role="status" aria-label="${esc(tx('loading'))}">${'<div class="world-card skeleton"><span class="sk-tile"></span><span class="sk-line"></span><span class="sk-line short"></span></div>'.repeat(4)}</div>
   </section>`;
@@ -54,13 +58,55 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
   const label = view.querySelector<HTMLElement>('#upload-label')!;
   label.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } });
 
+  const selBtn = view.querySelector<HTMLElement>('#sel-mode')!, selBar = view.querySelector<HTMLElement>('#sel-bar')!;
+  const sel = new Set<number>(); let selecting = false, anchor: number | undefined, shown: WorldSummary[] = [];
+  const download = (w: WorldSummary) => {
+    const a = document.createElement('a');
+    a.href = '/api/worlds/download?path=' + encodeURIComponent(w.path);
+    a.download = `${w.name}${w.edition === 'bedrock' ? '.mcworld' : '.zip'}`;
+    document.body.append(a); a.click(); a.remove();
+  };
+  function paintSel() {
+    list.classList.toggle('selecting', selecting); selBar.hidden = !selecting;
+    selBtn.setAttribute('aria-pressed', String(selecting)); selBtn.textContent = tx(selecting ? 'selectDone' : 'selectMode');
+    list.querySelectorAll<HTMLElement>('.world-card').forEach((card, i) => {
+      card.classList.toggle('selected', selecting && sel.has(i));
+      const box = card.querySelector<HTMLInputElement>('.sel-box'); if (box) { box.hidden = !selecting; box.checked = sel.has(i); }
+    });
+    view.querySelector('#sel-count')!.textContent = tx('selectedN', { n: sel.size, total: shown.length });
+    view.querySelector('#sel-dl')!.toggleAttribute('disabled', !sel.size);
+  }
+  const setSelecting = (on: boolean) => { selecting = on; if (!on) { sel.clear(); anchor = undefined; } paintSel(); };
+  selBtn.addEventListener('click', () => setSelecting(!selecting));
+  view.querySelector('#sel-all')!.addEventListener('click', () => { selectAll(sel, shown.length); paintSel(); });
+  view.querySelector('#sel-inv')!.addEventListener('click', () => { invert(sel, shown.length); paintSel(); });
+  view.querySelector('#sel-dl')!.addEventListener('click', () => {
+    const picked = [...sel].sort((a, b) => a - b).map((i) => shown[i]).filter(Boolean); if (!picked.length) return;
+    c.notify(tx('downloadingN', { n: picked.length }));
+    picked.forEach((w, k) => setTimeout(() => download(w), k * 700)); // spaced so the browser keeps every file
+  });
+  list.addEventListener('click', (e) => {
+    if (!selecting) return;
+    const card = (e.target as HTMLElement).closest<HTMLElement>('.world-card'); if (!card || (e.target as HTMLElement).closest('.row-actions')) return;
+    const i = Array.from(list.querySelectorAll('.world-card')).indexOf(card); if (i < 0) return;
+    if ((e.target as HTMLElement).matches('.sel-box')) e.stopPropagation();
+    anchor = pickItem(sel, i, anchor, (e as MouseEvent).shiftKey); paintSel();
+  });
+  view.addEventListener('keydown', (e) => {
+    if (!selecting || (e.target as HTMLElement).matches('input:not(.sel-box), textarea, md-outlined-text-field')) return;
+    if (e.key === 'Escape') { e.preventDefault(); setSelecting(false); selBtn.focus(); }
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') { e.preventDefault(); sel.clear(); selectAll(sel, shown.length); paintSel(); }
+  });
+
   async function load() {
     try {
       const { worlds, roots } = await c.api<{ worlds: WorldSummary[]; roots: string[] }>('/api/worlds');
       if (!list.isConnected) return; // the screen was replaced while this loaded
       view.querySelector('#roots')!.textContent = tx('worldsFrom', { roots: roots.join(', ') });
       list.removeAttribute('role'); list.removeAttribute('aria-label');
+      shown = worlds; sel.clear(); anchor = undefined; selBtn.hidden = worlds.length < 2;
       if (!worlds.length) {
+        selecting = false; selBar.hidden = true;
         list.className = '';
         list.innerHTML = `<div class="empty-world"><div class="empty-art" aria-hidden="true">${'<i></i>'.repeat(16)}</div>
           <div><h2>${esc(tx('noWorldsTitle'))}</h2><p class="muted">${esc(tx('noWorldsBody'))}</p></div></div>`;
@@ -68,18 +114,14 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
       }
       list.className = 'world-grid';
       list.innerHTML = worlds.map((w, i) => `<article class="world-card ${SHAPES[i % SHAPES.length]}" style="--i:${i}">
+        <input type="checkbox" class="sel-box" hidden aria-label="${esc(tx('selectWorld', { name: w.name }))}">
         <div class="mini-map" aria-hidden="true">${mosaic(w.name)}</div>
         <h2>${esc(w.name)}</h2>${w.edition === 'bedrock' ? `<p class="muted"><b>Bedrock</b> · ${esc(tx('bedrockNote'))}</p>` : `<p class="muted">Java ${esc(w.versionName ?? '')} · ${esc(w.dimensions.map((d) => tx(d as Key)).join(', '))}</p>`}
         <div class="row-actions"><md-filled-button data-open="${i}">${esc(tx('open'))}</md-filled-button>
         <button type="button" class="icon-btn" data-dl="${i}" aria-label="${esc(tx('download'))}: ${esc(w.name)}" title="${esc(tx('download'))}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/></svg></button></div></article>`).join('');
       list.querySelectorAll<HTMLElement>('[data-open]').forEach((b) => b.addEventListener('click', () => c.open(worlds[Number(b.dataset.open)]).catch((e) => c.notify((e as Error).message, true))));
-      list.querySelectorAll<HTMLElement>('[data-dl]').forEach((b) => b.addEventListener('click', () => {
-        const w = worlds[Number(b.dataset.dl)];
-        const a = document.createElement('a');
-        a.href = '/api/worlds/download?path=' + encodeURIComponent(w.path);
-        a.download = `${w.name}${w.edition === 'bedrock' ? '.mcworld' : '.zip'}`;
-        document.body.append(a); a.click(); a.remove();
-      }));
+      list.querySelectorAll<HTMLElement>('[data-dl]').forEach((b) => b.addEventListener('click', () => download(worlds[Number(b.dataset.dl)])));
+      paintSel();
     } catch (e) {
       if (!list.isConnected) return;
       list.className = '';
