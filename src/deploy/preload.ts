@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('deploy', {
   pickFile: (exts: string[]) => ipcRenderer.invoke('pick-file', exts),
   docker: (o: unknown) => ipcRenderer.invoke('deploy-docker', o),
   virtualbox: (o: unknown) => ipcRenderer.invoke('deploy-virtualbox', o),
+  vmware: (o: unknown) => ipcRenderer.invoke('deploy-vmware', o),
   disks: () => ipcRenderer.invoke('disks'),
   flash: (image: string, disk: string, typed: string) => ipcRenderer.invoke('flash', image, disk, typed),
   open: (url: string) => ipcRenderer.invoke('open', url),

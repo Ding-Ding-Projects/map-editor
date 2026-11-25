@@ -154,7 +154,7 @@ class Component extends DCLogic {
       ['Docker', 'This PC. Pulls the published image and starts it with Compose.', 'Docker found', true, 'Pull ghcr.io/ding-ding-projects/map-editor:latest', 'Start with docker compose up -d', '28px 28px 28px 8px'],
       ['Docker on another computer', 'A server, NAS or Raspberry Pi with Docker, reached with your own SSH key. No passwords stored.', 'ssh pi@192.168.1.50', true, 'Pull :latest there over SSH', 'Start with docker compose up -d there', '28px'],
       ['VirtualBox', 'Imports the appliance image as a VM with bridged networking so your LAN can reach it.', 'VirtualBox 7.1 found', true, 'Import map-editor-appliance.ova', 'Start the VM on a bridged adapter', '28px'],
-      ['VMware', 'The same appliance image in VMware Workstation or Player.', 'VMware not found', false, 'Import map-editor-appliance.ova', 'Start it with vmrun', '8px 28px 28px 28px'],
+      ['VMware', 'The same appliance image in VMware Workstation or Player, bridged, started without a window.', 'Workstation 17 found', true, 'Import with ovftool on a bridged network', 'Start it with vmrun, read its address', '8px 28px 28px 28px'],
       ['USB drive', 'Writes the appliance image to a USB stick. A spare PC boots straight into Map Editor.', '2 removable drives', true, '', '', '28px 8px 28px 28px'],
       ['Raspberry Pi', 'A Pi 4 or 5 with Docker works through Docker on another computer. A flashable Pi image comes later.', 'Use Docker over SSH', false, '', '', '28px 28px 8px 28px']
     ];

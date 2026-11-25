@@ -30,6 +30,7 @@ ipcMain.handle('pick-folder', async () => (await dialog.showOpenDialog(win!, { p
 ipcMain.handle('pick-file', async (_e, exts: string[]) => (await dialog.showOpenDialog(win!, { properties: ['openFile'], filters: [{ name: 'Image', extensions: exts }] })).filePaths[0]);
 ipcMain.handle('deploy-docker', (_e, o) => track(targets.deployDocker(dataDir(), o, progress)));
 ipcMain.handle('deploy-virtualbox', (_e, o) => track(targets.deployVirtualBox(dataDir(), o, progress)));
+ipcMain.handle('deploy-vmware', (_e, o) => track(targets.deployVMware(dataDir(), o, progress)));
 ipcMain.handle('disks', async () => targets.flashableDisks(await targets.listDisks()));
 ipcMain.handle('flash', async (_e, image: string, diskId: string, typed: string) => {
   // Re-read the disk list here so the renderer can never hand us a disk we did not offer.

@@ -14,14 +14,14 @@ const TARGETS = [
   { id: 'docker', name: 'Docker', desc: 'Pulls the published image and starts it with Compose on this computer.' },
   { id: 'ssh', name: 'Docker on another computer', desc: 'Uses Docker on a server or spare PC through SSH, with your own SSH key. No passwords are stored.' },
   { id: 'virtualbox', name: 'VirtualBox', desc: 'Imports the appliance image with a bridged adapter so your network can reach it.' },
-  { id: 'vmware', name: 'VMware', desc: 'Not available in this version yet. See the roadmap.' },
+  { id: 'vmware', name: 'VMware', desc: 'Imports the appliance image into VMware Workstation or Player on a bridged network and starts it without a window.' },
   { id: 'usb', name: 'USB drive', desc: 'Writes the appliance image to a USB drive so a spare PC boots straight into Map Editor.' },
   { id: 'pi', name: 'Raspberry Pi', desc: 'A Pi 4 or 5 running Docker can use Docker on another computer: the image runs on arm64. A ready-to-flash Pi image is not built yet.' },
 ] as const;
 let target: typeof TARGETS[number]['id'] = 'docker';
 let view: 'deploy' | 'instances' = 'deploy';
 let managing: string | undefined;
-const STATE_LABEL: Record<string, string> = { running: 'Running', stopped: 'Stopped', missing: 'Not found in Docker or VirtualBox', unknown: 'State unknown' };
+const STATE_LABEL: Record<string, string> = { running: 'Running', stopped: 'Stopped', missing: 'Not found in Docker, VirtualBox or VMware', unknown: 'State unknown' };
 
 async function manage(main: Element, i: Instance) {
   const url = `http://${i.host}:${i.port}/`;
@@ -174,6 +174,25 @@ async function render() {
         retry: portBusy ? { label: `Try port ${port + 1}`, run: () => { (form.querySelector('#port') as HTMLInputElement).value = String(port + 1); void deployNow(); } } : { label: 'Try again', run: () => void deployNow() } });
     };
     form.querySelector('#go')!.addEventListener('click', () => void deployNow());
+  } else if (target === 'vmware') {
+    form.innerHTML = `<h2 class="md-typescale-headline-large">VMware</h2>
+      <p class="muted">Needs VMware Workstation or Player with OVF Tool (it comes with Workstation). The VM uses a bridged network so other devices can reach it.</p>
+      <md-outlined-text-field id="name" label="VM name" value="map-editor-vmware"></md-outlined-text-field>
+      <md-outlined-button id="ova">Choose appliance .ova</md-outlined-button><span class="muted" id="opath">No file chosen</span>
+      <md-filled-button id="go">Deploy</md-filled-button><div id="steps"></div>`;
+    let ova = '';
+    form.querySelector('#ova')!.addEventListener('click', async () => { ova = (await d.pickFile(['ova'])) ?? ''; form.querySelector('#opath')!.textContent = ova || 'No file chosen'; });
+    const deployNow = async (): Promise<void> => {
+      const name = (form.querySelector('#name') as HTMLInputElement).value.trim();
+      if (!ova) return toast('Choose the appliance .ova file first.', true);
+      let steps: Step[] = [];
+      d.onProgress((st: Step[]) => { steps = st; form.querySelector('#steps')!.innerHTML = stepsHtml(st); });
+      const t0 = Date.now();
+      const r = await d.vmware({ name, ova });
+      if (!r.error) { celebrate(r.url, r.instance, Date.now() - t0); return; }
+      failTakeover({ what: `VMware could not start ${name}.`, error: r.error, steps, retry: { label: 'Try again', run: () => void deployNow() } });
+    };
+    form.querySelector('#go')!.addEventListener('click', () => void deployNow());
   } else if (target === 'virtualbox') {
     form.innerHTML = `<h2 class="md-typescale-headline-large">VirtualBox</h2>
       <md-outlined-text-field id="name" label="Instance name" value="map-editor-vm"></md-outlined-text-field>
@@ -262,7 +281,7 @@ function takeover(kind: 'ok' | 'fail', html: string, opener: Element | null): { 
 function celebrate(url: string, inst: Instance, tookMs = 0) {
   const { el, close } = takeover('ok', `<span class="tk-chip">Installed</span>
     <h1 id="tk-title">It is live.</h1>
-    <p class="tk-lead">${esc(inst.name)} is running ${inst.target === 'docker' ? 'in Docker on this computer' : inst.target === 'docker-ssh' ? `in Docker on ${inst.sshHost ?? inst.host}` : 'in VirtualBox'} and answered its health check.</p>
+    <p class="tk-lead">${esc(inst.name)} is running ${inst.target === 'docker' ? 'in Docker on this computer' : inst.target === 'docker-ssh' ? `in Docker on ${inst.sshHost ?? inst.host}` : inst.target === 'vmware' ? 'in VMware' : 'in VirtualBox'} and answered its health check.</p>
     <div class="tk-stats"><div><small>Link</small><code>${esc(url.replace(/^https?:\/\//, '').replace(/\/$/, ''))}</code></div><div><small>Version</small><b>${esc(inst.version)}</b></div><div><small>Took</small><b>${Math.max(1, Math.round(tookMs / 1000))} s</b></div></div>
     <div class="tk-actions"><md-filled-button id="tk-open">Open Map Editor</md-filled-button><md-outlined-button id="tk-copy">Copy link</md-outlined-button><md-text-button id="tk-close">Close (Esc)</md-text-button></div>
     <small class="tk-note" id="tk-count">Closes by itself in 8 s.</small>`, document.activeElement);

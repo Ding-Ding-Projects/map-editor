@@ -44,7 +44,8 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] VirtualBox target: import, bridged adapter, start headless, read the guest address, health check (code; not run).
 - [x] USB flashing: only removable non-system disks, typed confirmation naming the disk, read-back SHA-256 check (code; not run on real hardware).
 - [x] Instance list limited to instances the app created.
-- [ ] VMware target. Shown as not available in the app.
+- [x] VMware target: OVF Tool imports the appliance on a bridged network, vmrun starts it without a window and reads its address from open-vm-tools, then the health check; start, stop, restart and remove (files kept unless Delete data); unit tested with stand-in ovftool and vmrun. Not run on a real VMware install.
+- [x] The appliance now carries open-vm-tools and the VirtualBox guest additions, so VMware and VirtualBox can read its network address (the VirtualBox target needed this and could not have found the address before).
 - [x] Docker on another computer over SSH: Docker's own `DOCKER_HOST=ssh://user@host` transport with the user's SSH agent (the app stores no passwords or keys); validated login and absolute remote worlds path; deploy, state, actions and live log all go to that computer; unit tested with a stand-in docker that records DOCKER_HOST, and the form plus takeovers checked in headless Chrome. Not run against a real remote host.
 - [x] Raspberry Pi card explains that a Pi 4 or 5 with Docker uses the SSH route (the image is multi-arch) and links to it.
 - [ ] Raspberry Pi flashable image.

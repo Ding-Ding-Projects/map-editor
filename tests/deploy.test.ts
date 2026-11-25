@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { mkdtemp, writeFile, readFile, chmod, mkdir } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { instanceAction, instanceState, saveInstances, loadInstances, flashableDisks, confirmPhrase, validateInstance, composeFile, deployDocker, validateSshHost, sshHostname, type Instance } from '../src/deploy/targets.js';
+import { instanceAction, instanceState, saveInstances, loadInstances, flashableDisks, confirmPhrase, validateInstance, composeFile, deployDocker, deployVMware, validateSshHost, sshHostname, type Instance } from '../src/deploy/targets.js';
 import http from 'node:http';
 
 let data = '';
@@ -99,5 +99,33 @@ describe('deploy targets', () => {
       expect((await deployDocker(data, { name: 'remote-2', port, version: 'latest', worlds: 'relative/path', sshHost: 'tester@127.0.0.1' }, () => undefined)).error).toMatch(/full path/);
       expect((await deployDocker(data, { name: 'remote-3', port, version: 'latest', worlds: '/srv', sshHost: '-oProxyCommand=evil' }, () => undefined)).error).toMatch(/user@host/);
     } finally { srv.close(); }
+  });
+  it('imports, starts and manages a VMware VM with ovftool and vmrun', async () => {
+    const bin = await mkdtemp(path.join(os.tmpdir(), 'me-vmw-'));
+    const vlog = path.join(bin, 'vm.txt');
+    const srv = http.createServer((_q, r) => { r.setHeader('content-type', 'application/json'); r.end('{"version":"0.1.31"}'); });
+    await new Promise<void>((ok) => srv.listen(8420, '127.0.0.1', ok)).catch(() => undefined);
+    // ovftool creates <dir>/<name>/<name>.vmx; vmrun reports the guest address and lists running VMs.
+    await writeFile(path.join(bin, 'ovftool'), `#!/bin/sh\necho "ovftool $*" >> "${vlog}"\n[ "$1" = --version ] && echo "VMware ovftool 4.6.3" && exit 0\nfor a; do last="$a"; done\nname=$(echo "$*" | sed -n 's/.*--name=\\([^ ]*\\).*/\\1/p')\nmkdir -p "$last/$name" && touch "$last/$name/$name.vmx"\n`);
+    await writeFile(path.join(bin, 'vmrun'), `#!/bin/sh\necho "vmrun $*" >> "${vlog}"\n[ -z "$1" ] && echo "vmrun version 1.17.0" && echo "Usage: vmrun ..." && exit 255\ncase "$3" in getGuestIPAddress) echo 127.0.0.1;; list) echo "Total running VMs: 1"; cat "${bin}/running" 2>/dev/null;; start) echo "$4" > "${bin}/running";; stop) rm -f "${bin}/running";; esac\nexit 0\n`);
+    await chmod(path.join(bin, 'ovftool'), 0o755); await chmod(path.join(bin, 'vmrun'), 0o755);
+    process.env.MAP_EDITOR_OVFTOOL = path.join(bin, 'ovftool'); process.env.MAP_EDITOR_VMRUN = path.join(bin, 'vmrun');
+    try {
+      await saveInstances(data, []);
+      const r = await deployVMware(data, { name: 'vmw-1', ova: '/images/map-editor-appliance-x86_64.ova' }, () => undefined);
+      expect(r.error).toBeUndefined();
+      expect(r.instance).toMatchObject({ target: 'vmware', host: '127.0.0.1', vmPath: path.join(data, 'vms', 'vmw-1', 'vmw-1.vmx') });
+      const log = await readFile(vlog, 'utf8');
+      expect(log).toContain('--net:Bridged=bridged');
+      expect(log).toContain(`start ${path.join(data, 'vms', 'vmw-1', 'vmw-1.vmx')} nogui`);
+      const inst = (await loadInstances(data))[0];
+      expect(await instanceState(data, inst)).toBe('running');
+      expect((await instanceAction(data, 'vmw-1', 'stop')).ok).toBe(true);
+      expect(await instanceState(data, inst)).toBe('stopped');
+      expect((await instanceAction(data, 'vmw-1', 'update')).ok).toBe(false);
+      expect((await instanceAction(data, 'vmw-1', 'remove')).ok).toBe(true);
+      expect(await readFile(vlog, 'utf8')).not.toContain('deleteVM');
+      expect((await deployVMware(data, { name: 'vmw-2', ova: '/x/not-an-image.iso' }, () => undefined)).error).toMatch(/\.ova/);
+    } finally { srv.close(); delete process.env.MAP_EDITOR_OVFTOOL; delete process.env.MAP_EDITOR_VMRUN; }
   });
 });

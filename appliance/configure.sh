@@ -3,6 +3,11 @@
 set -eu
 rc-update add docker default
 rc-update add chronyd default
+# Guest agents report the VM's network address to VMware (vmrun getGuestIPAddress) and VirtualBox
+# (guest property /VirtualBox/GuestInfo/Net/0/V4/IP). Each exits quietly under other hypervisors.
+for svc in open-vm-tools virtualbox-guest-additions; do
+  if [ -x "/etc/init.d/$svc" ]; then rc-update add "$svc" default; echo "guest agent enabled: $svc"; else echo "guest agent service not found: $svc"; ls /etc/init.d | grep -i -E 'vm|vbox|virtualbox' || true; fi
+done
 rc-update add networking boot
 rc-update add devfs sysinit
 rc-update add mdev sysinit

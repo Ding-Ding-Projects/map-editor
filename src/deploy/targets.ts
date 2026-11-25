@@ -282,6 +282,48 @@ export async function deployVirtualBox(dataDir: string, opts: { name: string; ov
   return { instance, url };
 }
 
+const VMWARE_DIR = 'C:\\Program Files (x86)\\VMware\\VMware Workstation';
+export const vmrun = () => process.env.MAP_EDITOR_VMRUN || (process.platform === 'win32' ? `${VMWARE_DIR}\\vmrun.exe` : 'vmrun');
+export const ovftool = () => process.env.MAP_EDITOR_OVFTOOL || (process.platform === 'win32' ? `${VMWARE_DIR}\\OVFTool\\ovftool.exe` : 'ovftool');
+
+/** VMware Workstation or Player: convert the appliance OVA to a VM on a bridged network, start it without a window, wait for health. */
+export async function deployVMware(dataDir: string, opts: { name: string; ova: string; port?: number }, progress: Progress): Promise<{ instance?: Instance; url?: string; error?: string }> {
+  const steps: Step[] = [{ label: 'Check VMware', state: 'waiting' }, { label: 'Import appliance', state: 'waiting' }, { label: 'Start VM', state: 'waiting' }, { label: 'Find its LAN address and check health', state: 'waiting' }];
+  const step = (i: number, state: Step['state'], detail?: string) => { steps[i] = { ...steps[i], state, detail }; progress([...steps]); };
+  const existing = await loadInstances(dataDir);
+  if (!NAME_RE.test(opts.name) || existing.some((i) => i.name === opts.name)) return { error: 'Choose a new, valid instance name.' };
+  if (!/\.ova$/i.test(opts.ova)) return { error: 'Choose the appliance .ova file.' };
+  step(0, 'running');
+  const tool = await run(ovftool(), ['--version']);
+  const vr = tool.code === 0 ? await run(vmrun(), []) : tool; // vmrun with no arguments prints its help and exits non-zero
+  if (tool.code !== 0 || !/vmrun|Usage/i.test(vr.stdout + vr.stderr)) { step(0, 'failed', (tool.stderr || vr.stderr).trim()); return { error: 'VMware Workstation or Player with OVF Tool was not found.' }; }
+  step(0, 'done', tool.stdout.trim());
+  const dir = path.join(dataDir, 'vms');
+  await fs.mkdir(dir, { recursive: true });
+  const vmx = path.join(dir, opts.name, `${opts.name}.vmx`);
+  step(1, 'running');
+  const imp = await run(ovftool(), ['--acceptAllEulas', '--noSSLVerify', `--name=${opts.name}`, '--net:Bridged=bridged', opts.ova, dir], { timeoutMs: 30 * 60_000 });
+  if (imp.code !== 0) { step(1, 'failed', (imp.stderr || imp.stdout).trim()); return { error: `Import failed with exit code ${imp.code}.` }; }
+  step(1, 'done', vmx);
+  step(2, 'running');
+  const start = await run(vmrun(), ['-T', 'ws', 'start', vmx, 'nogui']);
+  if (start.code !== 0) { step(2, 'failed', (start.stderr || start.stdout).trim()); return { error: `The VM did not start (exit code ${start.code}).` }; }
+  step(2, 'done');
+  step(3, 'running');
+  // The appliance runs open-vm-tools, which reports the guest address to vmrun.
+  const g = await run(vmrun(), ['-T', 'ws', 'getGuestIPAddress', vmx, '-wait'], { timeoutMs: 5 * 60_000 });
+  const ip = /^(\d{1,3}(?:\.\d{1,3}){3})\s*$/.exec(g.stdout.trim())?.[1];
+  if (!ip) { step(3, 'failed', (g.stderr || g.stdout).trim()); return { error: 'The VM started but did not report a LAN address within 5 minutes.' }; }
+  const port = opts.port ?? 8420;
+  const url = `http://${ip}:${port}/`;
+  const h = await waitHealthy(url);
+  if (!h.ok) { step(3, 'failed', h.error); return { error: `${url} did not answer its health check (${h.error}).` }; }
+  step(3, 'done', url);
+  const instance: Instance = { id: `${Date.now()}`, name: opts.name, target: 'vmware', version: h.version ?? 'unknown', port, host: ip, vmPath: vmx, createdAt: new Date().toISOString() };
+  await saveInstances(dataDir, [...existing, instance]);
+  return { instance, url };
+}
+
 // ---------- instance management ----------
 export type InstanceAction = 'start' | 'stop' | 'restart' | 'update' | 'remove';
 
@@ -302,6 +344,12 @@ export async function instanceState(dataDir: string, i: Instance): Promise<'runn
     const r = await run(vboxManage(), ['showvminfo', i.name, '--machinereadable']);
     if (r.code !== 0) return 'missing';
     return /VMState="running"/.test(r.stdout) ? 'running' : 'stopped';
+  }
+  if (i.target === 'vmware' && i.vmPath) {
+    try { await fs.access(i.vmPath); } catch { return 'missing'; }
+    const r = await run(vmrun(), ['-T', 'ws', 'list']);
+    if (r.code !== 0) return 'unknown';
+    return r.stdout.split(/\r?\n/).some((l) => path.normalize(l.trim()) === path.normalize(i.vmPath!)) ? 'running' : 'stopped';
   }
   return 'unknown';
 }
@@ -337,6 +385,20 @@ export async function instanceAction(dataDir: string, name: string, action: Inst
     for (const args of map[action]) {
       r = await run(vbm, args);
       if (r.code !== 0 && !(action === 'remove' && args[0] === 'controlvm')) break; // poweroff fails harmlessly when already off
+    }
+  } else if (i.target === 'vmware' && i.vmPath) {
+    const vmx = i.vmPath;
+    if (action === 'update') return { ok: false, message: 'Update a VMware instance by importing the new appliance image. In-place updates are on the roadmap.' };
+    const map: Record<Exclude<InstanceAction, 'update'>, string[][]> = {
+      start: [['-T', 'ws', 'start', vmx, 'nogui']],
+      stop: [['-T', 'ws', 'stop', vmx, 'soft']],
+      restart: [['-T', 'ws', 'reset', vmx, 'soft']],
+      remove: [['-T', 'ws', 'stop', vmx, 'hard'], ...(deleteData ? [['-T', 'ws', 'deleteVM', vmx]] : [])],
+    };
+    r = { code: 0, stdout: '', stderr: '' };
+    for (const args of map[action]) {
+      r = await run(vmrun(), args);
+      if (r.code !== 0 && !(action === 'remove' && args[2] === 'stop')) break; // stopping an already stopped VM fails harmlessly
     }
   } else {
     return { ok: false, message: `Managing ${i.target} instances is not available yet.` };

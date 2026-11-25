@@ -30,7 +30,7 @@ echo "$VERSION" > "$OUT/payload/VERSION"
 
 rm -rf "$ROOT"
 "$OUT/alpine-make-rootfs" --branch v3.21 \
-  --packages "alpine-base linux-lts syslinux docker openrc chrony e2fsprogs" \
+  --packages "alpine-base linux-lts syslinux docker openrc chrony e2fsprogs open-vm-tools virtualbox-guest-additions" \
   --fs-skel-dir "$OUT/payload" --fs-skel-chown root:root \
   --script-chroot "$ROOT" -- "$HERE/configure.sh"
 

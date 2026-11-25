@@ -29,7 +29,8 @@ export const features = [
       ['When it finishes', 'A full-screen card says It is live with the link, version and how long it took, and closes by itself after 8 seconds unless you are using it. If something fails, a red card stays until you dismiss it and shows each step, the exact error, Copy details and a retry; when the port is already taken it offers the next port.'],
       ['Instances', 'The Instances view lists only what this app created, with its current state and the verified link for each.'],
       ['Managing an instance', 'Manage opens one instance: a state dot, its version and link, and buttons for Open, Start or Stop, Restart and Update (pulls the newest image and restarts). The live log follows the container output; Pause holds it still and Copy puts it on the clipboard. Remove asks first, stops the instance and deletes its Compose file; worlds and data stay unless you also tick Delete data.'],
-      ['Not yet available', 'VMware and a ready-to-flash Raspberry Pi image are on the roadmap.'],
+      ['VMware', 'VMware Workstation or Player with OVF Tool imports the appliance .ova on a bridged network and starts it without a window. The appliance reports its address through the VMware guest tools, and the app waits for the health check.'],
+      ['Not yet available', 'A ready-to-flash Raspberry Pi image is on the roadmap.'],
     ], related: ['appliance', 'web-app', 'desktop-app'] },
   { slug: 'worlds', title: 'Getting worlds in and out', group: 'Using the editor', summary: 'Upload a world as a .zip, download it again, or start a new flat world.',
     body: [
