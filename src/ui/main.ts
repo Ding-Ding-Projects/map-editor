@@ -610,11 +610,10 @@ function shell() {
     </header>
     <div id="update-banner" class="update-banner" role="region" aria-label="${esc(tx('updateRegion'))}" hidden></div>
     <div class="body">
-      ${user && prefs.onboarded ? `<nav class="tabs" aria-label="Tabs"><md-list role="tablist" aria-orientation="vertical">
-        ${open.map((x) => `<md-list-item type="button" role="tab" aria-selected="${x === prefs.tab}" data-tab="${x}" class="${x === prefs.tab ? 'active' : ''}"><span slot="start" class="rail-ico" aria-hidden="true">${iconSvg(RAIL_ICONS[x] ?? 'next', 22)}</span>${esc(tx(x as Key))}
-          ${x === prefs.tab && !prefs.tabsLocked ? `<div slot="supporting-text" class="rail-close"><md-outlined-button data-close="${x}">${esc(tx('close'))}</md-outlined-button></div>` : ''}</md-list-item>`).join('')}
-        </md-list>
-        <div class="tab-tools"><md-text-button id="tab-find">${esc(tx('tabSearch'))}</md-text-button>${prefs.closedTabs.length ? `<md-text-button id="open-all">${esc(tx('openEveryTab'))}</md-text-button>` : ''}</div>
+      ${user && prefs.onboarded ? `<nav class="tabs rail" aria-label="Tabs"><div class="rail-list" role="tablist" aria-orientation="vertical">
+        ${open.map((x) => `<div class="rail-item ${x === prefs.tab ? 'active' : ''}"><button type="button" role="tab" aria-selected="${x === prefs.tab}" data-tab="${x}" class="rail-btn"><span class="rail-ico" aria-hidden="true">${iconSvg(RAIL_ICONS[x] ?? 'next', 24)}</span><span class="rail-lbl">${esc(tx(x as Key))}</span></button>${x === prefs.tab && !prefs.tabsLocked ? `<button type="button" class="rail-x" data-close="${x}" aria-label="${esc(tx('close'))}: ${esc(tx(x as Key))}" title="${esc(tx('close'))}">${iconSvg('x', 14)}</button>` : ''}</div>`).join('')}
+        </div>
+        <div class="tab-tools"><button type="button" class="rail-tool" id="tab-find" aria-label="${esc(tx('tabSearch'))}" title="${esc(tx('tabSearch'))}">${iconSvg('search', 20)}</button>${prefs.closedTabs.length ? `<button type="button" class="rail-tool" id="open-all" aria-label="${esc(tx('openEveryTab'))}" title="${esc(tx('openEveryTab'))}">${iconSvg('list', 20)}</button>` : ''}</div>
       </nav>` : ''}
       <main id="view" class="view" role="tabpanel"></main>
     </div>

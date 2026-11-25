@@ -71,7 +71,7 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
         <div class="mini-map" aria-hidden="true">${mosaic(w.name)}</div>
         <h2>${esc(w.name)}</h2>${w.edition === 'bedrock' ? `<p class="muted"><b>Bedrock</b> · ${esc(tx('bedrockNote'))}</p>` : `<p class="muted">Java ${esc(w.versionName ?? '')} · ${esc(w.dimensions.map((d) => tx(d as Key)).join(', '))}</p>`}
         <div class="row-actions"><md-filled-button data-open="${i}">${esc(tx('open'))}</md-filled-button>
-        <md-outlined-button data-dl="${i}">${esc(tx('download'))}</md-outlined-button></div></article>`).join('');
+        <button type="button" class="icon-btn" data-dl="${i}" aria-label="${esc(tx('download'))}: ${esc(w.name)}" title="${esc(tx('download'))}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/></svg></button></div></article>`).join('');
       list.querySelectorAll<HTMLElement>('[data-open]').forEach((b) => b.addEventListener('click', () => c.open(worlds[Number(b.dataset.open)]).catch((e) => c.notify((e as Error).message, true))));
       list.querySelectorAll<HTMLElement>('[data-dl]').forEach((b) => b.addEventListener('click', () => {
         const w = worlds[Number(b.dataset.dl)];

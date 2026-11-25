@@ -928,3 +928,73 @@ body { background: var(--md-sys-color-surface-container); }
 .about-link:focus-visible { box-shadow: 0 0 0 3px currentColor; }
 .about-link-ico { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 12px; background: color-mix(in srgb, currentColor 14%, transparent); }
 @media (prefers-reduced-motion: reduce) { .about-link { transition: none; } }
+
+/* ================= Third pass: flat canvas, slim rail, floating panels ================= */
+/* One surface. Depth comes from a single level of soft containers, never boxes inside boxes. */
+body { background: var(--md-sys-color-surface); }
+.top { background: color-mix(in srgb, var(--md-sys-color-surface) 86%, transparent); padding: 12px 20px; }
+.body { gap: 4px; padding: 0 16px 16px 8px; }
+.view { padding: 8px 12px 24px; border-radius: 0; background: transparent; box-shadow: none; min-height: 0; }
+.view:has(> .dock), .view:has(> .panel-chips) { padding: 0 0 8px; }
+.card { border-radius: 28px; background: var(--md-sys-color-surface-container-low); }
+.card .card, .set-pane .card, .panel-scroll .card { background: transparent; padding: 0; border-radius: 0; }
+/* Navigation rail: icon in a pill, label beneath. */
+.tabs.rail { position: sticky; top: 84px; width: 96px; padding: 4px 0; border-radius: 0; background: transparent; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.rail-list { display: grid; gap: 6px; width: 100%; }
+.rail-item { position: relative; display: grid; justify-items: center; }
+.rail-btn { all: unset; box-sizing: border-box; width: 100%; display: grid; justify-items: center; gap: 4px; padding: 6px 4px; cursor: pointer; color: var(--md-sys-color-on-surface-variant); font: 600 12px/16px 'Roboto Flex', sans-serif; text-align: center; overflow-wrap: anywhere; }
+.rail-btn .rail-ico { width: 56px; height: 32px; border-radius: 16px; background: transparent; transition: width .3s cubic-bezier(.2,0,0,1), background-color .2s, border-radius .3s cubic-bezier(.2,0,0,1), transform .3s cubic-bezier(.2,0,0,1); }
+.rail-btn:hover .rail-ico { background: var(--md-sys-color-surface-container-highest); }
+.rail-item.active .rail-btn { color: var(--md-sys-color-on-surface); font-weight: 800; }
+.rail-item.active .rail-ico { width: 64px; height: 40px; border-radius: 20px 12px 20px 12px; background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); transform: none; }
+.rail-btn:focus-visible .rail-ico { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; }
+.rail-x { all: unset; box-sizing: border-box; position: absolute; top: 0; right: 8px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface); cursor: pointer; box-shadow: 0 0 0 2px var(--md-sys-color-surface); opacity: 0; transition: opacity .15s; }
+.rail-item:hover .rail-x, .rail-x:focus-visible, .rail-item:focus-within .rail-x { opacity: 1; }
+.rail-x:focus-visible { outline: 3px solid var(--md-sys-color-primary); }
+.rail-x::before { content: ''; position: absolute; inset: -11px; }
+.tab-tools { margin: 0; padding: 12px 0 0; border-top: 1px solid var(--md-sys-color-outline-variant); display: grid; gap: 6px; justify-items: center; width: 56px; }
+.rail-tool { all: unset; box-sizing: border-box; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; color: var(--md-sys-color-on-surface-variant); cursor: pointer; transition: background-color .2s, border-radius .25s cubic-bezier(.2,0,0,1); }
+.rail-tool:hover { background: var(--md-sys-color-surface-container-highest); border-radius: 22px; } .rail-tool:focus-visible { outline: 3px solid var(--md-sys-color-primary); }
+@media (min-width: 721px) and (max-width: 980px) { .tabs.rail { width: 84px; position: sticky; } }
+/* Header: quieter. */
+.top md-chip-set { background: transparent; padding: 0; }
+.search-pill { height: 48px; background: var(--md-sys-color-surface-container); }
+.logo { width: 40px; height: 40px; }
+/* Page titles. */
+.view > h1:first-child, .view .md-typescale-display-small { font-size: clamp(32px, 3.6vw, 48px); margin: 8px 0 6px; }
+/* Worlds: picture-first cards with one clear action. */
+.world-grid { gap: 16px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+.world-card { padding: 10px 10px 14px; gap: 6px; border-radius: 28px; background: var(--md-sys-color-surface-container-low); }
+.world-card:hover { border-radius: 28px 12px 28px 12px; transform: none; background: var(--md-sys-color-surface-container); }
+.world-card .mini-map { border-radius: 20px; overflow: hidden; }
+.world-card h2 { margin: 8px 6px 0; font-size: 20px; } .world-card p { margin: 0 6px; }
+.world-card .row-actions { margin: 8px 4px 0; flex-wrap: nowrap; }
+.world-card .row-actions md-filled-button { flex: 1; }
+.icon-btn { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); cursor: pointer; transition: border-radius .25s cubic-bezier(.2,0,0,1); }
+.icon-btn:hover { border-radius: 14px; } .icon-btn:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; }
+/* Workspace: panels float as rounded sheets, tabs are pills on a clear strip. */
+.dock { height: calc(100dvh - 96px); }
+.dockview-theme-m3 { --dv-group-view-background-color: var(--md-sys-color-surface-container-low); --dv-tabs-and-actions-container-background-color: transparent; --dv-tabs-and-actions-container-height: 44px; --dv-separator-border: transparent;
+  --dv-activegroup-visiblepanel-tab-background-color: var(--md-sys-color-surface-container-highest); --dv-activegroup-visiblepanel-tab-color: var(--md-sys-color-on-surface);
+  --dv-inactivegroup-visiblepanel-tab-background-color: var(--md-sys-color-surface-container-high); --dv-tab-border-radius: 999px; --dv-tab-margin: 6px 2px; --dv-border-radius: 24px; }
+.dockview-theme-m3 .dv-groupview { border-radius: 24px; overflow: hidden; }
+.dockview-theme-m3 .dv-tab { padding: 0 6px 0 14px; font-weight: 700; }
+.dockview-theme-m3 .dv-tabs-and-actions-container { padding: 0 6px; }
+.dockview-theme-m3 .dv-split-view-container > .dv-view-container > .dv-view { padding: 4px; }
+/* Tool panel: operations as an even grid, fields compact. */
+#ops { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+#ops md-filter-chip { width: 100%; --md-filter-chip-container-shape: 14px; --md-filter-chip-outline-width: 0; --md-filter-chip-container-height: 40px; background: var(--md-sys-color-surface-container-high); border-radius: 14px; --md-filter-chip-selected-container-color: var(--md-sys-color-primary); --md-filter-chip-selected-label-text-color: var(--md-sys-color-on-primary); --md-filter-chip-selected-leading-icon-color: var(--md-sys-color-on-primary); --md-filter-chip-selected-hover-label-text-color: var(--md-sys-color-on-primary); --md-filter-chip-selected-focus-label-text-color: var(--md-sys-color-on-primary); --md-filter-chip-selected-pressed-label-text-color: var(--md-sys-color-on-primary); }
+.block-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; padding-bottom: 4px; }
+/* Settings: no boxes around boxes. */
+.set-nav, .set-pane, .settings > .card { background: transparent; padding-left: 0; padding-right: 0; }
+.set-row { background: var(--md-sys-color-surface-container-low); }
+/* Fields share one shape. */
+md-outlined-text-field { --md-outlined-text-field-container-shape: 16px; --md-outlined-text-field-outline-color: var(--md-sys-color-outline-variant); }
+.sb-field, .sb-field input { border-radius: 16px; }
+@media (max-width: 720px) { .view { padding: 8px 8px 16px; } .tabs.rail { display: none; } .dock { height: calc(100dvh - 300px); } }
+@media (prefers-reduced-motion: reduce) { .rail-btn .rail-ico, .rail-tool, .icon-btn, .rail-x { transition: none; } }
+#ops { grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); }
+.h-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.h-filters > .sb { flex: 1 1 320px; min-width: 0; }
+.h-filters md-outlined-text-field { flex: 0 1 160px; }
+@media (min-width: 721px) and (max-width: 980px) { .dock { height: calc(100dvh - 150px); } }
