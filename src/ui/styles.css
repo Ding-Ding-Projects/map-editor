@@ -885,3 +885,14 @@ body { background: var(--md-sys-color-surface-container); }
 .rail-close { margin-top: 4px; }
 @media (min-width: 721px) and (max-width: 980px) { .tabs md-list-item.active md-outlined-button { display: inline-flex; } }
 .ext-list { grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); } .ext-card { min-width: 0; }
+/* Settings: every setting is its own soft tile instead of a ruled row. */
+.set-row { border-bottom: 0; margin: 6px 0; padding: 12px 16px; min-height: 68px; border-radius: 20px; background: var(--md-sys-color-surface-container); transition: border-radius .25s cubic-bezier(.2,0,0,1), background-color .2s; }
+.set-row:hover, .set-row:focus-within { border-radius: 28px 12px 28px 12px; background: var(--md-sys-color-surface-container-high); }
+.set-nav .set-tab { border-radius: 999px; transition: border-radius .25s cubic-bezier(.2,0,0,1), background-color .2s; }
+.set-nav .set-tab[aria-selected="true"], .set-nav .set-tab.active { border-radius: 24px 10px 24px 10px; }
+.set-pane > h2:first-child, .set-pane h2 { font-family: 'Roboto Flex', sans-serif; font-variation-settings: 'wdth' 116, 'wght' 800; letter-spacing: -.02em; }
+/* History and activity entries answer the pointer the same way. */
+.act-list li, .hist-list li, #h li { transition: border-radius .25s cubic-bezier(.2,0,0,1), background-color .2s; }
+.act-list li:hover, #h li:hover { border-radius: 24px 10px 24px 10px; }
+.cl-link { color: var(--md-sys-color-primary); }
+@media (prefers-reduced-motion: reduce) { .set-row, .set-nav .set-tab, .act-list li, #h li { transition: none; } }

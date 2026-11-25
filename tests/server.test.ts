@@ -223,3 +223,17 @@ describe('Postman collection', () => {
     for (const must of ['POST /api/auth/login', 'GET /api/worlds', 'POST /api/worlds/open', 'GET /api/render', 'GET /api/blocks']) expect(names).toContain(must);
   });
 });
+
+describe('notes are cleaned before they are stored', () => {
+  it('keeps ordinary formatting and drops anything that can run', async () => {
+    const { sanitizeNotes } = await import('../src/server/sanitize.js');
+    expect(sanitizeNotes('<p>Hello <b>there</b><br><a href="https://example.org/a?b=1&amp;c=2" title="t">link</a></p>')).toBe('<p>Hello <b>there</b><br><a href="https://example.org/a?b=1&amp;c=2" title="t" rel="noopener noreferrer">link</a></p>');
+    const dirty = '<p onclick="x()">a</p><script>alert(1)</script><img src="x" onerror="alert(1)"><a href="javascript:alert(1)">j</a><a href=" JaVa\tScript:alert(1)">k</a><iframe src="https://e.org"></iframe><svg><script>1</script></svg><style>p{}</style><!-- c --><form><input></form><img src="data:text/html;base64,AAAA"><div style="background:url(javascript:1)">d</div><scr<script>ipt>alert(2)</script>';
+    const clean = sanitizeNotes(dirty);
+    expect(clean).not.toMatch(/script|onerror|onclick|javascript|iframe|style|<form|<input|<svg|data:text/i);
+    expect(clean).toContain('<p>a</p>'); expect(clean).toContain('<div>d</div>');
+    expect(sanitizeNotes('<img src="data:image/png;base64,iVBORw0KGgo=" alt="a" width="20" height="9999999">')).toBe('<img src="data:image/png;base64,iVBORw0KGgo=" alt="a" width="20">');
+    expect(sanitizeNotes('<script>alert(1)')).toBe('');
+    expect(sanitizeNotes(sanitizeNotes(dirty))).toBe(clean); // cleaning twice changes nothing
+  });
+});

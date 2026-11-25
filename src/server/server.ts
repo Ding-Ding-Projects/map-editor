@@ -1,5 +1,6 @@
 // HTTP server shared by every form: the desktop app runs it on 127.0.0.1, the Docker
 // image and the appliance run it on the LAN. Same API, same UI.
+import { sanitizeNotes } from './sanitize.js';
 import { DimSum } from './dimsum.js';
 import { Extensions, PERMISSIONS, permissionKey, ReplaceNeeded } from './extensions.js';
 import { ActivityLog, type ActivityKind } from './activity.js';
@@ -438,7 +439,7 @@ export async function createServer(opts: ServerOptions) {
         const { html } = await body(req, 512 * 1024);
         if (typeof html !== 'string') throw new HttpError(400, 'html must be text');
         await fs.mkdir(path.dirname(file), { recursive: true });
-        await fs.writeFile(file + '.tmp', html); await fs.rename(file + '.tmp', file);
+        await fs.writeFile(file + '.tmp', sanitizeNotes(html)); await fs.rename(file + '.tmp', file);
         return send(200, { saved: true });
       }
     }

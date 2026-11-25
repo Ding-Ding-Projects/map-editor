@@ -406,7 +406,7 @@ function toast(text: string, error = false) {
 // Full-screen takeovers from the Takeover board (shared with the editor).
 function celebrate(url: string, inst: Instance, tookMs = 0) {
   const where = inst.target === 'docker' ? 'in Docker on this computer' : inst.target === 'docker-ssh' ? `in Docker on ${inst.sshHost ?? inst.host}` : inst.target === 'vmware' ? 'in VMware' : 'in VirtualBox';
-  showTakeover({ kind: 'ok', chip: 'Installed', title: 'It is live.', lead: `${inst.name} is running ${where} and answered its health check.`,
+  showTakeover({ kind: 'ok', chip: 'Installed', title: 'It is live.', lead: `${inst.name} is running ${where} and answered its health check. The first person to open the link creates the owner account, so open it yourself first.`,
     stats: [{ label: 'Link', value: url.replace(/^https?:\/\//, '').replace(/\/$/, ''), code: true }, { label: 'Version', value: inst.version }, { label: 'Took', value: `${Math.max(1, Math.round(tookMs / 1000))} s` }],
     actions: [{ label: 'Open Map Editor', primary: true, run: () => d.open(url) }, { label: 'Copy link', outlined: true, run: () => { void navigator.clipboard?.writeText(url).then(() => toast('Link copied.')); } }, { label: 'Close (Esc)', run: (close) => close() }],
     autoClose: { seconds: 8, text: (n) => `Closes by itself in ${n} s.`, held: 'Stays open while you use it.' } });

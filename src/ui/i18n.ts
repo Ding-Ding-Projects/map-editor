@@ -394,6 +394,7 @@ const S = {
   authPoint2: { en: 'Java Edition and Bedrock Edition worlds.', yue: 'Java 版同基岩版世界都啱用。' },
   authPoint3: { en: 'Runs on your own network. Your worlds stay with you.', yue: '喺你自己個網絡行，世界唔會走出去。' },
   vocabNone: { en: 'no wording in this file matches the app', yue: '呢個檔冇一句啱用' },
+  logoResetAsk: { en: 'Remove your own logo and go back to the built-in one? The picture you chose is deleted from this browser.', yue: '移除你自己個標誌，用返內置嗰個？你揀嗰張圖會喺呢個瀏覽器刪走。' },
   superTitle: { en: 'This cannot be taken back', yue: '呢樣嘢冇得返轉頭' },
   superKey1: { en: 'Turn the first key', yue: '扭第一條鎖匙' },
   superKey2: { en: 'Turn the second key', yue: '扭第二條鎖匙' },

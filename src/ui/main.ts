@@ -1564,7 +1564,7 @@ function settingsView(view: HTMLElement) {
     const all = Object.fromEntries(Object.entries(STRINGS).map(([k, e]) => [k, { en: cur[k]?.en ?? e.en, yue: cur[k]?.yue ?? e.yue }]));
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' })); a.download = 'map-editor-words.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   });
-  view.querySelector('#vocab-reset')?.addEventListener('click', async () => { if (!await askConfirm(tx('vocabResetAsk'), tx('vocabReset'))) return; saveVocab({}); notify(tx('vocabCleared')); render(); });
+  view.querySelector('#vocab-reset')?.addEventListener('click', async () => { if (!await askConfirm(tx('vocabResetAsk'), tx('vocabReset'), true)) return; saveVocab({}); notify(tx('vocabCleared')); render(); });
   view.querySelector('#fyue')!.addEventListener('change', () => { prefs.funnyYue = num('#fyue'); savePrefs(); render(); });
   view.querySelector('#dark')!.addEventListener('change', (e) => { prefs.dark = sel(e); savePrefs(); applyTheme(); });
   view.querySelector('#rm')!.addEventListener('change', (e) => { prefs.reduceMotion = sel(e); savePrefs(); applyTheme(); });
@@ -1602,7 +1602,7 @@ function settingsView(view: HTMLElement) {
     r.onload = () => { try { localStorage.setItem(LOGO_KEY, String(r.result)); notify(tx('logoDone')); render(); } catch { notify(tx('logoBad'), true); } };
     r.readAsDataURL(f);
   });
-  view.querySelector('#logo-reset')?.addEventListener('click', () => { try { localStorage.removeItem(LOGO_KEY); } catch { /* ignore */ } render(); });
+  view.querySelector('#logo-reset')?.addEventListener('click', async () => { if (!await askConfirm(tx('logoResetAsk'), tx('logoReset'), true)) return; try { localStorage.removeItem(LOGO_KEY); } catch { /* ignore */ } render(); });
   view.querySelector('#focus')!.addEventListener('change', (e) => { prefs.focusMode = sel(e); if (prefs.focusMode) prefs.reduceMotion = true; savePrefs(); applyTheme(); render(); });
   view.querySelector('#school')!.addEventListener('change', async (e) => {
     const on = sel(e);
@@ -1676,7 +1676,7 @@ async function aboutView(view: HTMLElement): Promise<void> {
     if (my !== clRun) return; // a hidden panel (phone width) is still filled, ready when shown
     const shown = all.filter((_, i) => hits[i]);
     listEl.innerHTML = shown.length ? shown.map((e, i) => `<li class="cl-entry${i === 0 && !q ? ' newest' : ''}" style="--i:${Math.min(i, 12)}"><span class="cl-kind ${kind(e.subject)}">${esc(tx(kind(e.subject) as Key))}</span>
-      <span class="cl-text"><b>${esc(e.subject)}</b><small>${esc(new Date(e.date).toLocaleString('en-GB'))} · <code>${esc(e.sha.slice(0, 7))}</code></small></span></li>`).join('') : `<li class="muted">${esc(tx('noMatches'))}</li>`;
+      <span class="cl-text"><b>${esc(e.subject)}</b><small>${esc(new Date(e.date).toLocaleString('en-GB'))} · <a class="cl-link" href="https://github.com/Ding-Ding-Projects/map-editor/commit/${esc(e.sha)}" target="_blank" rel="noopener noreferrer"><code>${esc(e.sha.slice(0, 7))}</code></a></small></span></li>`).join('') : `<li class="muted">${esc(tx('noMatches'))}</li>`;
   };
   clq.onChange(draw);
   draw();

@@ -84,13 +84,18 @@ for (const [from, to] of [['roboto-flex/files/roboto-flex-latin-standard-normal.
   copyFileSync(path.join(root, 'node_modules/@fontsource-variable', from), path.join(out, 'fonts', to));
 }
 const groups = [...new Set(features.map((f) => f.group))];
+// list the workflow saves (SITE_RELEASES). Without it, the page points at the releases list.
+let releases = [];
+try { releases = JSON.parse(readFileSync(process.env.SITE_RELEASES ?? path.join(here, 'releases.json'), 'utf8')); } catch { /* not available */ }
+const rel = releases.find((r) => !r.draft && !r.prerelease && (r.assets ?? []).some((a) => a.name === 'Map.EditorSetup.exe'));
+const asset = (n) => rel?.assets.find((a) => a.name === n);
 pagePath = '';
 writeFileSync(path.join(out, 'index.html'), page('Map Editor', 'A Minecraft world editor for your desk, your whole network, or a spare PC. Every edit can be undone.', `
 <section class="hero"><div class="hero-copy">
 <span class="pill">Java Edition 1.18 and newer · v${esc(pkg.version)}</span>
 <h1>Edit your world.<br><span>Undo anything.</span></h1>
 <p>A Minecraft world editor for your desk, your whole network, or a spare PC. Every fill, replace and clone is saved to its own history, so nothing is ever one click from gone.</p>
-<p class="actions"><a class="btn filled" href="${base}downloads/">Get Map Editor</a><a class="btn outlined" href="${base}web-app/">Run it with Docker</a></p></div>
+<p class="actions">${asset('Map.EditorSetup.exe') ? `<a class="btn filled" href="${esc(asset('Map.EditorSetup.exe').browser_download_url)}" download>Download for Windows · ${esc(rel.tag_name)}</a><a class="btn outlined" href="${base}downloads/">All downloads</a>` : `<a class="btn filled" href="${base}downloads/">Get Map Editor</a>`}<a class="btn outlined" href="${base}web-app/">Run it with Docker</a></p></div>
 <div class="hero-art"><div class="map" role="img" aria-label="Top-down map of a river valley with a selected area">${mosaic(18, 12)}</div><div class="sel" aria-hidden="true"><span class="wash"></span></div><div class="cursor" aria-hidden="true"></div>
 <div class="chip c1" aria-hidden="true"><small>Fill finished</small><b>53,248 blocks</b></div>
 <div class="chip c2" aria-hidden="true"><span class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 010 10h-3"/></svg></span><span><small>History</small><b>Rolled back to 16:38:52</b></span></div></div></section>
@@ -133,11 +138,6 @@ ${features.map((f, i) => `<h2 class="art" id="a${i}">${esc(f.title)}</h2><p><em>
 </main></body></html>`);
 
 // Downloads: buttons for the newest release that carries the Windows installer, from the release
-// list the workflow saves (SITE_RELEASES). Without it, the page points at the releases list.
-let releases = [];
-try { releases = JSON.parse(readFileSync(process.env.SITE_RELEASES ?? path.join(here, 'releases.json'), 'utf8')); } catch { /* not available */ }
-const rel = releases.find((r) => !r.draft && !r.prerelease && (r.assets ?? []).some((a) => a.name === 'Map.EditorSetup.exe'));
-const asset = (n) => rel?.assets.find((a) => a.name === n);
 const mib = (b) => `${(b / 1048576).toFixed(b > 104857600 ? 0 : 1)} MiB`;
 const DOWNLOADS = [
   ['Map.EditorSetup.exe', 'Map Editor for Windows', 'The desktop app. Opens worlds from your saves folder; updates itself.', 'desktop-app'],
