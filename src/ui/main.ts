@@ -22,6 +22,8 @@ interface DesktopBridge {
   pickFolder: () => Promise<string | undefined>;
   openDataFolder?: (p: string) => Promise<string>;
   editors?: () => Promise<Array<{ id: string; name: string }>>;
+  dataFolder?: () => Promise<{ path: string; bytes: number; files: number; worlds: string }>;
+  openDataRoot?: () => Promise<string>;
   openInEditor?: (id: string, folder: string) => Promise<string>;
   updates?: { state: () => Promise<UpdState>; check: () => Promise<UpdState>; restart: () => Promise<boolean>; onState: (fn: (s: UpdState) => void) => void };
 }
@@ -391,6 +393,19 @@ async function openOutside(id?: string, anchor?: { x: number; y: number }) {
   let last = ''; try { last = localStorage.getItem(EDITOR_KEY) ?? ''; } catch { /* none */ }
   if (!found.length) notify(tx('outsideNone'));
   contextMenu(anchor?.x ?? innerWidth / 2 - 140, anchor?.y ?? 120, tx('outsideTitle'), all.map((x) => [x.name, () => { void run(x.id, x.name); }] as MenuItem), undefined, all.findIndex((x) => x.id === last));
+}
+
+/** Desktop app only: fills the data folder card in Settings › Backup and history. */
+function wireDataFolder(view: HTMLElement) {
+  const box = view.querySelector<HTMLElement>('#data-folder'); if (!box || !desktopBridge?.dataFolder) return;
+  let where = '';
+  void desktopBridge.dataFolder().then((d) => {
+    where = d.path; if (!box.isConnected) return;
+    box.querySelector('#df-path')!.textContent = d.path; box.querySelector('#df-worlds')!.textContent = d.worlds;
+    box.querySelector('#df-size')!.textContent = tx('dataFolderSizeValue', { size: d.bytes < 1e5 ? `${Math.max(1, Math.round(d.bytes / 1e3))} kB` : `${(d.bytes / 1e6).toFixed(1)} MB`, n: d.files });
+  }, (e) => { box.querySelector('#df-path')!.textContent = (e as Error).message; });
+  box.querySelector('#df-open')!.addEventListener('click', async () => { const err = await desktopBridge!.openDataRoot?.(); if (err) notify(err, true); });
+  box.querySelector('#df-copy')!.addEventListener('click', () => { if (where) void navigator.clipboard?.writeText(where).then(() => notify(tx('copied')), () => notify(tx('copyFailed'), true)); });
 }
 
 function paletteCommands(): Command[] {
@@ -1601,6 +1616,7 @@ function settingsView(view: HTMLElement) {
     comfort: `<div class="row-actions" data-find="${esc(tx('tourTake'))} ${esc(tx('tourThisPage'))}"><md-filled-tonal-button id="set-tour">${esc(tx('tourTake'))}</md-filled-tonal-button></div>${sw('rm', 'reduceMotion', 'reduceMotionNote', prefs.reduceMotion)}${sw('lt', 'largeText', 'largeTextNote', prefs.largeText)}${sw('elock', 'editLock', 'editLockNote', prefs.editLock)}${sw('tko', 'takeovers', 'takeoversNote', prefs.takeovers)}${sw('llock', 'layoutLocked', 'layoutLockedNote', prefs.layoutLocked)}${sw('tlock', 'tabsLocked', 'tabsLockedNote', prefs.tabsLocked)}${sw('slock', 'settingsLocked', 'settingsLockedNote', prefs.settingsLocked)}${sw('focus', 'focusMode', 'focusModeNote', prefs.focusMode)}${sw('school', 'schoolMode', 'schoolModeNote', prefs.schoolMode)}`,
     backup: `<p data-find="${esc(tx('exportSettings'))} ${esc(tx('importSettings'))}">${esc(tx('settingsSaved'))}</p>
       <div class="row-actions"><md-filled-tonal-button id="exp">${esc(tx('exportSettings'))}</md-filled-tonal-button><md-outlined-button id="imp">${esc(tx('importSettings'))}</md-outlined-button><input id="imp-file" type="file" accept="application/json,.json" hidden></div>
+      ${desktopBridge?.dataFolder ? `<h3 data-find="${esc(tx('dataFolder'))} ${esc(tx('dataFolderNote'))}">${esc(tx('dataFolder'))}</h3><div class="data-folder" id="data-folder" data-find="${esc(tx('dataFolder'))}"><p class="muted">${esc(tx('dataFolderNote'))}</p><dl><dt>${esc(tx('dataFolderWhere'))}</dt><dd><code id="df-path">…</code></dd><dt>${esc(tx('dataFolderSize'))}</dt><dd id="df-size">…</dd><dt>${esc(tx('dataFolderWorlds'))}</dt><dd><code id="df-worlds">…</code></dd></dl><div class="row-actions"><md-filled-tonal-button id="df-open">${esc(tx('dataFolderOpen'))}</md-filled-tonal-button><md-outlined-button id="df-copy">${esc(tx('dataFolderCopy'))}</md-outlined-button></div></div>` : ''}
       <h3 data-find="${esc(tx('settingsHistory'))}">${esc(tx('settingsHistory'))}</h3><ol class="set-history" id="sh"></ol>`,
     sounds: `${sw('snd', 'soundEffects', 'soundEffectsNote', prefs.sounds)}
       <label class="set-slider" data-find="${esc(tx('soundVolume'))}"><span><b>${esc(tx('soundVolume'))}</b><em id="vol-n">${prefs.soundVolume}%</em></span><md-slider id="vol" min="0" max="100" step="10" labeled value="${prefs.soundVolume}" aria-label="${esc(tx('soundVolume'))}"></md-slider></label>
@@ -1743,6 +1759,7 @@ function settingsView(view: HTMLElement) {
     onSpeed: (lv) => { prefs.rainbowSpeed = lv; savePrefs(); applyRainbowSpeed(lv); },
   });
   view.querySelector('#seed-reset')!.addEventListener('click', () => { prefs.seed = DEFAULT_SEED; savePrefs(); render(); });
+  wireDataFolder(view);
   view.querySelector('#exp')!.addEventListener('click', () => {
     const blob = new Blob([JSON.stringify({ app: 'map-editor', kind: 'settings', version: 1, exportedAt: new Date().toISOString(), settings: pick(prefs) }, null, 2)], { type: 'application/json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'map-editor-settings.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);

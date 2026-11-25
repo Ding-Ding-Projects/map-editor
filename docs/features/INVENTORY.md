@@ -6,7 +6,7 @@ lands; anything not rechecked keeps its last audited status.
 
 Re-audited on 2026-11-25 after the changes of that day.
 
-Counts (126 features): built 14 / partial 84 / unbuilt 14 / not applicable 14
+Counts (126 features): built 14 / partial 85 / unbuilt 13 / not applicable 14
 
 
 ## Language, voice, and personalization
@@ -54,7 +54,7 @@ Counts (126 features): built 14 / partial 84 / unbuilt 14 / not applicable 14
 `info-icon-guidance` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: none | MISSING: info icon button above each control, its contextual panel, per-control inventory and tests
 `settings-explanations` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: main.ts `sw()` rows show a note per switch | MISSING: progressive disclosure; provenance line (saved value vs built-in default, naming the default); notes for sliders/time fields; hand-written settings inventory test
 `settings-quick-add` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: none (e.g. the Ollama-unreachable message points to an environment variable) | MISSING: quick-add input + Save beside every Settings pointer; pointer inventory test
-`data-folder-choice` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: data folder fixed in src/desktop/main.ts (`userData/data`); only a worlds folder picker exists | MISSING: profile/save folder rows with picker, current and default path, move with progress, reset; profile folder as a Git repository with .gitignore and auto-commits; optional private remote; fixed-volume notice in web/appliance forms
+`data-folder-choice` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: desktop app Settings › Backup and history shows the data folder, its size and file count and the worlds folder, with Open data folder and Copy path (src/desktop/main.ts `data-folder`, `open-data-root`; main.ts `wireDataFolder`) | MISSING: choosing or moving the data folder, default path row, move with progress and rollback; not run on a real Windows PC
 `blank-editors` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/ui/worlds.ts + src/core/archive.ts `createFlatWorld` presets | MISSING: presets for the blank notes editor and blank tools; preset description of exactly what is created; undo of a preset through history
 
 ## Safety, locks, and authentication

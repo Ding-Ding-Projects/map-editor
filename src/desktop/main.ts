@@ -57,6 +57,21 @@ if (!squirrel) app.whenReady().then(async () => {
       child.once('spawn', () => { child.unref(); resolve(''); });
     });
   });
+  // The data folder: where it is, how much it holds, and a way to open it. It is never moved or deleted from here.
+  ipcMain.handle('data-folder', async () => {
+    let bytes = 0, files = 0;
+    const walk = async (dir: string, depth: number): Promise<void> => {
+      if (depth > 12 || files > 200_000) return;
+      for (const e of await fs.readdir(dir, { withFileTypes: true }).catch(() => [])) {
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) await walk(full, depth + 1);
+        else if (e.isFile()) { files++; bytes += (await fs.stat(full).catch(() => ({ size: 0 }))).size; }
+      }
+    };
+    await walk(dataDir, 0);
+    return { path: dataDir, bytes, files, worlds: defaultSaves() };
+  });
+  ipcMain.handle('open-data-root', async () => { await fs.mkdir(dataDir, { recursive: true }); return shell.openPath(dataDir); });
   ipcMain.handle('pick-folder', async () => (await dialog.showOpenDialog(win!, { title: 'Open a Minecraft world folder', properties: ['openDirectory'] })).filePaths[0]);
   // Links to other sites open in the normal browser, never inside the app window.
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: 'deny' }; });

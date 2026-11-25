@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld('mapEditorDesktop', {
   openDataFolder: (p: string): Promise<string> => ipcRenderer.invoke('open-data-folder', p),
   editors: (): Promise<Array<{ id: string; name: string }>> => ipcRenderer.invoke('editors'),
   openInEditor: (id: string, folder: string): Promise<string> => ipcRenderer.invoke('open-in-editor', id, folder),
+  dataFolder: (): Promise<{ path: string; bytes: number; files: number; worlds: string }> => ipcRenderer.invoke('data-folder'),
+  openDataRoot: (): Promise<string> => ipcRenderer.invoke('open-data-root'),
   updates: {
     state: () => ipcRenderer.invoke('update-state'),
     check: () => ipcRenderer.invoke('update-check'),

@@ -1098,3 +1098,7 @@ md-list-item .h-pick { inline-size: 18px; block-size: 18px; margin: 0; accent-co
 .bottom-nav .bn-label span + span { font-size: .92em; opacity: .85; }
 @media (max-width: 430px) { .bottom-nav button { font-size: 10.5px; letter-spacing: 0; padding-inline: 0; } }
 @media (max-width: 350px) { .bottom-nav button { font-size: 8.5px; } .bottom-nav .bn-label span + span { font-size: 1em; } }
+
+.data-folder dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 8px 0 12px; } .data-folder dt { color: var(--md-sys-color-on-surface-variant); font-size: 13px; }
+.data-folder dd { margin: 0; min-inline-size: 0; overflow-wrap: anywhere; } .data-folder code { font-size: 13px; }
+@media (max-width: 560px) { .data-folder dl { grid-template-columns: 1fr; gap: 2px; } .data-folder dd { margin-block-end: 8px; } }
