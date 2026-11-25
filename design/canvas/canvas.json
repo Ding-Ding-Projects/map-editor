@@ -349,7 +349,7 @@
    "x": 1360,
    "y": 0,
    "w": 420,
-   "text": "First-run wizard. Try: click steps, Back, Next, Skip, language cards; Tweaks dark, seed, motion.\nStands for the in-app onboarding wizard: language and voice, comfort modes, theme colour, open a world; progress saves and resumes.\nBeing built; the owner account already exists as the sign-up screen.",
+   "text": "First-run wizard. Try: click steps, Back, Next, Skip, language cards; Tweaks dark, seed, motion.\nStands for the in-app onboarding wizard: language and voice, comfort modes, theme colour, open a world; progress saves and resumes.\nBeing built; the owner account already exists as the sign-up screen. Sign-in is now a two-part screen: an expressive panel (headline, three points with icons, moving blocks that stop under reduced motion) beside the form; one column on phones.",
    "fill": "yellow",
    "page": "setup"
   },
