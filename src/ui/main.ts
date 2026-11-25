@@ -35,6 +35,7 @@ import { argbFromHex, themeFromSourceColor, applyTheme as applyM3Theme } from '@
 import { notesPanel as notesPanelImpl } from './notes.js';
 import { contextMenu, initMenus } from './menu.js';
 import { iconSvg, initButtonIcons } from './icons.js';
+import { pickItem } from './select.js';
 import { ARTICLES, docsView, docTitle, openDoc } from './docs.js';
 import { levelUp, otpauthParts, qrSvg, superConfirm, vocabHeadline } from './moments.js';
 
@@ -222,7 +223,7 @@ function toggleNoteCentre() {
   panel.className = 'note-centre';
   panel.setAttribute('aria-label', tx('notifications'));
   panel.innerHTML = `<header><h2>${esc(tx('notifications'))}</h2><md-text-button id="nc-clear">${esc(tx('dismissAll'))}</md-text-button><md-text-button id="nc-close">${esc(tx('close'))}</md-text-button></header>
-    ${notes.length ? `<ol>${notes.map((n) => `<li class="${n.error ? 'error' : ''}"><span class="dot" aria-hidden="true"></span><span class="nc-text">${esc(n.text)}</span><time>${esc(n.at)}</time></li>`).join('')}</ol>` : `<p class="muted">${esc(tx('noNotifications'))}</p>`}`;
+    ${notes.length ? `<ol>${notes.map((n) => `<li class="${n.error ? 'error' : ''}"><input type="checkbox" class="nc-pick" aria-label="${esc(tx('selectWorld', { name: n.text.slice(0, 60) }))}"><span class="dot" aria-hidden="true"></span><span class="nc-text">${esc(n.text)}</span><time>${esc(n.at)}</time></li>`).join('')}</ol>` : `<p class="muted">${esc(tx('noNotifications'))}</p>`}`;
   document.body.append(panel);
   const list = panel.querySelector('ol');
   if (list) {
@@ -241,6 +242,31 @@ function toggleNoteCentre() {
       const shown = hits.filter(Boolean).length;
       none.hidden = shown > 0; none.textContent = tx('noMatches');
     });
+    // Selection: tick, Shift+click for a range; the bar acts on what is ticked and still shown.
+    const picked = new Set<number>(); let anchor: number | undefined;
+    const bar = document.createElement('div'); bar.className = 'nc-bar'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', tx('selectMode'));
+    bar.innerHTML = `<b id="nc-count" role="status"></b><md-text-button id="nc-all">${esc(tx('selectAll'))}</md-text-button><md-text-button id="nc-inv">${esc(tx('selectInvert'))}</md-text-button><md-filled-tonal-button id="nc-drop">${esc(tx('dismissSelected'))}</md-filled-tonal-button>`;
+    list.before(bar);
+    const shownIdx = () => items.map((li, i) => li.hidden ? -1 : i).filter((i) => i >= 0);
+    const paint = () => {
+      items.forEach((li, i) => { li.querySelector<HTMLInputElement>('.nc-pick')!.checked = picked.has(i); li.classList.toggle('picked', picked.has(i)); });
+      bar.querySelector('#nc-count')!.textContent = tx('selectedN', { n: picked.size, total: notes.length });
+      bar.querySelector('#nc-drop')!.toggleAttribute('disabled', !picked.size);
+    };
+    list.addEventListener('click', (e) => {
+      const li = (e.target as HTMLElement).closest('li'); if (!li || !(e.target as HTMLElement).matches('.nc-pick')) return;
+      anchor = pickItem(picked, items.indexOf(li), anchor, (e as MouseEvent).shiftKey); paint();
+    });
+    bar.querySelector('#nc-all')!.addEventListener('click', () => { const vis = shownIdx(); const all = vis.every((i) => picked.has(i)); vis.forEach((i) => { if (all) picked.delete(i); else picked.add(i); }); paint(); });
+    bar.querySelector('#nc-inv')!.addEventListener('click', () => { shownIdx().forEach((i) => { if (picked.has(i)) picked.delete(i); else picked.add(i); }); paint(); });
+    bar.querySelector('#nc-drop')!.addEventListener('click', () => {
+      const gone = notes.filter((_n, i) => picked.has(i)); if (!gone.length) return;
+      const left = notes.filter((_n, i) => !picked.has(i)); notes.length = 0; notes.push(...left); keepNotes();
+      const badge = document.querySelector('.bell-wrap .badge'); if (badge) { if (notes.length) badge.textContent = String(notes.length); else badge.remove(); }
+      panel.remove(); if (notes.length) toggleNoteCentre();
+      narrate(tx('dismissedN', { n: gone.length }));
+    });
+    paint();
   }
   panel.querySelector('#nc-clear')!.addEventListener('click', () => { notes.length = 0; keepNotes(); panel.remove(); document.querySelector('.bell-wrap .badge')?.remove(); });
   panel.querySelector('#nc-close')!.addEventListener('click', () => panel.remove());

@@ -1058,3 +1058,9 @@ md-outlined-text-field { --md-outlined-text-field-container-shape: 16px; --md-ou
 .world-grid.selecting .world-card.selected { background: var(--md-sys-color-primary-container); outline: 3px solid var(--md-sys-color-primary); outline-offset: -3px; }
 .world-grid.selecting .world-card .sel-box:focus-visible { outline: 3px solid var(--md-sys-color-on-primary-container); outline-offset: 2px; }
 .world-grid.selecting .world-card { user-select: none; -webkit-user-select: none; }
+
+/* Notification centre: selection */
+.note-centre .nc-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin: 4px 12px; font-size: 13px; }
+.note-centre .nc-bar b { flex: 1 1 auto; font-weight: 600; }
+.note-centre li .nc-pick { inline-size: 18px; block-size: 18px; margin: 2px 0 0; flex: none; accent-color: var(--md-sys-color-primary); cursor: pointer; }
+.note-centre li.picked { background: var(--md-sys-color-secondary-container); }

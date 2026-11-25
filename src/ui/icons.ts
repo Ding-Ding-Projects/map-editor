@@ -65,7 +65,7 @@ const RULES: Array<[RegExp, string]> = [
   [/unlock/i, 'unlock'], [/\block\b/i, 'lock'], [/rename|edit\b/i, 'pencil'], [/passkey|sign in|sign out|account|authenticator/i, 'key'],
   [/folder|browse|choose/i, 'folder'], [/\bopen\b|manage|show\b|view\b|history/i, 'open'], [/search|find/i, 'search'],
   [/pause|stop\b/i, 'pause'], [/sound|voice|narrat|listen/i, 'sound'], [/rainbow|colou?r|theme/i, 'palette'],
-  [/deploy|flash|write the/i, 'rocket'], [/\bpan\b/i, 'hand'], [/pick/i, 'pipette'], [/\b3d\b|block/i, 'cube'], [/selection|select/i, 'select'],
+  [/deploy|flash|write the/i, 'rocket'], [/\bpan\b/i, 'hand'], [/pick/i, 'pipette'], [/\b3d\b|block/i, 'cube'], [/dismiss selected/i, 'x'], [/download selected/i, 'download'], [/selection|select/i, 'select'],
   [/measure/i, 'ruler'], [/go to|jump|centre|center/i, 'target'],
   [/\brun\b|start|\btry\b|test|play|encode|decode|convert|make|ask\b|\bgo\b/i, 'play'],
   [/\bback\b|previous/i, 'back'], [/next|continue|skip/i, 'next'],
