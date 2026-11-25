@@ -1,6 +1,7 @@
 // Deploy wizard page. Matches the "Deploy wizard and instances" design board.
 import '@material/web/all.js';
 import { enableClearControls } from '../ui/clearable.js';
+import { startTour } from '../ui/tour.js';
 
 interface Step { label: string; state: 'waiting' | 'running' | 'done' | 'failed'; detail?: string }
 interface Disk { id: string; name: string; sizeBytes: number }
@@ -98,17 +99,33 @@ function showUpdate() {
 d.onUpdate?.((u: typeof upd) => { if (u?.state === 'ready') updLater = false; upd = u; showUpdate(); });
 d.updateState?.().then((u: typeof upd) => { upd = u; showUpdate(); }).catch(() => undefined);
 
+// Guided tour of the deploy app, same coach card as the editor.
+function deployTour(start = 0) {
+  const toDeploy = { text: 'This part is on the Deploy view.', label: 'Show Deploy', reveal: () => { view = 'deploy'; return render(); } };
+  startTour('Map Editor Deploy', [
+    { target: '.grid', title: 'Choose where', body: 'Docker on this computer, Docker on another computer over SSH, VirtualBox, VMware, a USB drive, or a Raspberry Pi with Docker.', missing: toDeploy },
+    { target: '#form', title: 'Fill in and deploy', body: 'Each target asks only for what it needs, shows every step while it runs, and ends with the working link or the exact error.', missing: toDeploy },
+    { target: '#v-inst', title: 'Instances', body: 'Everything this app created: open, start, stop, restart, update, remove, and follow its live log.' },
+    { target: '#tour', title: 'Come back any time', body: 'Take a tour starts this walk-through again.' },
+  ], { stepOf: (n, m) => `Step ${n} of ${m} of the deploy tour`, back: 'Back', skip: 'Skip this step', next: 'Next', done: 'Finish', close: 'Close', notHere: 'This part is not on screen right now.' }, {
+    start,
+    onStep: (i) => { try { localStorage.setItem('map-editor-deploy.tour', String(i)); } catch { /* ignore */ } },
+    onEnd: (done) => { try { localStorage.setItem('map-editor-deploy.tour', done ? 'done' : localStorage.getItem('map-editor-deploy.tour') ?? '0'); } catch { /* ignore */ } },
+  });
+}
+
 async function render() {
   const app = document.getElementById('app')!;
   app.innerHTML = `<header class="top"><div class="brand"><div class="logo" aria-hidden="true"></div><div>
       <div class="md-typescale-headline-medium title">Put Map Editor on your network</div>
       <div class="muted" id="prov"></div></div></div>
-    <md-chip-set><md-filter-chip id="v-deploy" label="Deploy" ${view === 'deploy' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-inst" label="Instances" ${view === 'instances' ? 'selected' : ''}></md-filter-chip></md-chip-set></header>
+    <md-chip-set><md-filter-chip id="v-deploy" label="Deploy" ${view === 'deploy' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-inst" label="Instances" ${view === 'instances' ? 'selected' : ''}></md-filter-chip></md-chip-set><md-text-button id="tour">Take a tour</md-text-button></header>
     <div id="update-banner" class="update-banner" role="region" aria-label="Update" hidden></div>
     <div class="body"><main class="view" id="main"></main></div><div id="toasts" class="toasts"></div>`;
   showUpdate();
   app.querySelector('#v-deploy')!.addEventListener('click', () => { view = 'deploy'; render(); });
   app.querySelector('#v-inst')!.addEventListener('click', () => { view = 'instances'; render(); });
+  app.querySelector('#tour')!.addEventListener('click', () => deployTour());
   const main = app.querySelector('#main')!;
   if (view === 'instances') {
     const list: Instance[] = await d.instances();
@@ -309,4 +326,4 @@ function failTakeover(o: { what: string; error: string; steps: Step[]; retry: { 
 }
 
 enableClearControls((field) => `Clear ${field}`);
-render();
+render().then(() => { let t: string | null = null; try { t = localStorage.getItem('map-editor-deploy.tour'); } catch { /* ignore */ } if (t === null) setTimeout(() => deployTour(), 800); });

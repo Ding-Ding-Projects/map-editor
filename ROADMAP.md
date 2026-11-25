@@ -87,6 +87,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [ ] Built-in tools: file converter, Base64, quicktype, Ollama suite, Minecraft server manager and world generator, virtual disk manager on Windows.
 - [x] Documentation site generated from `site/content.mjs`: landing page and one article per feature, each ending in suggested articles, version and commit in the footer; checked at 320 px wide with no sideways scrolling.
 - [ ] Site: every required feature, bundled fonts, phone PDF edition, interactive diagrams, real screenshots, install buttons tied to verified releases.
+- [x] Guided Take a tour: whole-app tour and one per destination, coach card with highlight ring on the real control, Step N of M, Back, Skip this step, Next, Close, Esc and arrow keys, screen-reader announcements, reduced motion, English and Cantonese, offered once after onboarding, reachable from the Help menu, Settings and the palette, resumes where it stopped, off-screen steps offer to reveal the control. Same tour in the deploy app and on the documentation site. Checked in headless Chrome (start, next, skip, back, close, resume, a missing control at phone width); screenshot in the README.
 - [ ] Tabbed README, screen recording, line counts in releases.
 
 ## Decisions recorded

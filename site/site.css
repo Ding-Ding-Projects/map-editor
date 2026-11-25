@@ -95,3 +95,32 @@ footer > div > span { flex: 1 1 320px; }
 @media (max-width: 760px) { .bento { grid-template-columns: 1fr 1fr; } .b-wide { grid-column: span 2; } .hero-art { min-height: 340px; } .toc { position: static; flex-basis: 100%; } }
 @media (max-width: 480px) { .bento { grid-template-columns: 1fr; } .b-wide { grid-column: span 1; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } .way:hover { transform: none; } }
+
+/* Guided tour (same look as the app; site colours) */
+:root { --md-sys-color-primary: var(--p); --md-sys-color-surface: var(--s); --md-sys-color-inverse-surface: var(--inv); --md-sys-color-inverse-on-surface: var(--on-inv); --md-sys-color-inverse-primary: var(--pc); --md-sys-color-on-primary-container: var(--on-pc); }
+
+.tour-ring { position: fixed; z-index: 60; pointer-events: none; border-radius: 20px; outline: 3px solid var(--md-sys-color-primary); outline-offset: 0; box-shadow: 0 0 0 4px var(--md-sys-color-surface), 0 0 0 9999px rgba(0,0,0,.28); transition: left .3s cubic-bezier(.2,0,0,1), top .3s cubic-bezier(.2,0,0,1), width .3s cubic-bezier(.2,0,0,1), height .3s cubic-bezier(.2,0,0,1); }
+@media (forced-colors: active) { .tour-ring { outline: 3px solid Highlight; } }
+.tour-card { position: fixed; z-index: 61; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; padding: 18px 20px 16px; border-radius: 28px 28px 28px 8px; background: var(--md-sys-color-inverse-surface, #2d322b); color: var(--md-sys-color-inverse-on-surface, #eef2e8); box-shadow: 0 12px 32px rgba(0,0,0,.3); animation: me-rise .3s cubic-bezier(.2,0,0,1) both; transition: left .3s cubic-bezier(.2,0,0,1), top .3s cubic-bezier(.2,0,0,1); }
+.tour-card header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tour-card header small { font-size: 12px; font-weight: 700; opacity: .85; }
+.tour-card h2 { margin: 0; font-size: 20px; line-height: 26px; }
+.tour-card p { margin: 0; font-size: 14px; line-height: 20px; }
+.tour-card button { font: inherit; cursor: pointer; }
+.tour-x { width: 32px; height: 32px; border: 0; border-radius: 16px; background: transparent; color: inherit; font-size: 20px; line-height: 1; }
+.tour-dots { display: flex; gap: 6px; margin-top: 4px; } .tour-dots i { width: 8px; height: 8px; border-radius: 4px; background: currentColor; opacity: .3; transition: width .25s; } .tour-dots i.seen { opacity: .6; } .tour-dots i.on { width: 22px; opacity: 1; background: var(--md-sys-color-inverse-primary, #8fd88a); }
+.tour-card footer { display: flex; align-items: center; gap: 6px; margin-top: 4px; } .tour-card footer span { flex: 1; }
+.tour-back, .tour-skip { height: 36px; padding: 0 12px; border: 0; border-radius: 18px; background: transparent; color: inherit; font-weight: 600; }
+.tour-back[disabled] { opacity: .4; cursor: default; }
+.tour-next, .tour-reveal { height: 40px; padding: 0 20px; border: 0; border-radius: 20px; background: var(--md-sys-color-inverse-primary, #8fd88a); color: var(--md-sys-color-on-primary-container, #002204); font-weight: 800; }
+.tour-reveal { align-self: flex-start; }
+.tour-card button:focus-visible { outline: 3px solid var(--md-sys-color-inverse-primary, #8fd88a); outline-offset: 2px; }
+.tour-live { position: absolute; left: -9999px; }
+.tour-target { position: relative; z-index: 1; }
+.reduce-motion .tour-ring, .reduce-motion .tour-card { transition: none; animation: none; }
+@media (prefers-reduced-motion: reduce) { .tour-ring, .tour-card { transition: none; animation: none; } }
+@keyframes me-rise { from { opacity: 0; transform: translateY(16px) scale(.985); } to { opacity: 1; transform: none; } }
+.tour-card footer { all: unset; display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.tour-card header { all: unset; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tour-target:focus:not(:focus-visible), .tour-target[tabindex="-1"]:focus { outline: none; }
+article figure { margin: 16px 0 24px; } article figure img { width: 100%; height: auto; border-radius: 20px; box-shadow: 0 4px 16px rgba(0,0,0,.12); } article figcaption { font-size: 13px; color: var(--on-sv); margin-top: 6px; }

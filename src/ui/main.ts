@@ -6,6 +6,7 @@ import { mountWorkspace, PHONE } from './workspace.js';
 import { searchBox, type RegexText } from './regex.js';
 import { enableClearControls } from './clearable.js';
 import { configureSounds, play } from './sounds.js';
+import { startTour, type TourStep } from './tour.js';
 import { worldsView } from './worlds.js';
 import { openPalette, type Command } from './palette.js';
 import { onboarding } from './onboarding.js';
@@ -28,10 +29,10 @@ import { notesPanel as notesPanelImpl } from './notes.js';
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
 
 // ---------- state ----------
-interface Prefs extends I18nState { dark: boolean; reduceMotion: boolean; largeText: boolean; dimSum: boolean; sounds: boolean; soundVolume: number; settingsSection: string; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
+interface Prefs extends I18nState { dark: boolean; reduceMotion: boolean; largeText: boolean; dimSum: boolean; tourOffered: boolean; tourResume: { name: string; step: number } | null; sounds: boolean; soundVolume: number; settingsSection: string; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
 const PREFS_KEY = 'map-editor.prefs.v1';
 const DEFAULT_SEED = '#4c8c4a';
-const defaults: Prefs = { lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, largeText: false, dimSum: true, sounds: true, soundVolume: 40, settingsSection: 'language', closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
+const defaults: Prefs = { lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, largeText: false, dimSum: true, tourOffered: false, tourResume: null, sounds: true, soundVolume: 40, settingsSection: 'language', closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
 function loadPrefs(): Prefs { try { return { ...defaults, ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') }; } catch { return { ...defaults }; } }
 let prefs = loadPrefs();
 // Settings history: every saved change to a user-facing setting keeps the previous values,
@@ -157,6 +158,8 @@ function paletteCommands(): Command[] {
   cmds.push({ id: 'dark', label: tx('dark'), where: `${tx('settings')} › Appearance`, toggle: { get: () => prefs.dark, set: (v) => { prefs.dark = v; savePrefs(); applyTheme(); } } });
   cmds.push({ id: 'large-text', label: tx('largeText'), where: `${tx('settings')} › ${tx('secComfort')}`, toggle: { get: () => prefs.largeText, set: (v) => { prefs.largeText = v; savePrefs(); applyTheme(); } } });
   cmds.push({ id: 'sounds', label: tx('soundEffects'), where: `${tx('settings')} › ${tx('secSounds')}`, toggle: { get: () => prefs.sounds, set: (v) => { prefs.sounds = v; savePrefs(); applyTheme(); } } });
+  cmds.push({ id: 'tour', label: tx('tourTake'), where: tx('help'), run: () => takeTour('app') });
+  cmds.push({ id: 'tour-page', label: tx('tourThisPage'), where: `${tx('help')} › ${tx(prefs.tab as Key)}`, run: () => takeTour(prefs.tab as Tab) });
   cmds.push({ id: 'check-updates', label: tx('updCheck'), where: `${tx('about')}`, run: () => { void checkForUpdates(); } });
   for (const e of extCache) if (e.enabled) for (const c of e.commands) cmds.push({ id: `ext-${e.id}-${c.id}`, label: c.title, where: `${tx('secExtensions')} › ${e.name}`, run: () => { void runExtension(e.id, c.id); } });
   cmds.push({ id: 'dim-sum', label: tx('dimSumNow'), where: `${tx('settings')} › ${tx('secAppearance')}`, run: () => { void dimSumSurprise(true); } });
@@ -260,6 +263,37 @@ async function dimSumSurprise(force = false) {
   document.body.append(el);
 }
 
+// ---------- guided tours ----------
+const goTab = (t: Tab) => () => { prefs.closedTabs = prefs.closedTabs.filter((x) => x !== t); prefs.tab = t; savePrefs(); render(); };
+const tabsTarget = () => (matchMedia('(max-width: 720px)').matches ? '.bottom-nav' : '.tabs');
+function tourSteps(name: 'app' | Tab): TourStep[] {
+  const needWorld = { text: tx('tourNeedWorld'), label: tx('tourOpenWorlds'), reveal: goTab('worlds') };
+  const s = (target: string, k: string, missing?: TourStep['missing']): TourStep => ({ target, title: tx(`tour_${k}_t` as Key), body: tx(`tour_${k}_b` as Key), missing });
+  switch (name) {
+    case 'worlds': return [s('#upload-label', 'upload', { text: tx('tourNotHere'), label: tx('tourOpenWorlds'), reveal: goTab('worlds') }), s('#new', 'newworld', { text: tx('tourNotHere'), label: tx('tourOpenWorlds'), reveal: goTab('worlds') }), s('.world-card, .empty-world', 'cards', { text: tx('tourNotHere'), label: tx('tourOpenWorlds'), reveal: goTab('worlds') })];
+    case 'editor': return [s('#map', 'map', needWorld), s('#ops', 'tools', needWorld), s('.coords-grid', 'coords', needWorld), s('#run', 'run', needWorld), s('#undo', 'undo', needWorld)];
+    case 'history': return [s('[data-search=history-search]', 'hsearch', needWorld), s('.h-filters', 'hdates', needWorld), s('#h md-chip-set', 'hchips', needWorld), s('#h md-list', 'hlist', needWorld)];
+    case 'settings': return [s('.set-nav [role=tablist]', 'ssections', { text: tx('tourNotHere'), label: tx('tourOpenSettings'), reveal: goTab('settings') }), s('[data-search=settings-search]', 'ssearch', { text: tx('tourNotHere'), label: tx('tourOpenSettings'), reveal: goTab('settings') })];
+    case 'about': return [s('.about-stats', 'aversion', { text: tx('tourNotHere'), label: tx('tourOpenAbout'), reveal: goTab('about') }), s('[data-search=changelog-search]', 'achangelog', { text: tx('tourNotHere'), label: tx('tourOpenAbout'), reveal: goTab('about') })];
+    default: return [s('#cmd', 'palette'), s('.top md-chip-set, .set-langs', 'language', { text: tx('tourLangHidden'), label: tx('tourOpenSettings'), reveal: () => { prefs.settingsSection = 'language'; goTab('settings')(); } }), s('#bell', 'bell'), s(tabsTarget(), 'tabs'), s('#tour-help', 'help')];
+  }
+}
+function offerTour() {
+  if (prefs.tourOffered) return;
+  prefs.tourOffered = true; savePrefs();
+  setTimeout(() => notify(tx('tourOffer'), false, { label: tx('tourTake'), run: () => takeTour('app') }), 600);
+}
+function takeTour(name: 'app' | Tab = 'app', start = 0) {
+  const steps = tourSteps(name);
+  const label = name === 'app' ? tx('tourWhole') : tx(name as Key);
+  startTour(label, steps, { stepOf: (n, m, tour) => tx('tourStepOf', { n, m, tour }), back: tx('back'), skip: tx('tourSkip'), next: tx('next'), done: tx('tourDone'), close: tx('close'), notHere: tx('tourNotHere') }, {
+    start,
+    onStep: (i) => { prefs.tourResume = { name, step: i }; savePrefs(); },
+    onEnd: (finished) => { prefs.tourOffered = true; if (finished) prefs.tourResume = null; savePrefs(); },
+  });
+}
+function resumeOrStartTour() { const r = prefs.tourResume; if (r) takeTour(r.name as 'app' | Tab, r.step); else takeTour('app'); }
+
 function updateText(u: UpdState | undefined): string {
   if (!desktopBridge?.updates) return tx('updWeb');
   if (!u) return tx('updIdle');
@@ -296,6 +330,28 @@ async function checkForUpdates() {
   if (prefs.tab === 'about') render(); else updateBanner();
 }
 
+function helpMenu(anchor: HTMLElement) {
+  document.querySelector('.help-menu')?.remove();
+  const m = document.createElement('div');
+  m.className = 'help-menu'; m.setAttribute('role', 'menu'); m.setAttribute('aria-label', tx('help'));
+  const items: Array<[string, () => void]> = [[tx('tourTake'), () => takeTour('app')], [tx('tourThisPage'), () => takeTour(prefs.tab as Tab)], ...(prefs.tourResume ? [[tx('tourResume'), resumeOrStartTour] as [string, () => void]] : []), [tx('paletteHint'), () => showPalette()]];
+  m.innerHTML = items.map(([label], i) => `<button role="menuitem" data-i="${i}">${esc(label)}</button>`).join('');
+  const r = anchor.getBoundingClientRect();
+  Object.assign(m.style, { top: `${r.bottom + 6}px`, right: `${Math.max(8, innerWidth - r.right)}px` });
+  document.body.append(m);
+  const close = () => { m.remove(); document.removeEventListener('pointerdown', outside, true); document.removeEventListener('keydown', key, true); };
+  const outside = (e: Event) => { if (!m.contains(e.target as Node)) close(); };
+  const key = (e: KeyboardEvent) => {
+    const b = Array.from(m.querySelectorAll<HTMLElement>('button')); const k = b.indexOf(document.activeElement as HTMLElement);
+    if (e.key === 'Escape') { e.preventDefault(); close(); anchor.focus(); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); b[(k + 1) % b.length].focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); b[(k - 1 + b.length) % b.length].focus(); }
+  };
+  document.addEventListener('pointerdown', outside, true); document.addEventListener('keydown', key, true);
+  m.querySelectorAll<HTMLElement>('button').forEach((b) => b.addEventListener('click', () => { close(); items[Number(b.dataset.i)][1](); }));
+  m.querySelector<HTMLElement>('button')?.focus();
+}
+
 function shell() {
   const app = document.getElementById('app')!;
   const open = TABS.filter((x) => !prefs.closedTabs.includes(x));
@@ -309,6 +365,7 @@ function shell() {
       <md-chip-set aria-label="${esc(tx('language'))}">
         ${(['en', 'yue', 'both'] as Lang[]).map((l) => `<md-filter-chip data-lang="${l}" label="${l === 'en' ? 'English' : l === 'yue' ? '粵語' : 'EN + 粵'}" ${prefs.lang === l ? 'selected' : ''}></md-filter-chip>`).join('')}
       </md-chip-set>
+      ${user && prefs.onboarded ? `<md-icon-button id="tour-help" aria-label="${esc(tx('help'))}" title="${esc(tx('help'))}"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.7-2.5 2-2.5 4M12 17h.01"/></svg></md-icon-button>` : ''}
       ${user ? `<span class="bell-wrap"><md-icon-button id="bell" aria-label="${esc(tx('notifications'))}${notes.length ? `, ${notes.length}` : ''}"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21h4"/></svg></md-icon-button>${notes.length ? `<span class="badge">${notes.length}</span>` : ''}</span>` : ''}
       ${user ? `<md-outlined-button id="logout">${esc(user.name)}</md-outlined-button>` : ''}
     </header>
@@ -330,6 +387,7 @@ function shell() {
   app.querySelector('#open-all')?.addEventListener('click', () => { prefs.closedTabs = []; savePrefs(); render(); });
   app.querySelector('#cmd')?.addEventListener('click', () => showPalette());
   app.querySelector('#bell')?.addEventListener('click', () => toggleNoteCentre());
+  app.querySelector('#tour-help')?.addEventListener('click', (e) => helpMenu(e.currentTarget as HTMLElement));
   updateBanner();
   app.querySelector('#logout')?.addEventListener('click', async () => { await api('/api/auth/logout', { method: 'POST', body: {} }); user = null; render(); });
 }
@@ -345,7 +403,7 @@ async function render(): Promise<void> {
       save: (step) => { prefs.onboardStep = step; savePrefs(); },
       apply: () => { savePrefs(); applyTheme(); },
       relabel: () => { savePrefs(); applyTheme(); shell(); return document.getElementById('view')!; },
-      done: () => { prefs.onboarded = true; prefs.tab = 'worlds'; savePrefs(); render(); },
+      done: () => { prefs.onboarded = true; prefs.tab = 'worlds'; savePrefs(); render(); offerTour(); },
     });
     return;
   }
@@ -638,7 +696,7 @@ function settingsView(view: HTMLElement) {
     appearance: `${sw('dark', 'dark', 'darkNote', prefs.dark)}${sw('ds', 'dimSum', 'dimSumNote', prefs.dimSum)}
       <div class="set-row seed-row" data-find="${esc(tx('seed'))}"><span><b>${esc(tx('seed'))}</b></span><span class="seed-now"><span class="seed-swatch ${prefs.seed === RAINBOW ? 'rainbow' : ''}" style="background:${prefs.seed === RAINBOW ? 'none' : esc(prefs.seed)}"></span><code>${esc(prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed)}</code><md-text-button id="seed-reset">${esc(tx('reset'))}</md-text-button></span></div>
       <div id="seed-picker" data-find="${esc(tx('seed'))} colour color"></div>`,
-    comfort: `${sw('rm', 'reduceMotion', 'reduceMotionNote', prefs.reduceMotion)}${sw('lt', 'largeText', 'largeTextNote', prefs.largeText)}`,
+    comfort: `<div class="row-actions" data-find="${esc(tx('tourTake'))} ${esc(tx('tourThisPage'))}"><md-filled-tonal-button id="set-tour">${esc(tx('tourTake'))}</md-filled-tonal-button></div>${sw('rm', 'reduceMotion', 'reduceMotionNote', prefs.reduceMotion)}${sw('lt', 'largeText', 'largeTextNote', prefs.largeText)}`,
     backup: `<p data-find="${esc(tx('exportSettings'))} ${esc(tx('importSettings'))}">${esc(tx('settingsSaved'))}</p>
       <div class="row-actions"><md-filled-tonal-button id="exp">${esc(tx('exportSettings'))}</md-filled-tonal-button><md-outlined-button id="imp">${esc(tx('importSettings'))}</md-outlined-button><input id="imp-file" type="file" accept="application/json,.json" hidden></div>
       <h3 data-find="${esc(tx('settingsHistory'))}">${esc(tx('settingsHistory'))}</h3><ol class="set-history" id="sh"></ol>`,
@@ -692,6 +750,7 @@ function settingsView(view: HTMLElement) {
   view.querySelector('#snd')!.addEventListener('change', (e) => { prefs.sounds = sel(e); savePrefs(); applyTheme(); });
   view.querySelector('#vol')!.addEventListener('change', () => { prefs.soundVolume = num('#vol'); view.querySelector('#vol-n')!.textContent = `${prefs.soundVolume}%`; savePrefs(); applyTheme(); play('success'); });
   view.querySelector('#snd-try')!.addEventListener('click', () => { play('create'); });
+  view.querySelector('#set-tour')!.addEventListener('click', () => takeTour('app'));
   const showSeed = () => { const s = view.querySelector<HTMLElement>('.seed-swatch')!; s.classList.toggle('rainbow', prefs.seed === RAINBOW); s.style.background = prefs.seed === RAINBOW ? '' : prefs.seed; view.querySelector('.seed-now code')!.textContent = prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed; };
   colorPicker(view.querySelector<HTMLElement>('#seed-picker')!, {
     value: prefs.seed, label: tx('seed'), allowRainbow: true, rainbowSpeed: prefs.rainbowSpeed,

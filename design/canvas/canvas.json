@@ -39,6 +39,10 @@
    "name": "About and changelog"
   },
   {
+   "id": "help",
+   "name": "Help and tours"
+  },
+  {
    "id": "mobile",
    "name": "Phone"
   },
@@ -176,6 +180,16 @@
    "expand": "fill",
    "page": "about"
   },
+  "Tour.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Guided tour coach card",
+   "expand": "fill",
+   "page": "help",
+   "is_interactive": true
+  },
   "SiteHome.dc.html": {
    "x": 0,
    "y": 0,
@@ -200,6 +214,7 @@
   "Deploy.dc.html",
   "DeployManage.dc.html",
   "About.dc.html",
+  "Tour.dc.html",
   "SiteHome.dc.html"
  ],
  "notes": {
@@ -262,12 +277,20 @@
   "t7": {
    "x": 0,
    "y": -300,
+   "text": "Help and tours",
+   "kind": "title1",
+   "maxW": 2400,
+   "page": "help"
+  },
+  "t8": {
+   "x": 0,
+   "y": -300,
    "text": "Phone",
    "kind": "title1",
    "maxW": 2400,
    "page": "mobile"
   },
-  "t8": {
+  "t9": {
    "x": 0,
    "y": -300,
    "text": "Deploy app",
@@ -275,7 +298,7 @@
    "maxW": 2400,
    "page": "deploy"
   },
-  "t9": {
+  "t10": {
    "x": 0,
    "y": -300,
    "text": "Docs site",
@@ -386,6 +409,14 @@
    "text": "About and changelog. Tweaks dark, seed, motion.\nStands for version provenance from the running build and a changelog generated from the real commit history at build time, each entry with its SHA, searchable.\nBeing built; the regex builder beside the search is not built.",
    "fill": "yellow",
    "page": "about"
+  },
+  "n_tour": {
+   "x": 1520,
+   "y": 0,
+   "w": 420,
+   "text": "Guided Take a tour: coach card beside the real control with a highlight ring, Step N of M, Back, Skip this step, Next, Close. Try: Back, Skip, Next, Close; Tweaks dark, seed, motion.\nIn the app: whole-app tour plus one per destination (Worlds, Editor, History, Settings, About), offered once after onboarding, reachable from the ? Help menu, Settings \u203a Comfort and the palette, resumes where it stopped, focus moves to the control, Esc and arrow keys, screen-reader announcement, reduced motion, English and Cantonese. Steps whose control is off screen say so and offer to reveal it. The deploy app and the docs site have their own tours with the same card. Not yet: tours for the appliance console.",
+   "fill": "yellow",
+   "page": "help"
   },
   "n_sitehome": {
    "x": 1520,

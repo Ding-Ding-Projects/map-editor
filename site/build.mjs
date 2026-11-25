@@ -22,10 +22,11 @@ function page(title, desc, main, active = 'guide') {
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website">
 <link rel="stylesheet" href="${base}site.css"></head><body>
 <header class="top"><a class="brand" href="${base}"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="title">Map Editor</span></a>
-<nav aria-label="Site"><a href="${base}"${active === 'guide' ? ' aria-current="page"' : ''}>Guide</a><a href="${repo}/releases">Downloads</a><a href="${repo}/commits/main">Changelog</a><a href="${repo}">Source</a></nav></header>
+<nav aria-label="Site"><a href="${base}"${active === 'guide' ? ' aria-current="page"' : ''}>Guide</a><a href="${repo}/releases">Downloads</a><a href="${repo}/commits/main">Changelog</a><a href="${repo}">Source</a><a href="#tour" data-tour="page">Take a tour</a></nav></header>
 <main>${main}</main>
 <footer><div><span>Map Editor ${esc(pkg.version)} · updated ${esc(stamp)} · <a href="${repo}/commit/${esc(commit)}">${esc(commit.slice(0, 7) || 'unavailable')}</a></span>
 <span>This site documents and downloads Map Editor; it is not the editor. Based on Amulet Map Editor, which needs its own licence. Minecraft is a trademark of Mojang Synergies AB; not affiliated with Mojang or Microsoft.</span></div></footer>
+<script src="${base}tour.js" defer></script>
 </body></html>`;
 }
 
@@ -57,6 +58,9 @@ const bento = [
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 copyFileSync(path.join(here, 'site.css'), path.join(out, 'site.css'));
+copyFileSync(path.join(here, 'tour.js'), path.join(out, 'tour.js'));
+mkdirSync(path.join(out, 'screenshots'), { recursive: true });
+for (const f of ['tour.png', 'extensions-consent.png', 'about.png']) copyFileSync(path.join(root, 'docs', 'screenshots', f), path.join(out, 'screenshots', f));
 const groups = [...new Set(features.map((f) => f.group))];
 writeFileSync(path.join(out, 'index.html'), page('Map Editor', 'A Minecraft world editor for your desk, your whole network, or a spare PC. Every edit can be undone.', `
 <section class="hero"><div class="hero-copy">
@@ -78,7 +82,7 @@ for (const f of features) {
   writeFileSync(path.join(out, f.slug, 'index.html'), page(`${f.title} · Map Editor`, f.summary, `
 <section class="article-hero"><p class="crumb"><a href="${base}">Guide</a> › ${esc(f.group)}</p><h1>${esc(f.title)}</h1><p class="lead">${esc(f.summary)}</p></section>
 <div class="article-body"><nav class="toc" aria-label="On this page"><strong>On this page</strong>${f.body.map(([h], i) => `<a href="#s${i}">${esc(h)}</a>`).join('')}</nav>
-<article>${f.body.map(([h, t], i) => `<h2 id="s${i}">${esc(h)}</h2><p>${esc(t)}</p>`).join('')}</article></div>
+<article>${f.body.map(([h, t, img], i) => `<h2 id="s${i}">${esc(h)}</h2><p>${esc(t)}</p>${img ? `<figure><img src="${base}screenshots/${esc(img.src)}" alt="${esc(img.alt)}" loading="lazy" width="1440" height="900"><figcaption>${esc(img.alt)}</figcaption></figure>` : ''}`).join('')}</article></div>
 <section class="band-wrap suggested"><h2>Suggested articles</h2><div class="grid">${rel.map((r) => `<a class="card" href="${base}${r.slug}/"><small>${esc(r.group)}</small><strong>${esc(r.title)}</strong><span>${esc(r.summary)}</span></a>`).join('')}</div></section>`));
 }
 writeFileSync(path.join(out, '.nojekyll'), '');

@@ -14,6 +14,16 @@ A separate **Map Editor Deploy** app does each of those in one click and gives y
 
 **Every edit can be undone.** Each operation is saved and recorded in a private Git history kept in the app's own data folder (never inside your world). Rolling back adds a new history entry, so a rollback can be undone too.
 
+## A look around
+
+New here? **Take a tour**: after setup the app offers a short guided tour that points at each real control. Start it again any time from the **?** Help menu, Settings › Comfort and focus, or the command palette (Ctrl+Shift+F). Every page has its own tour too, and so do the deploy app and the documentation site.
+
+![The guided tour pointing at the command palette search](docs/screenshots/tour.png)
+
+Extensions add commands in any language, each only with the permissions you allow:
+
+![Allowing an extension's permissions](docs/screenshots/extensions-consent.png)
+
 ## Quick start
 
 **Windows, from source** (installs missing tools through Chocolatey, may show one admin prompt):

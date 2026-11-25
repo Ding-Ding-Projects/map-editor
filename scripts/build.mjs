@@ -27,6 +27,8 @@ try {
 writeFileSync(path.join(dist, 'build-info.json'), JSON.stringify({ version: version, commit, builtAt, changelog }, null, 2));
 
 const common = { bundle: true, sourcemap: true, logLevel: 'info', legalComments: 'linked' };
+// The documentation site's tour script is committed so the site builds without installing anything.
+await build({ ...common, entryPoints: [path.join(root, 'src/site/tour.ts')], outfile: path.join(root, 'site/tour.js'), format: 'iife', platform: 'browser', target: 'es2020', minify: true, sourcemap: false, legalComments: 'none' });
 await build({ ...common, entryPoints: [path.join(root, 'src/ui/regex-worker.ts')], outfile: path.join(dist, 'ui/regex-worker.js'), format: 'esm', platform: 'browser', target: 'es2022', minify: true });
 await build({ ...common, entryPoints: [path.join(root, 'src/ui/main.ts')], outfile: path.join(dist, 'ui/app.js'), format: 'esm', platform: 'browser', target: 'es2022', minify: true });
 copyFileSync(path.join(root, 'src/ui/index.html'), path.join(dist, 'ui/index.html'));

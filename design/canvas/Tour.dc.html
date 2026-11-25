@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map Editor guided tour</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,100..125,400..800&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid #8FD88A;outline-offset:2px}
+@keyframes dc-rise{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+.moving section,.moving aside,.moving header,.moving main,.moving nav{animation:dc-rise .6s cubic-bezier(.2,0,0,1) both}
+.moving .coach,.moving .ring{transition:left .3s cubic-bezier(.2,0,0,1),top .3s cubic-bezier(.2,0,0,1),width .3s,height .3s}
+.moving button:active{transform:scale(.97)}
+.still *{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div class="{{motionClass}}" style="position: relative; height: 900px; overflow: hidden; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif; font-size: 14px">
+  <header style="display: flex; align-items: center; gap: 12px; padding: 12px 16px">
+    <span style="width: 40px; height: 40px; border-radius: 12px; background: {{t.primaryContainer}}"></span>
+    <b style="font-size: 28px">Map Editor</b><span style="flex: 1"></span>
+    <span style="width: 520px; height: 56px; border-radius: 28px; background: {{t.surfaceContainerHigh}}; display: flex; align-items: center; padding: 0 18px; color: {{t.onSurfaceVariant}}">Type to find commands and settings</span>
+    <span style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid {{t.outline}}; line-height: 32px">English · 粵語 · EN + 粵</span>
+    <span aria-label="Help" style="width: 40px; height: 40px; border-radius: 20px; border: 2px solid {{t.onSurfaceVariant}}; display: grid; place-items: center; font-weight: 800">?</span>
+    <span style="width: 40px; height: 40px; display: grid; place-items: center">🔔</span>
+  </header>
+  <div style="display: flex; gap: 8px; padding: 0 12px">
+    <nav style="width: 300px; height: 420px; border-radius: 28px; background: {{t.surfaceContainerLow}}"></nav>
+    <main style="flex: 1; height: 420px; border-radius: 28px; background: {{t.surfaceContainerLow}}; padding: 24px"><b style="font-size: 48px">Worlds</b></main>
+  </div>
+  <div style="position: absolute; inset: 0; background: rgba(0,0,0,.28); pointer-events: none"></div>
+  <div class="ring" style="{{ring}}"></div>
+  <section class="coach" role="dialog" aria-label="Tour step" style="{{card}}">
+    <div style="display: flex; justify-content: space-between; align-items: center"><small style="font-weight: 700; opacity: .85">Step {{n}} of {{m}} of the Map Editor tour</small><button aria-label="Close" onClick="{{close}}" style="width: 32px; height: 32px; border: 0; border-radius: 16px; background: transparent; color: inherit; font-size: 20px">×</button></div>
+    <h2 style="margin: 0; font-size: 20px">{{title}}</h2>
+    <p style="margin: 0; line-height: 20px">{{body}}</p>
+    <div style="display: flex; gap: 6px"><sc-for list="{{dots}}" as="d" hint-placeholder-count="5"><i style="{{d}}"></i></sc-for></div>
+    <div style="display: flex; align-items: center; gap: 6px"><button onClick="{{back}}" style="height: 36px; padding: 0 12px; border: 0; border-radius: 18px; background: transparent; color: inherit; font-weight: 600; opacity: {{backOpacity}}">Back</button><span style="flex: 1"></span><button onClick="{{skip}}" style="height: 36px; padding: 0 12px; border: 0; border-radius: 18px; background: transparent; color: inherit; font-weight: 600">Skip this step</button><button onClick="{{next}}" style="height: 40px; padding: 0 20px; border: 0; border-radius: 20px; background: {{t.inversePrimary}}; color: #002204; font-weight: 800">{{nextLabel}}</button></div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"seed":{"editor":"color","default":"#4C8C4A"},"motion":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { const v = this.baseVals(); const s = this.props.seed ?? '#4C8C4A'; if (v.t && s.toLowerCase() !== '#4c8c4a') { v.t.primary = s; v.t.onPrimary = '#FFFFFF'; } v.motionClass = (this.props.motion ?? true) ? 'moving' : 'still'; return v; }
+  baseVals() {
+    const dark = this.props.dark ?? true;
+    const t = dark ? { primary:'#8FD88A', onPrimary:'#00390A', primaryContainer:'#1B5220', inversePrimary:'#8FD88A', surface:'#10140F', surfaceContainerLow:'#181D17', surfaceContainerHigh:'#262B25', onSurface:'#E0E4DA', onSurfaceVariant:'#C2C9BD', outline:'#8C9388', inverseSurface:'#E0E4DA', inverseOnSurface:'#2D322B' }
+      : { primary:'#2E6B2C', onPrimary:'#FFFFFF', primaryContainer:'#AFF4A6', inversePrimary:'#8FD88A', surface:'#F7FBF1', surfaceContainerLow:'#F1F5EB', surfaceContainerHigh:'#E5EAE0', onSurface:'#181D17', onSurfaceVariant:'#42493F', outline:'#72796E', inverseSurface:'#2D322B', inverseOnSurface:'#EEF2E8' };
+    const steps = [
+      { title: 'Find anything', body: 'Click here or press Ctrl+Shift+F to search every command and setting.', r: [478, 10, 536, 60] },
+      { title: 'Language', body: 'Switch between English, Cantonese or both at once.', r: [1006, 22, 214, 36] },
+      { title: 'Notifications', body: 'Every message from this session, with its time and a search box.', r: [1290, 18, 44, 44] },
+      { title: 'Destinations', body: 'Worlds, Editor, History, Settings and About.', r: [12, 80, 300, 420] },
+      { title: 'Help and tours', body: 'Come back here any time for this tour or a tour of the page you are on.', r: [1238, 18, 44, 44] }
+    ];
+    const i = this.state.i ?? 0, s = steps[i], [x, y, w, h] = s.r;
+    const cardLeft = Math.min(Math.max(12, x), 1440 - 372), cardTop = y + h + 16;
+    return {
+      t, n: i + 1, m: steps.length, title: s.title, body: s.body,
+      ring: `position: absolute; left: ${x - 6}px; top: ${y - 6}px; width: ${w + 12}px; height: ${h + 12}px; border-radius: 20px; outline: 3px solid ${t.primary}; box-shadow: 0 0 0 4px ${t.surface}`,
+      card: `position: absolute; left: ${cardLeft}px; top: ${cardTop}px; width: 360px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; padding: 18px 20px 16px; border-radius: 28px 28px 28px 8px; background: ${t.inverseSurface}; color: ${t.inverseOnSurface}; box-shadow: 0 12px 32px rgba(0,0,0,.3)`,
+      dots: steps.map((_, k) => `display: block; width: ${k === i ? 22 : 8}px; height: 8px; border-radius: 4px; background: ${k === i ? t.inversePrimary : 'currentColor'}; opacity: ${k === i ? 1 : k < i ? .6 : .3}`),
+      backOpacity: i === 0 ? .4 : 1, nextLabel: i === steps.length - 1 ? 'Finish' : 'Next',
+      back: () => this.setState({ i: Math.max(0, i - 1) }), next: () => this.setState({ i: (i + 1) % steps.length }), skip: () => this.setState({ i: Math.min(steps.length - 1, i + 1) }), close: () => this.setState({ i: 0 })
+    };
+  }
+}
+</script>
+</body>
+</html>
