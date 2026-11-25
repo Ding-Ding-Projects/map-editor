@@ -41,7 +41,8 @@ echo 'start=2048, type=83, bootable' | sfdisk -q "$RAW"
 LOOP=$(losetup --find --show --partscan "$RAW")
 cleanup() { for fs in sys proc dev; do umount "$OUT/mnt/$fs" 2>/dev/null || true; done; umount "$OUT/mnt" 2>/dev/null || true; losetup -d "$LOOP" 2>/dev/null || true; }
 trap cleanup EXIT
-for i in 1 2 3 4 5; do [ -b "${LOOP}p1" ] && break; partprobe "$LOOP" 2>/dev/null || true; sleep 1; done
+for i in $(seq 1 30); do [ -b "${LOOP}p1" ] && break; partprobe "$LOOP" 2>/dev/null || true; udevadm settle 2>/dev/null || true; sleep 1; done
+[ -b "${LOOP}p1" ] || { echo "partition of $LOOP did not appear"; exit 1; }
 mkfs.ext4 -q -L map-editor -O ^64bit "${LOOP}p1"
 mkdir -p "$OUT/mnt"
 mount "${LOOP}p1" "$OUT/mnt"

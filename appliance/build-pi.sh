@@ -46,7 +46,9 @@ printf 'start=2048, size=524288, type=c, bootable\nstart=526336, type=83\n' | sf
 LOOP=$(losetup --find --show --partscan "$IMG")
 cleanup() { umount "$OUT/pi-boot" 2>/dev/null || true; umount "$OUT/pi-mnt" 2>/dev/null || true; losetup -d "$LOOP" 2>/dev/null || true; }
 trap cleanup EXIT
-for i in 1 2 3 4 5; do [ -b "${LOOP}p2" ] && break; partprobe "$LOOP" 2>/dev/null || true; sleep 1; done
+# The partition devices can take a moment to appear on busy runners.
+for i in $(seq 1 30); do [ -b "${LOOP}p1" ] && [ -b "${LOOP}p2" ] && break; partprobe "$LOOP" 2>/dev/null || true; udevadm settle 2>/dev/null || true; sleep 1; done
+[ -b "${LOOP}p1" ] && [ -b "${LOOP}p2" ] || { echo "partitions of $LOOP did not appear"; lsblk "$LOOP"; exit 1; }
 mkfs.vfat -F 32 -n MEBOOT "${LOOP}p1" >/dev/null
 mkfs.ext4 -q -L map-editor "${LOOP}p2"
 
