@@ -36,16 +36,16 @@ import { notesPanel as notesPanelImpl } from './notes.js';
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
 
 // ---------- state ----------
-interface Prefs extends I18nState { dark: boolean; reduceMotion: boolean; largeText: boolean; dimSum: boolean; takeovers: boolean; lockedSettings: string[]; layoutLocked: boolean; tabsLocked: boolean; settingsLocked: boolean; quietHours: boolean; quietFrom: string; quietTo: string; narrate: boolean; narrateRate: number; darkSchedule: boolean; darkFrom: string; darkTo: string; editLock: boolean; tourOffered: boolean; tourResume: { name: string; step: number } | null; sounds: boolean; soundVolume: number; settingsSection: string; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
+interface Prefs extends I18nState { focusMode: boolean; schoolMode: boolean; dark: boolean; reduceMotion: boolean; largeText: boolean; dimSum: boolean; takeovers: boolean; lockedSettings: string[]; layoutLocked: boolean; tabsLocked: boolean; settingsLocked: boolean; quietHours: boolean; quietFrom: string; quietTo: string; narrate: boolean; narrateRate: number; darkSchedule: boolean; darkFrom: string; darkTo: string; editLock: boolean; tourOffered: boolean; tourResume: { name: string; step: number } | null; sounds: boolean; soundVolume: number; settingsSection: string; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
 const PREFS_KEY = 'map-editor.prefs.v1';
 const DEFAULT_SEED = '#4c8c4a';
-const defaults: Prefs = { lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, largeText: false, dimSum: true, takeovers: true, lockedSettings: [], layoutLocked: false, tabsLocked: false, settingsLocked: false, quietHours: false, quietFrom: '22:00', quietTo: '07:00', narrate: false, narrateRate: 10, darkSchedule: false, darkFrom: '19:00', darkTo: '07:00', editLock: false, tourOffered: false, tourResume: null, sounds: true, soundVolume: 40, settingsSection: 'language', closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
+const defaults: Prefs = { focusMode: false, schoolMode: false, lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, largeText: false, dimSum: true, takeovers: true, lockedSettings: [], layoutLocked: false, tabsLocked: false, settingsLocked: false, quietHours: false, quietFrom: '22:00', quietTo: '07:00', narrate: false, narrateRate: 10, darkSchedule: false, darkFrom: '19:00', darkTo: '07:00', editLock: false, tourOffered: false, tourResume: null, sounds: true, soundVolume: 40, settingsSection: 'language', closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
 function loadPrefs(): Prefs { try { return { ...defaults, ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') }; } catch { return { ...defaults }; } }
 let prefs = loadPrefs();
 // Settings history: every saved change to a user-facing setting keeps the previous values,
 // newest first, so any change can be restored (and the restore is recorded too).
 const HISTORY_KEY = 'map-editor.settings-history.v1';
-const TRACKED = ['lang', 'funnyEn', 'funnyYue', 'dark', 'reduceMotion', 'largeText', 'takeovers', 'lockedSettings', 'layoutLocked', 'tabsLocked', 'settingsLocked', 'quietHours', 'quietFrom', 'quietTo', 'dimSum', 'narrate', 'narrateRate', 'darkSchedule', 'darkFrom', 'darkTo', 'editLock', 'sounds', 'soundVolume', 'seed', 'rainbowSpeed'] as const;
+const TRACKED = ['focusMode', 'schoolMode', 'lang', 'funnyEn', 'funnyYue', 'dark', 'reduceMotion', 'largeText', 'takeovers', 'lockedSettings', 'layoutLocked', 'tabsLocked', 'settingsLocked', 'quietHours', 'quietFrom', 'quietTo', 'dimSum', 'narrate', 'narrateRate', 'darkSchedule', 'darkFrom', 'darkTo', 'editLock', 'sounds', 'soundVolume', 'seed', 'rainbowSpeed'] as const;
 type Tracked = typeof TRACKED[number];
 interface SettingsChange { at: string; keys: Tracked[]; before: Partial<Prefs>; after: Partial<Prefs> }
 let lastSaved: Partial<Prefs> = pick(prefs);
@@ -158,6 +158,8 @@ function notify(text: string, error = false, action?: { label: string; run: () =
   if (error) play('error');
   narrate(text);
   const host = document.getElementById('toasts')!;
+  // Focus mode: routine messages wait quietly in the bell; only problems and messages with an action pop up.
+  if (prefs.focusMode && !error && !action) { const bell = document.querySelector('.bell-wrap'); if (bell) { bell.querySelector('.badge')?.remove(); bell.insertAdjacentHTML('beforeend', `<span class="badge">${notes.length}</span>`); } return; }
   const el = document.createElement('div');
   el.className = `toast${error ? ' error' : ''}`;
   el.setAttribute('role', error ? 'alert' : 'status');
@@ -229,7 +231,7 @@ function askConfirm(text: string, ok = tx('ok'), danger = false): Promise<boolea
 const SETTING_TARGETS: Array<[string, string, Key]> = [
   ['.set-langs', 'language', 'secLanguage'], ['#fen', 'language', 'funnyEn'], ['#fyue', 'language', 'funnyYue'],
   ['#dark', 'appearance', 'dark'], ['#dsched', 'appearance', 'darkSchedule'], ['#dfrom', 'appearance', 'darkFrom'], ['#ds', 'appearance', 'dimSum'], ['#seed-picker', 'appearance', 'seed'], ['#reset-layouts', 'appearance', 'resetLayouts'],
-  ['#rm', 'comfort', 'reduceMotion'], ['#lt', 'comfort', 'largeText'], ['#elock', 'comfort', 'editLock'], ['#tko', 'comfort', 'takeovers'], ['#llock', 'comfort', 'layoutLocked'], ['#tlock', 'comfort', 'tabsLocked'], ['#slock', 'comfort', 'settingsLocked'],
+  ['#rm', 'comfort', 'reduceMotion'], ['#lt', 'comfort', 'largeText'], ['#elock', 'comfort', 'editLock'], ['#tko', 'comfort', 'takeovers'], ['#llock', 'comfort', 'layoutLocked'], ['#tlock', 'comfort', 'tabsLocked'], ['#slock', 'comfort', 'settingsLocked'], ['#focus', 'comfort', 'focusMode'], ['#school', 'comfort', 'schoolMode'],
   ['#snd', 'sounds', 'soundEffects'], ['#vol', 'sounds', 'soundVolume'], ['#quiet', 'sounds', 'quietHours'], ['#qfrom', 'sounds', 'quietFrom'], ['#nar', 'sounds', 'narrate'], ['#nar-rate', 'sounds', 'narrateRate'],
   ['#pk-add', 'account', 'pkAdd'], ['#exp', 'backup', 'exportSettings'], ['#imp', 'backup', 'importSettings'], ['#sh', 'backup', 'settingsHistory'],
 ];
@@ -274,6 +276,7 @@ function paletteCommands(): Command[] {
   cmds.push({ id: 'dark', label: tx('dark'), where: `${tx('settings')} › Appearance`, toggle: { get: () => prefs.dark, set: (v) => { prefs.dark = v; savePrefs(); applyTheme(); } } });
   cmds.push({ id: 'large-text', label: tx('largeText'), where: `${tx('settings')} › ${tx('secComfort')}`, toggle: { get: () => prefs.largeText, set: (v) => { prefs.largeText = v; savePrefs(); applyTheme(); } } });
   cmds.push({ id: 'edit-lock', label: tx('editLock'), where: `${tx('settings')} › ${tx('secComfort')}`, toggle: { get: () => prefs.editLock, set: (v) => { prefs.editLock = v; savePrefs(); applyTheme(); } } });
+  cmds.push({ id: 'focus-mode', label: tx('focusMode'), where: `${tx('settings')} › ${tx('secComfort')}`, toggle: { get: () => prefs.focusMode, set: (v) => { prefs.focusMode = v; if (v) prefs.reduceMotion = true; savePrefs(); applyTheme(); } } });
   cmds.push({ id: 'narrate', label: tx('narrate'), where: `${tx('settings')} › ${tx('secSounds')}`, toggle: { get: () => prefs.narrate, set: (v) => { prefs.narrate = v; savePrefs(); } } });
   cmds.push({ id: 'sounds', label: tx('soundEffects'), where: `${tx('settings')} › ${tx('secSounds')}`, toggle: { get: () => prefs.sounds, set: (v) => { prefs.sounds = v; savePrefs(); applyTheme(); } } });
   cmds.push({ id: 'tour', label: tx('tourTake'), where: tx('help'), run: () => takeTour('app') });
@@ -291,7 +294,7 @@ function paletteCommands(): Command[] {
   cmds.push({ id: 'welcome', label: tx('welcome'), where: `${tx('settings')}`, run: () => { prefs.onboarded = false; prefs.onboardStep = 0; savePrefs(); render(); } });
   // Every setting can be teleported to (Shift+Enter or the arrow): toggles get it as a second action,
   // and settings that are not switches get a row of their own that teleports.
-  const gotoOf: Record<string, string> = { dark: '#dark', motion: '#rm', 'large-text': '#lt', sounds: '#snd', 'edit-lock': '#elock', narrate: '#nar', 'dim-sum-toggle': '#ds', 'reset-layouts': '#reset-layouts' };
+  const gotoOf: Record<string, string> = { 'focus-mode': '#focus', dark: '#dark', motion: '#rm', 'large-text': '#lt', sounds: '#snd', 'edit-lock': '#elock', narrate: '#nar', 'dim-sum-toggle': '#ds', 'reset-layouts': '#reset-layouts' };
   for (const c of cmds) { const sel = gotoOf[c.id]; const t = sel && SETTING_TARGETS.find(([x]) => x === sel); if (t) c.goto = () => showSetting(t[0], t[1]); }
   const covered = new Set(Object.values(gotoOf));
   for (const [selector, section, key] of SETTING_TARGETS) {
@@ -299,7 +302,7 @@ function paletteCommands(): Command[] {
     cmds.push({ id: `set-${selector.replace(/\W/g, '')}`, label: tx(key), where: `${tx('settings')} › ${tx(SECTION_KEY[section])}`, run: () => showSetting(selector, section), goto: () => showSetting(selector, section) });
   }
   // A setting locked in Settings is locked here too: its row says so instead of switching.
-  const SWITCH_OF: Record<string, string> = { dark: 'dark', motion: 'rm', 'large-text': 'lt', sounds: 'snd', 'edit-lock': 'elock', narrate: 'nar', 'dim-sum-toggle': 'ds' };
+  const SWITCH_OF: Record<string, string> = { 'focus-mode': 'focus', dark: 'dark', motion: 'rm', 'large-text': 'lt', sounds: 'snd', 'edit-lock': 'elock', narrate: 'nar', 'dim-sum-toggle': 'ds' };
   for (const c of cmds) {
     const sid = SWITCH_OF[c.id];
     if (c.toggle && ((sid && prefs.lockedSettings.includes(sid)) || prefs.settingsLocked)) { c.where = `${c.where} · ${tx('lockedSettings')}`; c.toggle = { get: c.toggle.get, set: () => notify(tx('settingLocked'), true) }; }
@@ -330,6 +333,8 @@ function applyTheme() {
   document.documentElement.classList.toggle('edit-locked', prefs.editLock);
   document.documentElement.classList.toggle('reduce-motion', prefs.reduceMotion);
   document.documentElement.classList.toggle('large-text', prefs.largeText);
+  document.documentElement.classList.toggle('focus-mode', prefs.focusMode);
+  document.documentElement.classList.toggle('school-mode', prefs.schoolMode);
   configureSounds(prefs.sounds && !quiet(), prefs.soundVolume / 100);
   document.documentElement.lang = prefs.lang === 'yue' ? 'zh-Hant-HK' : 'en';
 }
@@ -379,7 +384,7 @@ async function runExtension(id: string, command: string) {
 
 let surprised = false;
 async function dimSumSurprise(force = false) {
-  if (!force && (surprised || !prefs.dimSum || !user || !prefs.onboarded || Math.random() >= 0.1)) return;
+  if (!force && (surprised || !prefs.dimSum || prefs.focusMode || !user || !prefs.onboarded || Math.random() >= 0.1)) return;
   surprised = true;
   type R = { dish: { id: string; name: { en: string; zhHant: string }; jyutping?: string; description: { en: string; yue: string }; alt?: { en: string; yue: string } }; total: number; revision: string };
   let r: R;
@@ -1131,7 +1136,7 @@ async function extensionsPanel(view: HTMLElement) {
   bar.className = 'ext-bar';
   bar.innerHTML = `<label class="ext-master"><md-switch id="ext-master" ${data.masterOn ? 'selected' : ''} aria-label="${esc(tx('extMaster'))}"></md-switch><span><b>${esc(tx('extMaster'))}</b><small>${esc(tx(data.masterOn ? 'extMasterOn' : 'extMasterOff'))}</small></span></label>
     <span class="spacer"></span>
-    <md-outlined-button id="ext-zip">${esc(tx('extAddZip'))}</md-outlined-button><md-outlined-button id="ext-link">${esc(tx('extAddLink'))}</md-outlined-button><input type="file" id="ext-zip-file" accept=".zip,application/zip" hidden>
+    ${prefs.schoolMode ? `<span class="muted">${esc(tx('schoolNoAdd'))}</span>` : `<md-outlined-button id="ext-zip">${esc(tx('extAddZip'))}</md-outlined-button><md-outlined-button id="ext-link">${esc(tx('extAddLink'))}</md-outlined-button>`}<input type="file" id="ext-zip-file" accept=".zip,application/zip" hidden>
     ${data.canAddFolder && desktopBridge ? `<md-outlined-button id="ext-folder">${esc(tx('extAddFolder'))}</md-outlined-button>` : ''}
     ${data.folder && desktopBridge?.openDataFolder ? `<md-text-button id="ext-open">${esc(tx('extOpenFolder'))}</md-text-button>` : ''}
     <md-text-button id="ext-reload">${esc(tx('extReload'))}</md-text-button>`;
@@ -1155,14 +1160,14 @@ async function extensionsPanel(view: HTMLElement) {
     notify(j.sha256 ? tx('extAddedSha', { name: j.name, version: j.version, sha: j.sha256 }) : tx('extAdded', { name: j.name, version: j.version })); play('create'); void extensionsPanel(view);
   };
   const zipIn = bar.querySelector<HTMLInputElement>('#ext-zip-file')!;
-  bar.querySelector('#ext-zip')!.addEventListener('click', () => zipIn.click());
+  bar.querySelector('#ext-zip')?.addEventListener('click', () => zipIn.click());
   zipIn.addEventListener('change', () => {
     const f = zipIn.files?.[0]; if (!f) return;
     void added((replace) => fetch('/api/extensions/upload', { method: 'POST', headers: { 'content-type': 'application/zip', 'x-map-editor': '1', ...(replace ? { 'x-replace': '1' } : {}) }, body: f }));
     zipIn.value = '';
   });
   // A dialog rather than prompt(): the desktop app has no prompt(), and the SHA-256 needs its own field.
-  bar.querySelector('#ext-link')!.addEventListener('click', () => {
+  bar.querySelector('#ext-link')?.addEventListener('click', () => {
     const dlg = document.createElement('md-dialog') as HTMLElement & { show: () => void; close: () => void; returnValue: string };
     dlg.innerHTML = `<div slot="headline">${esc(tx('extAddLink'))}</div>
       <form slot="content" id="ext-link-form" method="dialog" class="stack">
@@ -1267,7 +1272,7 @@ function settingsView(view: HTMLElement) {
       <div class="set-row seed-row" data-find="${esc(tx('seed'))}"><span><b>${esc(tx('seed'))}</b></span><span class="seed-now"><span class="seed-swatch ${prefs.seed === RAINBOW ? 'rainbow' : ''}" style="background:${prefs.seed === RAINBOW ? 'none' : esc(prefs.seed)}"></span><code>${esc(prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed)}</code><md-text-button id="seed-reset">${esc(tx('reset'))}</md-text-button></span></div>
       <div class="row-actions" data-find="${esc(tx('resetLayouts'))} dockview panels"><md-outlined-button id="reset-layouts">${esc(tx('resetLayouts'))}</md-outlined-button></div>
       <div id="seed-picker" data-find="${esc(tx('seed'))} colour color"></div>`,
-    comfort: `<div class="row-actions" data-find="${esc(tx('tourTake'))} ${esc(tx('tourThisPage'))}"><md-filled-tonal-button id="set-tour">${esc(tx('tourTake'))}</md-filled-tonal-button></div>${sw('rm', 'reduceMotion', 'reduceMotionNote', prefs.reduceMotion)}${sw('lt', 'largeText', 'largeTextNote', prefs.largeText)}${sw('elock', 'editLock', 'editLockNote', prefs.editLock)}${sw('tko', 'takeovers', 'takeoversNote', prefs.takeovers)}${sw('llock', 'layoutLocked', 'layoutLockedNote', prefs.layoutLocked)}${sw('tlock', 'tabsLocked', 'tabsLockedNote', prefs.tabsLocked)}${sw('slock', 'settingsLocked', 'settingsLockedNote', prefs.settingsLocked)}`,
+    comfort: `<div class="row-actions" data-find="${esc(tx('tourTake'))} ${esc(tx('tourThisPage'))}"><md-filled-tonal-button id="set-tour">${esc(tx('tourTake'))}</md-filled-tonal-button></div>${sw('rm', 'reduceMotion', 'reduceMotionNote', prefs.reduceMotion)}${sw('lt', 'largeText', 'largeTextNote', prefs.largeText)}${sw('elock', 'editLock', 'editLockNote', prefs.editLock)}${sw('tko', 'takeovers', 'takeoversNote', prefs.takeovers)}${sw('llock', 'layoutLocked', 'layoutLockedNote', prefs.layoutLocked)}${sw('tlock', 'tabsLocked', 'tabsLockedNote', prefs.tabsLocked)}${sw('slock', 'settingsLocked', 'settingsLockedNote', prefs.settingsLocked)}${sw('focus', 'focusMode', 'focusModeNote', prefs.focusMode)}${sw('school', 'schoolMode', 'schoolModeNote', prefs.schoolMode)}`,
     backup: `<p data-find="${esc(tx('exportSettings'))} ${esc(tx('importSettings'))}">${esc(tx('settingsSaved'))}</p>
       <div class="row-actions"><md-filled-tonal-button id="exp">${esc(tx('exportSettings'))}</md-filled-tonal-button><md-outlined-button id="imp">${esc(tx('importSettings'))}</md-outlined-button><input id="imp-file" type="file" accept="application/json,.json" hidden></div>
       <h3 data-find="${esc(tx('settingsHistory'))}">${esc(tx('settingsHistory'))}</h3><ol class="set-history" id="sh"></ol>`,
@@ -1359,6 +1364,15 @@ function settingsView(view: HTMLElement) {
   view.querySelector('#llock')!.addEventListener('change', (e) => { prefs.layoutLocked = sel(e); savePrefs(); notify(tx(prefs.layoutLocked ? 'layoutLockedOn' : 'layoutLockedOff')); });
   view.querySelector('#tlock')!.addEventListener('change', (e) => { prefs.tabsLocked = sel(e); savePrefs(); render(); });
   view.querySelector('#slock')!.addEventListener('change', (e) => { prefs.settingsLocked = sel(e); savePrefs(); render(); });
+  view.querySelector('#focus')!.addEventListener('change', (e) => { prefs.focusMode = sel(e); if (prefs.focusMode) prefs.reduceMotion = true; savePrefs(); applyTheme(); render(); });
+  view.querySelector('#school')!.addEventListener('change', async (e) => {
+    const on = sel(e);
+    if (on && !await askConfirm(tx('schoolAsk'), tx('schoolOn'))) { render(); return; }
+    // School mode: extensions off and none added, editing history kept, and Settings locked so a class cannot change them.
+    prefs.schoolMode = on;
+    if (on) { prefs.settingsLocked = true; prefs.takeovers = false; try { await api('/api/extensions/master', { method: 'POST', body: { on: false } }); } catch { /* not allowed or offline */ } }
+    savePrefs(); render(); notify(tx(on ? 'schoolDone' : 'schoolOff'));
+  });
   view.querySelector('#tko')!.addEventListener('change', (e) => { prefs.takeovers = sel(e); savePrefs(); });
   view.querySelector('#elock')!.addEventListener('change', (e) => { prefs.editLock = sel(e); savePrefs(); applyTheme(); notify(tx(prefs.editLock ? 'editLockOn' : 'editLockOff')); });
   const showSeed = () => { const s = view.querySelector<HTMLElement>('.seed-swatch')!; s.classList.toggle('rainbow', prefs.seed === RAINBOW); s.style.background = prefs.seed === RAINBOW ? '' : prefs.seed; view.querySelector('.seed-now code')!.textContent = prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed; };
@@ -1384,7 +1398,7 @@ function settingsView(view: HTMLElement) {
   const sh = view.querySelector<HTMLElement>('#sh')!;
   const hist = loadSettingsHistory();
   const fmt = (k: Tracked, v: unknown) => k === 'seed' && v === RAINBOW ? tx('rainbow') : typeof v === 'boolean' ? (v ? 'on' : 'off') : String(v);
-  const name: Record<Tracked, string> = { layoutLocked: tx('layoutLocked'), tabsLocked: tx('tabsLocked'), settingsLocked: tx('settingsLocked'), lockedSettings: tx('lockedSettings'), quietHours: tx('quietHours'), quietFrom: tx('quietFrom'), quietTo: tx('quietTo'), takeovers: tx('takeovers'), narrate: tx('narrate'), narrateRate: tx('narrateRate'), darkSchedule: tx('darkSchedule'), darkFrom: tx('darkFrom'), darkTo: tx('darkTo'), editLock: tx('editLock'), dimSum: tx('dimSum'), sounds: tx('soundEffects'), soundVolume: tx('soundVolume'), lang: tx('secLanguage'), funnyEn: tx('funnyEn'), funnyYue: tx('funnyYue'), dark: tx('dark'), reduceMotion: tx('reduceMotion'), largeText: tx('largeText'), seed: tx('seed'), rainbowSpeed: tx('rainbow') };
+  const name: Record<Tracked, string> = { focusMode: tx('focusMode'), schoolMode: tx('schoolMode'), layoutLocked: tx('layoutLocked'), tabsLocked: tx('tabsLocked'), settingsLocked: tx('settingsLocked'), lockedSettings: tx('lockedSettings'), quietHours: tx('quietHours'), quietFrom: tx('quietFrom'), quietTo: tx('quietTo'), takeovers: tx('takeovers'), narrate: tx('narrate'), narrateRate: tx('narrateRate'), darkSchedule: tx('darkSchedule'), darkFrom: tx('darkFrom'), darkTo: tx('darkTo'), editLock: tx('editLock'), dimSum: tx('dimSum'), sounds: tx('soundEffects'), soundVolume: tx('soundVolume'), lang: tx('secLanguage'), funnyEn: tx('funnyEn'), funnyYue: tx('funnyYue'), dark: tx('dark'), reduceMotion: tx('reduceMotion'), largeText: tx('largeText'), seed: tx('seed'), rainbowSpeed: tx('rainbow') };
   sh.innerHTML = hist.length ? hist.slice(0, 50).map((h, i) => `<li data-find="${esc(h.keys.map((k) => name[k]).join(' '))}"><span><b>${h.keys.map((k) => `${esc(name[k])}: ${esc(fmt(k, h.before[k]))} → ${esc(fmt(k, h.after[k]))}`).join(' · ')}</b><small>${esc(new Date(h.at).toLocaleString())}</small></span><md-text-button data-restore="${i}">${esc(tx('restore'))}</md-text-button></li>`).join('') : `<li class="muted">${esc(tx('noSettingsHistory'))}</li>`;
   sh.querySelectorAll<HTMLElement>('[data-restore]').forEach((b) => b.addEventListener('click', () => {
     const h = hist[Number(b.dataset.restore)]; if (!h) return;
