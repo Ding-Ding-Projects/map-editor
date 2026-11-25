@@ -188,3 +188,5 @@ article figure { margin: 16px 0 24px; } article figure img { width: 100%; height
 .lang-switch button[aria-pressed="true"] { background: var(--p); color: var(--on-p); }
 .lang-switch button:focus-visible { outline: 3px solid var(--p); outline-offset: 2px; }
 @media print { .lang-switch { display: none; } }
+/* In the diagram, "both" shows the English name over the Cantonese line so nothing runs out of its box. */
+[data-lang="both"] .dt [data-l="yue"], [data-lang="both"] .db [data-l="en"] { display: none; }
