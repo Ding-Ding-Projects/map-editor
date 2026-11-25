@@ -35,6 +35,7 @@ import { argbFromHex, themeFromSourceColor, applyTheme as applyM3Theme } from '@
 import { notesPanel as notesPanelImpl } from './notes.js';
 import { contextMenu, initMenus } from './menu.js';
 import { iconSvg, initButtonIcons } from './icons.js';
+import { levelUp, otpauthParts, qrSvg, superConfirm, vocabHeadline } from './uh.js';
 
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
 
@@ -134,6 +135,26 @@ setVocabulary(loadVocab());
 const rx: RegexText = (k, v) => tx(k, v);
 initMenus({ rx, search: () => tx('searchMenu'), none: () => tx('menuNone') });
 initButtonIcons(englishOf);
+// A personal-vocabulary JSON dropped anywhere on the window is checked with the same rules as the Settings upload.
+window.addEventListener('dragover', (e) => { if (e.dataTransfer?.types.includes('Files')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; document.documentElement.classList.add('vocab-dropping'); } });
+window.addEventListener('dragleave', (e) => { if (!e.relatedTarget) document.documentElement.classList.remove('vocab-dropping'); });
+window.addEventListener('drop', (e) => {
+  document.documentElement.classList.remove('vocab-dropping');
+  const f = e.dataTransfer?.files?.[0];
+  if (!f || (e.target as HTMLElement | null)?.closest?.('input[type=file], .tool-card, #upload-label')) return; // other drop targets keep their own files
+  if (!/\.json$/i.test(f.name) && f.type !== 'application/json') return;
+  e.preventDefault();
+  void (async () => {
+    try {
+      if (f.size > 512 * 1024) throw new Error(tx('vocabTooBig'));
+      const raw = JSON.parse(await f.text());
+      const { ok } = parseVocabulary(raw);
+      if (!Object.keys(ok).length) throw new Error(tx('vocabNone'));
+      saveVocab(ok); play('tada'); render();
+      levelUp(vocabHeadline(raw, tx('vocabApplied')), tx('vocabDropSub'));
+    } catch (err) { play('invalid'); notify(tx('vocabBad', { e: (err as Error).message }), true); }
+  })();
+});
 const esc = (s: unknown) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
 // ---------- api ----------
@@ -268,6 +289,8 @@ function askUnlock(what: string): Promise<boolean> {
 
 /** Material confirm dialog in place of the browser's confirm(): themed, translated and keyboard friendly. */
 function askConfirm(text: string, ok = tx('ok'), danger = false): Promise<boolean> {
+  // Anything destructive needs two keys and a full slide, in every language mode.
+  if (danger) return superConfirm(text, { title: tx('superTitle'), key1: tx('superKey1'), key2: tx('superKey2'), keyOn: tx('superKeyOn'), slide: tx('superSlide'), slideLocked: tx('superSlideLocked'), exit: tx('superExit'), hint: tx('superHint'), done: tx('superDone') });
   return new Promise((resolve) => {
     const dlg = document.createElement('md-dialog') as HTMLElement & { show: () => void; returnValue: string };
     dlg.setAttribute('type', 'alert');
@@ -1262,9 +1285,12 @@ async function totpPanel(view: HTMLElement) {
   box.querySelector('#totp-begin')!.addEventListener('click', async () => {
     try {
       const { secret, uri } = await api<{ secret: string; uri: string }>('/api/authenticator/begin', { method: 'POST', body: {} });
-      box.innerHTML = `<ol class="totp-steps"><li>${esc(tx('totpStep1'))} <a href="${esc(uri)}">${esc(tx('totpOpenApp'))}</a></li>
-        <li>${esc(tx('totpStep2'))}<br><code class="totp-secret">${esc(secret.replace(/(.{4})/g, '$1 ').trim())}</code> <md-text-button id="totp-copy">${esc(tx('toolCopy'))}</md-text-button></li>
-        <li>${esc(tx('totpStep3'))}</li></ol><div class="row-actions">${codeField('totp-code')}<md-filled-button id="totp-confirm">${esc(tx('totpConfirm'))}</md-filled-button></div>`;
+      const parts = otpauthParts(uri);
+      box.innerHTML = `<div class="totp-pair"><div class="totp-qr">${qrSvg(uri, tx('totpQrLabel'))}</div><ol class="totp-steps"><li>${esc(tx('totpStep1'))} <a href="${esc(uri)}">${esc(tx('totpOpenApp'))}</a></li>
+        <li>${esc(tx('totpStep2'))}<br><code class="totp-secret" id="totp-secret" hidden>${esc(secret.replace(/(.{4})/g, '$1 ').trim())}</code> <md-text-button id="totp-show" aria-expanded="false" aria-controls="totp-secret">${esc(tx('totpShowKey'))}</md-text-button> <md-text-button id="totp-copy">${esc(tx('toolCopy'))}</md-text-button>
+          <br><small class="muted">${esc(tx('totpParams', { algorithm: parts.algorithm, digits: parts.digits, period: parts.period }))}</small></li>
+        <li>${esc(tx('totpStep3'))}</li></ol></div><div class="row-actions">${codeField('totp-code')}<md-filled-button id="totp-confirm">${esc(tx('totpConfirm'))}</md-filled-button></div>`;
+      box.querySelector('#totp-show')!.addEventListener('click', (e) => { const c = box.querySelector<HTMLElement>('#totp-secret')!; c.hidden = !c.hidden; const b = e.currentTarget as HTMLElement; b.setAttribute('aria-expanded', String(!c.hidden)); b.textContent = tx(c.hidden ? 'totpShowKey' : 'totpHideKey'); });
       box.querySelector('#totp-copy')!.addEventListener('click', () => navigator.clipboard?.writeText(secret).then(() => notify(tx('copied'))));
       box.querySelector('#totp-confirm')!.addEventListener('click', async () => {
         try { await api('/api/authenticator/confirm', { method: 'POST', body: { code: (box.querySelector('#totp-code') as HTMLInputElement).value.trim() } }); notify(tx('totpOnDone')); play('success'); void totpPanel(view); }

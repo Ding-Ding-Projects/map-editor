@@ -5,6 +5,7 @@ import { startTour } from '../ui/tour.js';
 import { showTakeover } from '../ui/takeover.js';
 import { downloadRows, exportButton } from '../ui/exporter.js';
 import { iconSvg, initButtonIcons } from '../ui/icons.js';
+import { superConfirm } from '../ui/uh.js';
 
 interface Step { label: string; state: 'waiting' | 'running' | 'done' | 'failed'; detail?: string }
 interface Disk { id: string; name: string; sizeBytes: number }
@@ -80,7 +81,11 @@ async function manage(main: Element, i: Instance) {
       const ok = (dlg as HTMLElement & { returnValue: string }).returnValue === 'ok';
       const del = (dlg.querySelector('[name=data]') as HTMLInputElement & { checked: boolean }).checked;
       dlg.remove();
-      if (ok) act('remove', del);
+      if (!ok) return;
+      // Removing is destructive, so it also needs two keys and a full slide.
+      void superConfirm(`Remove ${i.name}: the instance stops and its Compose file is deleted.${del ? ' Its data (accounts, history, notes) is deleted too.' : ' Its data is kept.'} Worlds are never deleted.`,
+        { title: 'This cannot be taken back', key1: 'Turn the first key', key2: 'Turn the second key', keyOn: 'Key turned.', slide: 'Slide all the way to the end to go ahead', slideLocked: 'Turn both keys to unlock the slider', exit: 'Emergency exit', hint: 'Nothing happens until both keys are turned and the slider reaches the end. Emergency exit or Esc leaves at once.', done: 'Confirmed.' })
+        .then((yes) => { if (yes) act('remove', del); });
     });
   });
   refresh();

@@ -2,9 +2,11 @@
 // Cues only follow an action that has already succeeded or been refused; they never delay it.
 // Turning the setting off silences everything immediately.
 
-export type Cue = 'success' | 'undo' | 'error' | 'create';
+export type Cue = 'success' | 'undo' | 'error' | 'create' | 'tada' | 'invalid';
 // Notes in Hz and their start offsets in seconds.
 const CUES: Record<Cue, Array<[number, number]>> = {
+  tada: [[523, 0], [659, 0.09], [784, 0.18], [1047, 0.3]], // a rising fanfare for a level-up
+  invalid: [[196, 0], [147, 0.14]], // a low double note for input that was refused
   success: [[659.25, 0], [987.77, 0.07]],
   create: [[523.25, 0], [659.25, 0.06], [783.99, 0.12]],
   undo: [[783.99, 0], [587.33, 0.08]],

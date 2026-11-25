@@ -64,7 +64,7 @@ const RULES: Array<[RegExp, string]> = [
   [/measure/i, 'ruler'], [/go to|jump|centre|center/i, 'target'],
   [/\brun\b|start|\btry\b|test|play|encode|decode|convert|make|ask\b|\bgo\b/i, 'play'],
   [/\bback\b|previous/i, 'back'], [/next|continue|skip/i, 'next'],
-  [/close|cancel|dismiss|hide|\bno\b/i, 'x'], [/\bok\b|allow|confirm|done|finish|apply|yes|use\b|got it/i, 'check'],
+  [/close|cancel|dismiss|hide|\bno\b/i, 'x'], [/\bok\b|turn on|allow|confirm|done|finish|apply|yes|use\b|got it/i, 'check'],
   [/setting|layout|option/i, 'sliders'],
 ];
 
@@ -76,7 +76,7 @@ export const iconSvg = (name: string, size = 18) => `<svg class="btn-ico" viewBo
 export const ICON_NAMES = Object.keys(P);
 
 const MD = 'md-filled-button, md-filled-tonal-button, md-outlined-button, md-text-button';
-const PLAIN = '.map-toolbar [data-mode], .ctx-list button, .help-menu button, .select-button, .btn-primary, .sb-actions button, .export-menu button';
+const PLAIN = '.sc-key, .sc-exit, .map-toolbar [data-mode], .ctx-list button, .help-menu button, .select-button, .btn-primary, .sb-actions button, .export-menu button';
 
 /**
  * Give every button an icon, now and whenever buttons are added or relabelled.

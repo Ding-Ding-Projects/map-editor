@@ -24,6 +24,7 @@
     "@simplewebauthn/server": "^14.1.0",
     "dockview-core": "8.9.1",
     "isomorphic-git": "1.44.19",
+    "qrcode-generator": "^1.5.2",
     "tinymce": "8.10.2",
     "yauzl": "3.4.0",
     "yazl": "3.3.1"

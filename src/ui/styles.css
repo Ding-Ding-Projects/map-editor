@@ -771,3 +771,47 @@ md-slider { min-inline-size: min(200px, 100%); }
 @media (prefers-reduced-motion: reduce) { .auth-blocks i { animation: none; } }
 .reduce-motion .auth-blocks i { animation: none; }
 @media (max-width: 860px) { .auth-split { grid-template-columns: 1fr; margin: 8px auto; } .auth-hero { min-height: 0; padding: 24px; border-radius: 32px 12px 32px 12px; } .auth-blocks { width: 70%; opacity: .5; } .auth-hero ul { display: none; } }
+/* Two-key confirmation for destructive actions. */
+.super-confirm { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, var(--md-sys-color-scrim, #000) 55%, transparent); }
+.sc-card { width: min(520px, 100%); max-height: 100%; overflow: auto; padding: 28px; border-radius: 36px 12px 36px 12px; background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); box-shadow: 0 18px 48px rgba(0,0,0,.35); animation: sc-in .28s cubic-bezier(.2,0,0,1); }
+.sc-card h2 { margin: 0 0 8px; font-family: 'Roboto Flex', sans-serif; font-size: 30px; line-height: 1.05; font-variation-settings: 'wdth' 120, 'wght' 850; letter-spacing: -.02em; }
+.sc-what { margin: 0 0 8px; font-size: 17px; line-height: 24px; font-weight: 600; white-space: pre-wrap; overflow-wrap: anywhere; }
+.sc-hint { margin: 0 0 16px; font-size: 14px; line-height: 20px; opacity: .85; }
+.sc-keys { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sc-key { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 56px; padding: 8px 12px; border: 2px solid currentColor; border-radius: 18px; background: transparent; color: inherit; font: inherit; font-weight: 700; cursor: pointer; transition: border-radius .25s cubic-bezier(.2,0,0,1), background-color .2s, transform .25s cubic-bezier(.2,0,0,1); }
+.sc-key .btn-ico { transition: transform .3s cubic-bezier(.2,0,0,1); }
+.sc-key[aria-pressed="true"] { background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); border-color: var(--md-sys-color-error); border-radius: 28px; }
+.sc-key[aria-pressed="true"] .btn-ico { transform: rotate(90deg); }
+.sc-slide { position: relative; display: block; margin: 18px 0 6px; }
+.sc-slide > span:first-child { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; }
+.sc-slide input { position: relative; z-index: 1; width: 100%; height: 48px; margin: 0; opacity: 0; cursor: grab; }
+.sc-slide input:disabled { cursor: not-allowed; }
+.sc-track { position: absolute; left: 0; right: 0; bottom: 0; height: 48px; border-radius: 24px; background: color-mix(in srgb, currentColor 16%, transparent); overflow: hidden; pointer-events: none; }
+.sc-fill { display: block; height: 100%; width: 0; min-width: 48px; border-radius: 24px; background: var(--md-sys-color-error); opacity: .35; transition: opacity .2s; }
+.super-confirm.armed .sc-fill { opacity: 1; }
+.sc-slide input:focus-visible + .sc-track { outline: 3px solid currentColor; outline-offset: 2px; }
+.sc-status { min-height: 20px; margin: 6px 0; font-size: 14px; font-weight: 600; }
+.sc-actions { display: flex; justify-content: flex-end; }
+.sc-exit { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 20px; border: 0; border-radius: 24px; background: var(--md-sys-color-on-error-container); color: var(--md-sys-color-error-container); font: inherit; font-weight: 700; cursor: pointer; }
+.sc-key:focus-visible, .sc-exit:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+.super-confirm.done .sc-card { transform: scale(.97); transition: transform .25s; }
+@keyframes sc-in { from { transform: translateY(16px) scale(.96); opacity: 0; } }
+/* Authenticator pairing: the QR code stays black on white in both themes. */
+.totp-pair { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.totp-qr { flex: none; padding: 10px; border-radius: 20px; background: #fff; line-height: 0; }
+.totp-qr .qr { max-width: 100%; height: auto; }
+.totp-pair .totp-steps { flex: 1 1 260px; margin: 0; }
+/* Dropping a vocabulary file: a ring while it hovers, then a level-up that never blocks. */
+.vocab-dropping body::after { content: ''; position: fixed; inset: 8px; z-index: 95; border: 4px dashed var(--md-sys-color-primary); border-radius: 28px; pointer-events: none; }
+.level-up { position: fixed; inset: 0; z-index: 96; display: grid; place-content: center; justify-items: center; gap: 4px; padding: 24px; text-align: center; pointer-events: none; background: color-mix(in srgb, var(--md-sys-color-primary) 88%, transparent); color: var(--md-sys-color-on-primary); animation: lu-in .5s cubic-bezier(.2,0,0,1); transition: opacity .5s, transform .5s cubic-bezier(.2,0,0,1); }
+.level-up.out { opacity: 0; transform: scale(1.04); }
+.level-up h2 { margin: 0; font-family: 'Roboto Flex', sans-serif; font-size: clamp(36px, 8vw, 96px); line-height: 1; font-variation-settings: 'wdth' 130, 'wght' 900; letter-spacing: -.03em; animation: lu-head .7s cubic-bezier(.2,0,0,1); overflow-wrap: anywhere; }
+.lu-sub { margin: 0; padding: 6px 16px; border-radius: 999px; background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); font-weight: 800; }
+.lu-burst { position: absolute; inset: 0; overflow: hidden; }
+.lu-burst i { position: absolute; left: calc(6% + var(--i) * 6.6%); bottom: -40px; width: 22px; height: 22px; border-radius: 6px; background: var(--md-sys-color-tertiary-container); animation: lu-rise 3.2s cubic-bezier(.2,0,0,1) calc(var(--i) * 60ms) both; }
+.lu-burst i:nth-child(3n) { border-radius: 50%; background: var(--md-sys-color-primary-container); }
+@keyframes lu-in { from { opacity: 0; } } @keyframes lu-head { from { transform: translateY(40px) scale(.8); opacity: 0; } }
+@keyframes lu-rise { to { transform: translateY(-110vh) rotate(260deg); } }
+@media (prefers-reduced-motion: reduce) { .level-up, .level-up h2, .sc-card { animation: none; } .lu-burst { display: none; } .level-up { transition: opacity .3s; } .level-up.out { transform: none; } .sc-key, .sc-key .btn-ico { transition: none; } }
+.reduce-motion .level-up, .reduce-motion .level-up h2, .reduce-motion .sc-card { animation: none; } .reduce-motion .lu-burst { display: none; } .reduce-motion .level-up.out { transform: none; }
+.row-actions { align-items: center; }
