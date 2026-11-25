@@ -10,6 +10,7 @@ import { startTour, type TourStep } from './tour.js';
 import { worldsView } from './worlds.js';
 import { openPalette, type Command } from './palette.js';
 import { showTabSearch } from './tabsearch.js';
+import { toolsView } from './tools.js';
 import { browserSupportsWebAuthn, startAuthentication, startRegistration } from '@simplewebauthn/browser';
 import { onboarding } from './onboarding.js';
 
@@ -99,7 +100,7 @@ function importSettings(raw: unknown): number {
   return n;
 }
 
-const TABS = ['worlds', 'editor', 'history', 'settings', 'about'] as const;
+const TABS = ['worlds', 'editor', 'history', 'tools', 'settings', 'about'] as const;
 type Tab = typeof TABS[number];
 
 interface Health { version: string; commit: string; builtAt: string | null }
@@ -348,6 +349,7 @@ const TAB_ICON: Record<Tab, string> = {
   history: ico('<path d="M3 12a9 9 0 103-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>'),
   settings: ico('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>'),
   about: ico('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>'),
+  tools: ico('<path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>'),
 };
 
 // Dim sum surprise: a 1 in 10 chance per start once setup is done, never during setup or an error.
@@ -409,6 +411,7 @@ function tourSteps(name: 'app' | Tab): TourStep[] {
     case 'editor': return [s('#map', 'map', needWorld), s('#ops', 'tools', needWorld), s('.coords-grid', 'coords', needWorld), s('#run', 'run', needWorld), s('#undo', 'undo', needWorld)];
     case 'history': return [s('[data-search=history-search]', 'hsearch', needWorld), s('.h-filters', 'hdates', needWorld), s('#h md-chip-set', 'hchips', needWorld), s('#h md-list', 'hlist', needWorld)];
     case 'settings': return [s('.set-nav [role=tablist]', 'ssections', { text: tx('tourNotHere'), label: tx('tourOpenSettings'), reveal: goTab('settings') }), s('[data-search=settings-search]', 'ssearch', { text: tx('tourNotHere'), label: tx('tourOpenSettings'), reveal: goTab('settings') })];
+    case 'tools': return [s('#tb64', 'tbase64', { text: tx('tourNotHere'), label: tx('tools'), reveal: goTab('tools') }), s('#tts', 'ttypes', { text: tx('tourNotHere'), label: tx('tools'), reveal: goTab('tools') }), s('#tco', 'tcoords', { text: tx('tourNotHere'), label: tx('tools'), reveal: goTab('tools') })];
     case 'about': return [s('.about-stats', 'aversion', { text: tx('tourNotHere'), label: tx('tourOpenAbout'), reveal: goTab('about') }), s('[data-search=changelog-search]', 'achangelog', { text: tx('tourNotHere'), label: tx('tourOpenAbout'), reveal: goTab('about') })];
     default: return [s('#cmd', 'palette'), s('.top md-chip-set, .set-langs', 'language', { text: tx('tourLangHidden'), label: tx('tourOpenSettings'), reveal: () => { prefs.settingsSection = 'language'; goTab('settings')(); } }), s('#bell', 'bell'), s(tabsTarget(), 'tabs'), s('#tour-help', 'help')];
   }
@@ -559,6 +562,7 @@ async function render(): Promise<void> {
     case 'history': return historyView(view);
     case 'settings': return settingsView(view);
     case 'about': return aboutView(view);
+    case 'tools': return toolsView(view, (k, v) => tx(k as Key, v), esc, notify);
   }
 }
 

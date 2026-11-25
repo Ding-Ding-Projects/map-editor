@@ -634,3 +634,11 @@ canvas#map[data-mode="pick"] { cursor: copy; } canvas#map[data-mode="goto"] { cu
 .nf-swatch { width: 22px; height: 22px; border-radius: 6px; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .2); }
 .p-classic { background: #5f903a; } .p-desert { background: #dbcfa3; } .p-snowy { background: #f0f4f5; } .p-water { background: #3f68c9; } .p-stone { background: #7a7a7a; } .p-void { background: linear-gradient(135deg, #111 50%, #7a7a7a 50%); }
 .nf-size { display: flex; gap: 8px; align-items: center; } .nf-size select { font: inherit; padding: 6px 8px; border-radius: 8px; }
+/* Tools screen */
+.tools-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 16px; align-items: start; }
+.tool-card { display: flex; flex-direction: column; gap: 10px; }
+.tool-card h2 { margin: 0; font-size: 22px; }
+.tool-field { display: flex; flex-direction: column; gap: 4px; font-weight: 600; font-size: 13px; }
+.tool-field textarea { font: 13px/1.45 'Roboto Mono', monospace; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--md-sys-color-outline); background: var(--md-sys-color-surface-container-lowest); color: var(--md-sys-color-on-surface); resize: vertical; }
+.tool-pre { margin: 0; padding: 12px; border-radius: 12px; background: var(--md-sys-color-surface-container-lowest); font: 13px/1.45 'Roboto Mono', monospace; overflow: auto; max-height: 320px; white-space: pre; }
+.tool-dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0; } .tool-dl dt { font-weight: 600; } .tool-dl dd { margin: 0; }
