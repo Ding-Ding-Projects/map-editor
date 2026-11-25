@@ -22,7 +22,7 @@ function page(title, desc, main, active = 'guide') {
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website">
 <link rel="icon" type="image/svg+xml" href="${base}favicon.svg"><link rel="stylesheet" href="${base}site.css"></head><body>
 <header class="top"><a class="brand" href="${base}"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="title">Map Editor</span></a>
-<nav aria-label="Site"><a href="${base}"${active === 'guide' ? ' aria-current="page"' : ''}>Guide</a><a href="${repo}/releases">Downloads</a><a href="${repo}/commits/main">Changelog</a><a href="${repo}">Source</a><a href="#tour" data-tour="page">Take a tour</a></nav></header>
+<nav aria-label="Site"><a href="${base}"${active === 'guide' ? ' aria-current="page"' : ''}>Guide</a><a href="${base}downloads/"${active === 'downloads' ? ' aria-current="page"' : ''}>Downloads</a><a href="${repo}/commits/main">Changelog</a><a href="${repo}">Source</a><a href="#tour" data-tour="page">Take a tour</a></nav></header>
 <main>${main}</main>
 <footer><div><span>Map Editor ${esc(pkg.version)} · updated ${esc(stamp)} · <a href="${repo}/commit/${esc(commit)}">${esc(commit.slice(0, 7) || 'unavailable')}</a></span>
 <span>This site documents and downloads Map Editor; it is not the editor. Based on Amulet Map Editor, which needs its own licence. Minecraft is a trademark of Mojang Synergies AB; not affiliated with Mojang or Microsoft.</span></div></footer>
@@ -76,7 +76,7 @@ writeFileSync(path.join(out, 'index.html'), page('Map Editor', 'A Minecraft worl
 <span class="pill">Java Edition 1.18 and newer · v${esc(pkg.version)}</span>
 <h1>Edit your world.<br><span>Undo anything.</span></h1>
 <p>A Minecraft world editor for your desk, your whole network, or a spare PC. Every fill, replace and clone is saved to its own history, so nothing is ever one click from gone.</p>
-<p class="actions"><a class="btn filled" href="${repo}/releases">Get Map Editor</a><a class="btn outlined" href="${base}web-app/">Run it with Docker</a></p></div>
+<p class="actions"><a class="btn filled" href="${base}downloads/">Get Map Editor</a><a class="btn outlined" href="${base}web-app/">Run it with Docker</a></p></div>
 <div class="hero-art"><div class="map" role="img" aria-label="Top-down map of a river valley with a selected area">${mosaic(18, 12)}</div><div class="sel" aria-hidden="true"><span class="wash"></span></div><div class="cursor" aria-hidden="true"></div>
 <div class="chip c1" aria-hidden="true"><small>Fill finished</small><b>53,248 blocks</b></div>
 <div class="chip c2" aria-hidden="true"><span class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 010 10h-3"/></svg></span><span><small>History</small><b>Rolled back to 16:38:52</b></span></div></div></section>
@@ -94,5 +94,25 @@ for (const f of features) {
 <article>${f.body.map(([h, t, img], i) => `<h2 id="s${i}">${esc(h)}</h2><p>${esc(t)}</p>${img ? `<figure><img src="${base}screenshots/${esc(img.src)}" alt="${esc(img.alt)}" loading="lazy" width="1440" height="900"><figcaption>${esc(img.alt)}</figcaption></figure>` : ''}`).join('')}</article></div>
 <section class="band-wrap suggested"><h2>Suggested articles</h2><div class="grid">${rel.map((r) => `<a class="card" href="${base}${r.slug}/"><small>${esc(r.group)}</small><strong>${esc(r.title)}</strong><span>${esc(r.summary)}</span></a>`).join('')}</div></section>`));
 }
+// Downloads: buttons for the newest release that carries the Windows installer, from the release
+// list the workflow saves (SITE_RELEASES). Without it, the page points at the releases list.
+let releases = [];
+try { releases = JSON.parse(readFileSync(process.env.SITE_RELEASES ?? path.join(here, 'releases.json'), 'utf8')); } catch { /* not available */ }
+const rel = releases.find((r) => !r.draft && !r.prerelease && (r.assets ?? []).some((a) => a.name === 'Map.EditorSetup.exe'));
+const asset = (n) => rel?.assets.find((a) => a.name === n);
+const mib = (b) => `${(b / 1048576).toFixed(b > 104857600 ? 0 : 1)} MiB`;
+const DOWNLOADS = [
+  ['Map.EditorSetup.exe', 'Map Editor for Windows', 'The desktop app. Opens worlds from your saves folder; updates itself.', 'desktop-app'],
+  ['Map.Editor.DeploySetup.exe', 'Map Editor Deploy for Windows', 'One-click deploy to Docker, VirtualBox, VMware or a USB drive.', 'deploy-app'],
+  ['map-editor-appliance-x86_64.ova', 'Appliance for VirtualBox or VMware', 'Import it and the web app starts on boot.', 'appliance'],
+  ['map-editor-appliance-x86_64.img.xz', 'Appliance for a USB drive or spare PC', 'Unpack, then write the .img to a drive.', 'appliance'],
+  ['map-editor-appliance-rpi-arm64.img.xz', 'Appliance for Raspberry Pi 4 and 5', 'Unpack, then write the .img to an SD card.', 'appliance'],
+];
+mkdirSync(path.join(out, 'downloads'), { recursive: true });
+writeFileSync(path.join(out, 'downloads', 'index.html'), page('Downloads · Map Editor', 'Download Map Editor for Windows, Docker, a virtual machine, a USB drive or a Raspberry Pi.', `
+<section class="article-hero"><p class="crumb"><a href="${base}">Guide</a> › Downloads</p><h1>Downloads</h1><p class="lead">${rel ? `Map Editor ${esc(rel.tag_name)}, published ${esc(String(rel.published_at).slice(0, 10))}. Every file below comes from that release.` : 'The newest files are on the releases page.'}</p></section>
+<section class="band-wrap"><div class="dl-grid">${rel ? DOWNLOADS.filter(([n]) => asset(n)).map(([n, t, b, slug]) => `<div class="dl-card"><strong>${esc(t)}</strong><span>${esc(b)}</span><a class="btn filled" href="${esc(asset(n).browser_download_url)}" download>Download <small>${esc(mib(asset(n).size))}</small></a><a href="${base}${slug}/">How it works →</a></div>`).join('') : ''}
+<div class="dl-card"><strong>Docker</strong><span>Run the web app on any machine with Docker.</span><code>docker run -d -p 8420:8420 -v map-editor-data:/data -v "$PWD/worlds:/worlds" ghcr.io/ding-ding-projects/map-editor:${rel ? esc(rel.tag_name.replace(/^v/, '')) : 'latest'}</code><a href="${base}web-app/">How it works →</a></div></div>
+<p class="muted">${rel ? `Checksums: <a href="${esc(rel.html_url)}">${esc(rel.tag_name)} on GitHub</a> lists SHA256SUMS for the appliance images. ` : ''}The Windows installers are not code-signed, so Windows SmartScreen may ask before running them. All releases: <a href="${repo}/releases">${repo.replace('https://', '')}/releases</a>.</p></section>`, 'downloads'));
 writeFileSync(path.join(out, '.nojekyll'), '');
 console.log(`Site built: ${features.length + 1} pages in ${out}`);

@@ -6,3 +6,4 @@ appliance/out/
 .env
 *.log
 site/dist/
+site/releases.json
