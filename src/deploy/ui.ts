@@ -135,13 +135,21 @@ async function render() {
       <md-filled-button id="go">Deploy</md-filled-button><div id="steps"></div>`;
     let worlds = '';
     form.querySelector('#worlds')!.addEventListener('click', async () => { worlds = (await d.pickFolder()) ?? ''; form.querySelector('#wpath')!.textContent = worlds || 'No folder chosen'; });
-    form.querySelector('#go')!.addEventListener('click', async () => {
+    const deployNow = async (): Promise<void> => {
       if (!worlds) return toast('Choose the worlds folder first.', true);
       const val = (id: string) => (form.querySelector(id) as HTMLInputElement).value;
-      d.onProgress((s: Step[]) => { form.querySelector('#steps')!.innerHTML = stepsHtml(s); });
+      let steps: Step[] = [];
+      d.onProgress((s: Step[]) => { steps = s; form.querySelector('#steps')!.innerHTML = stepsHtml(s); });
+      const t0 = Date.now();
       const r = await d.docker({ name: val('#name'), port: Number(val('#port')), version: val('#version'), worlds });
-      if (r.error) toast(r.error, true); else celebrate(r.url, r.instance);
-    });
+      if (!r.error) { celebrate(r.url, r.instance, Date.now() - t0); return; }
+      const port = Number(val('#port'));
+      const portBusy = /port|allocated|in use/i.test(r.error) && port < 65535;
+      failTakeover({ what: `Docker could not start ${val('#name')}.`, error: r.error, steps,
+        retry: portBusy ? { label: `Try port ${port + 1}`, run: () => { (form.querySelector('#port') as HTMLInputElement).value = String(port + 1); void deployNow(); } }
+          : { label: 'Try again', run: () => void deployNow() } });
+    };
+    form.querySelector('#go')!.addEventListener('click', () => void deployNow());
   } else if (target === 'virtualbox') {
     form.innerHTML = `<h2 class="md-typescale-headline-large">VirtualBox</h2>
       <md-outlined-text-field id="name" label="Instance name" value="map-editor-vm"></md-outlined-text-field>
@@ -150,13 +158,17 @@ async function render() {
       <md-filled-button id="go">Deploy</md-filled-button><div id="steps"></div>`;
     let ova = '';
     form.querySelector('#ova')!.addEventListener('click', async () => { ova = (await d.pickFile(['ova'])) ?? ''; form.querySelector('#opath')!.textContent = ova || 'No file chosen'; });
-    form.querySelector('#go')!.addEventListener('click', async () => {
+    const deployNow = async (): Promise<void> => {
       const val = (id: string) => (form.querySelector(id) as HTMLInputElement).value;
       if (!ova || !val('#bridge')) return toast('Choose the .ova file and the adapter to bridge.', true);
-      d.onProgress((s: Step[]) => { form.querySelector('#steps')!.innerHTML = stepsHtml(s); });
+      let steps: Step[] = [];
+      d.onProgress((s: Step[]) => { steps = s; form.querySelector('#steps')!.innerHTML = stepsHtml(s); });
+      const t0 = Date.now();
       const r = await d.virtualbox({ name: val('#name'), ova, bridgeAdapter: val('#bridge') });
-      if (r.error) toast(r.error, true); else celebrate(r.url, r.instance);
-    });
+      if (!r.error) { celebrate(r.url, r.instance, Date.now() - t0); return; }
+      failTakeover({ what: `VirtualBox could not start ${val('#name')}.`, error: r.error, steps, retry: { label: 'Try again', run: () => void deployNow() } });
+    };
+    form.querySelector('#go')!.addEventListener('click', () => void deployNow());
   } else if (target === 'usb') {
     const disks: Disk[] = await d.disks().catch((e: Error) => { toast(e.message, true); return []; });
     form.innerHTML = `<h2 class="md-typescale-headline-large">USB drive</h2>
@@ -179,7 +191,12 @@ async function render() {
     sel.addEventListener('change', refresh); typed.addEventListener('input', refresh);
     form.querySelector('#img')!.addEventListener('click', async () => { img = (await d.pickFile(['img'])) ?? ''; form.querySelector('#ipath')!.textContent = img || 'No file chosen'; refresh(); });
     d.onFlash((w: number, t: number) => { (form.querySelector('#bar') as HTMLInputElement).value = String(w / t); });
-    go.addEventListener('click', async () => { go.disabled = true; const r = await d.flash(img, sel.value, typed.value); toast(r.message, !r.ok); });
+    go.addEventListener('click', async () => {
+      go.disabled = true;
+      const r = await d.flash(img, sel.value, typed.value);
+      if (r.ok) { toast(r.message); return; }
+      failTakeover({ what: 'The drive was not written correctly.', error: r.message, steps: [], retry: { label: 'Choose again', run: () => { typed.value = ''; refresh(); sel.focus(); } } });
+    });
   } else {
     form.innerHTML = `<h2 class="md-typescale-headline-large">${esc(TARGETS.find((t) => t.id === target)!.name)}</h2><p>${esc(TARGETS.find((t) => t.id === target)!.desc)}</p>`;
   }
@@ -194,21 +211,56 @@ function toast(text: string, error = false) {
   if (!error) setTimeout(() => el.remove(), 8000);
 }
 
-function celebrate(url: string, inst: Instance) {
+// Full-screen takeovers from the Takeover board. Success closes itself after 8 s; failure stays
+// until it is dismissed and keeps the step log, the exact error and a retry.
+function takeover(kind: 'ok' | 'fail', html: string, opener: Element | null): { el: HTMLElement; close: () => void } {
   const el = document.createElement('div');
-  el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-label', 'Deployed');
-  el.style.cssText = 'position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;justify-content:center;gap:24px;padding:48px;background:var(--md-sys-color-primary-container);color:var(--md-sys-color-on-primary-container)';
-  el.innerHTML = `<h1 style="margin:0;font-size:clamp(48px,8vw,96px);font-weight:900;letter-spacing:-3px">It is live.</h1>
-    <p class="md-typescale-title-large">${esc(inst.name)} answered its health check at <strong>${esc(url)}</strong> (version ${esc(inst.version)}).</p>
-    <div><md-filled-button id="o">Open Map Editor</md-filled-button> <md-text-button id="c">Close (Esc)</md-text-button></div>`;
-  const close = () => { el.remove(); document.removeEventListener('keydown', onKey); };
-  const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
-  document.addEventListener('keydown', onKey);
-  el.querySelector('#o')!.addEventListener('click', () => d.open(url));
-  el.querySelector('#c')!.addEventListener('click', close);
+  el.className = `takeover ${kind}`;
+  el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'tk-title');
+  el.innerHTML = `<div class="tk-shapes" aria-hidden="true"><i></i><i></i><i></i></div><section>${html}</section>`;
+  const close = () => { el.remove(); document.removeEventListener('keydown', onKey, true); (opener as HTMLElement | null)?.focus?.(); };
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') { e.preventDefault(); close(); }
+    if (e.key === 'Tab') { // keep focus inside the takeover
+      const f = Array.from(el.querySelectorAll<HTMLElement>('button, md-filled-button, md-outlined-button, md-text-button, a'));
+      const i = f.indexOf(document.activeElement as HTMLElement);
+      if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1]?.focus(); } else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0]?.focus(); }
+    }
+  };
+  document.addEventListener('keydown', onKey, true);
   document.body.append(el);
-  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) el.animate([{ transform: 'scale(.96)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 280, easing: 'cubic-bezier(.2,0,0,1)' });
-  setTimeout(close, 10_000);
+  requestAnimationFrame(() => el.querySelector<HTMLElement>('md-filled-button')?.focus());
+  return { el, close };
+}
+
+function celebrate(url: string, inst: Instance, tookMs = 0) {
+  const { el, close } = takeover('ok', `<span class="tk-chip">Installed</span>
+    <h1 id="tk-title">It is live.</h1>
+    <p class="tk-lead">${esc(inst.name)} is running ${inst.target === 'docker' ? 'in Docker on this computer' : 'in VirtualBox'} and answered its health check.</p>
+    <div class="tk-stats"><div><small>Link</small><code>${esc(url.replace(/^https?:\/\//, '').replace(/\/$/, ''))}</code></div><div><small>Version</small><b>${esc(inst.version)}</b></div><div><small>Took</small><b>${Math.max(1, Math.round(tookMs / 1000))} s</b></div></div>
+    <div class="tk-actions"><md-filled-button id="tk-open">Open Map Editor</md-filled-button><md-outlined-button id="tk-copy">Copy link</md-outlined-button><md-text-button id="tk-close">Close (Esc)</md-text-button></div>
+    <small class="tk-note" id="tk-count">Closes by itself in 8 s.</small>`, document.activeElement);
+  el.querySelector('#tk-open')!.addEventListener('click', () => d.open(url));
+  el.querySelector('#tk-copy')!.addEventListener('click', () => navigator.clipboard?.writeText(url).then(() => toast('Link copied.')));
+  el.querySelector('#tk-close')!.addEventListener('click', close);
+  let left = 8;
+  const timer = setInterval(() => { left--; const c = el.querySelector('#tk-count'); if (!el.isConnected || left <= 0) { clearInterval(timer); if (el.isConnected) close(); return; } if (c) c.textContent = `Closes by itself in ${left} s.`; }, 1000);
+  // Hovering or focusing inside keeps it open, so it never vanishes while being read.
+  const hold = () => { clearInterval(timer); el.querySelector('#tk-count')!.textContent = 'Stays open while you use it.'; };
+  el.addEventListener('pointerenter', hold, { once: true }); el.addEventListener('focusin', (e) => { if (e.target !== el.querySelector('md-filled-button')) hold(); });
+}
+
+function failTakeover(o: { what: string; error: string; steps: Step[]; retry: { label: string; run: () => void } }) {
+  const stamp = new Date().toLocaleTimeString('en-GB');
+  const log = [...o.steps.map((s) => `${s.state === 'failed' ? '✗' : s.state === 'done' ? '✓' : '·'} ${s.label}${s.detail ? ` — ${s.detail}` : ''}`), '', o.error, `at ${stamp}`].join('\n').trim();
+  const { el, close } = takeover('fail', `<span class="tk-chip">Install failed · stays until you close it</span>
+    <h1 id="tk-title">That did not work.</h1>
+    <p class="tk-lead">${esc(o.what)} Nothing else on this computer was changed.</p>
+    <pre class="tk-log" tabindex="0" aria-label="What happened">${esc(log)}</pre>
+    <div class="tk-actions"><md-filled-button id="tk-retry">${esc(o.retry.label)}</md-filled-button><md-outlined-button id="tk-copy">Copy details</md-outlined-button><md-text-button id="tk-close">Dismiss (Esc)</md-text-button></div>`, document.activeElement);
+  el.querySelector('#tk-retry')!.addEventListener('click', () => { close(); o.retry.run(); });
+  el.querySelector('#tk-copy')!.addEventListener('click', () => navigator.clipboard?.writeText(log).then(() => toast('Details copied.')));
+  el.querySelector('#tk-close')!.addEventListener('click', close);
 }
 
 enableClearControls((field) => `Clear ${field}`);

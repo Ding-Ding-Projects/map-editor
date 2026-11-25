@@ -391,3 +391,32 @@ md-list-item[hidden] { display: none; }
 .ub-text { flex: 1 1 260px; display: flex; flex-direction: column; } .ub-text small { opacity: .85; }
 .update-banner a { color: inherit; font-weight: 600; }
 .about-update { margin-top: 16px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; } .about-update p { margin: 0; }
+
+/* ---------- install takeovers (deploy app) ---------- */
+.takeover { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; padding: 48px; overflow: auto; background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); animation: tk-in .32s cubic-bezier(.2,0,0,1) both; }
+.takeover.fail { background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); }
+.takeover section { position: relative; width: 100%; max-width: 920px; display: flex; flex-direction: column; gap: 20px; align-items: flex-start; }
+.takeover h1 { margin: 0; font-size: clamp(48px, 8vw, 96px); line-height: 1; font-weight: 900; letter-spacing: -3px; font-variation-settings: 'wdth' 120; }
+.tk-chip { height: 36px; padding: 0 16px; border-radius: 18px; background: color-mix(in srgb, currentColor 14%, transparent); font-size: 14px; font-weight: 700; line-height: 36px; }
+.tk-lead { margin: 0; font-size: 22px; line-height: 30px; max-width: 700px; }
+.tk-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; width: 100%; }
+.tk-stats div { display: flex; flex-direction: column; gap: 4px; padding: 20px; border-radius: 28px; background: color-mix(in srgb, currentColor 12%, transparent); }
+.tk-stats div:first-child { border-radius: 28px 28px 28px 8px; } .tk-stats div:last-child { border-radius: 8px 28px 28px 28px; }
+.tk-stats small { font-size: 13px; font-weight: 600; } .tk-stats b { font-size: 28px; font-weight: 800; } .tk-stats code { font-size: 15px; overflow-wrap: anywhere; }
+.tk-log { width: 100%; box-sizing: border-box; margin: 0; max-height: 40vh; overflow: auto; padding: 20px 24px; border-radius: 24px; background: rgba(0,0,0,.35); color: #fff; font: 14px/22px 'Roboto Mono', ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tk-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.tk-actions md-filled-button, .tk-actions md-outlined-button, .tk-actions md-text-button { --md-filled-button-container-height: 64px; --md-outlined-button-container-height: 64px; --md-text-button-container-height: 64px; --md-filled-button-label-text-size: 18px; --md-outlined-button-label-text-size: 18px; }
+.tk-note { font-size: 13px; }
+.tk-shapes i { position: absolute; border-radius: 40% 60% 55% 45%; background: color-mix(in srgb, currentColor 8%, transparent); animation: tk-spin 18s linear infinite; }
+.tk-shapes i:nth-child(1) { width: 360px; height: 360px; right: -80px; top: -60px; }
+.tk-shapes i:nth-child(2) { width: 220px; height: 220px; left: -60px; bottom: 40px; animation-duration: 24s; animation-direction: reverse; }
+.tk-shapes i:nth-child(3) { width: 140px; height: 140px; right: 20%; bottom: -40px; border-radius: 30%; animation-duration: 30s; }
+@keyframes tk-in { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes tk-spin { to { transform: rotate(360deg); } }
+.reduce-motion .takeover, .reduce-motion .tk-shapes i { animation: none; }
+@media (prefers-reduced-motion: reduce) { .takeover, .tk-shapes i { animation: none; } }
+.takeover { --tk-fg: var(--md-sys-color-on-primary-container); --tk-bg: var(--md-sys-color-primary-container); }
+.takeover.fail { --tk-fg: var(--md-sys-color-on-error-container); --tk-bg: var(--md-sys-color-error-container); }
+.takeover md-filled-button { --md-filled-button-container-color: var(--tk-fg); --md-filled-button-label-text-color: var(--tk-bg); --md-filled-button-hover-label-text-color: var(--tk-bg); --md-filled-button-focus-label-text-color: var(--tk-bg); --md-filled-button-pressed-label-text-color: var(--tk-bg); --md-filled-button-label-text-weight: 800; }
+.takeover md-outlined-button { --md-outlined-button-outline-color: var(--tk-fg); --md-outlined-button-outline-width: 2px; --md-outlined-button-label-text-color: var(--tk-fg); --md-outlined-button-hover-label-text-color: var(--tk-fg); --md-outlined-button-focus-label-text-color: var(--tk-fg); --md-outlined-button-pressed-label-text-color: var(--tk-fg); }
+.takeover md-text-button { --md-text-button-label-text-color: var(--tk-fg); --md-text-button-hover-label-text-color: var(--tk-fg); --md-text-button-focus-label-text-color: var(--tk-fg); --md-text-button-pressed-label-text-color: var(--tk-fg); --md-text-button-label-text-size: 16px; }
