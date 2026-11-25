@@ -310,7 +310,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Editor workspace. Shows the panel layout: tab strip docked left with Close and Open every tab, map, Fill tool, floating Block palette group, floating toolbar, snackbar.\nTry: Tweaks dark, showFloat, showDrop, seed, motion; click tabs, tools, toolbar modes.\nIn the app: panels, map, the five tools, history, notes, language chips. Also: the Blocks panel and the floating map toolbar with Pan, Select, Pick block, Measure and Go to. Not in the app yet: per-element appearance.",
+   "text": "Editor workspace. Shows the panel layout: tab strip docked left with Close and Open every tab, map, Fill tool, floating Block palette group, floating toolbar, snackbar.\nTry: Tweaks dark, showFloat, showDrop, seed, motion; click tabs, tools, toolbar modes.\nIn the app: panels, map, the five tools, history, notes, language chips. Also: structure files (.nbt save and place, undoable), the Blocks panel and the floating map toolbar with Pan, Select, Pick block, Measure and Go to. Not in the app yet: per-element appearance.",
    "fill": "yellow",
    "page": "editor"
   },

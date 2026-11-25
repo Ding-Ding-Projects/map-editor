@@ -4,6 +4,7 @@ import { WorldHistory, type HistoryAction } from './history.js';
 import { blockColor, shade } from './colors.js';
 import { parseBlock } from './chunk.js';
 import * as ops from './ops.js';
+import { captureStructure, encodeStructure, placeStructure, type Structure } from './structure.js';
 
 export interface OperationRequest {
   op: ops.OperationName;
@@ -55,6 +56,23 @@ export class EditSession {
       let entry;
       try { entry = await this.history.record(PAST[req.op], `${req.op[0].toUpperCase()}${req.op.slice(1)} ${size}${what}`); }
       catch (e) { console.error('History write failed; the edit itself was saved.', e); } // never fail the edit for a history write
+      return { ...res, history: entry };
+    });
+  }
+
+  /** The selection as a structure file (.nbt). */
+  exportStructure(dim: Dimension, box: ops.Box) {
+    return this.serial(async () => encodeStructure(await captureStructure(this.world, dim, box, this.world.info.dataVersion ?? 4189)));
+  }
+
+  /** Place a structure with its origin at a corner; saved and recorded like any edit, so it can be undone. */
+  placeStructure(dim: Dimension, s: Structure, at: { x: number; y: number; z: number }, name: string) {
+    return this.serial(async () => {
+      const res = await placeStructure(this.world, dim, s, at);
+      await this.world.save();
+      let entry;
+      try { entry = await this.history.record('placed', `Placed ${name} (${s.size.join('×')}) at ${at.x}, ${at.y}, ${at.z}`); }
+      catch (e) { console.error('History write failed; the edit itself was saved.', e); }
       return { ...res, history: entry };
     });
   }

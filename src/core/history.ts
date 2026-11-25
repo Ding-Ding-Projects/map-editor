@@ -8,7 +8,7 @@ import { createHash } from 'node:crypto';
 import git from 'isomorphic-git';
 import { changedChunks } from './region.js';
 
-export type HistoryAction = 'opened' | 'filled' | 'replaced' | 'deleted' | 'cloned' | 'waterlogged' | 'edited' | 'restored' | 'settings changed';
+export type HistoryAction = 'opened' | 'filled' | 'replaced' | 'deleted' | 'cloned' | 'waterlogged' | 'edited' | 'restored' | 'settings changed' | 'placed';
 
 export interface HistoryEntry {
   sha: string;

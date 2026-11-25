@@ -653,6 +653,8 @@ async function editorView(view: HTMLElement): Promise<void> {
       <div id="op-fields" class="stack"></div>
       <div class="muted" id="sel-size"></div>
       <md-filled-button id="run"></md-filled-button>
+      <section class="structures" aria-label="${esc(tx('structures'))}"><h3>${esc(tx('structures'))}</h3><p class="muted">${esc(tx('structuresNote'))}</p>
+        <div class="row-actions"><md-outlined-button id="st-export">${esc(tx('structExport'))}</md-outlined-button><md-outlined-button id="st-place">${esc(tx('structPlace'))}</md-outlined-button><input type="file" id="st-file" accept=".nbt" hidden></div></section>
     </aside></div>`;
   // dockview moves these panels out of root, so every later lookup goes through the panel itself
   const mapEl = root.querySelector<HTMLElement>('.map')!;
@@ -698,6 +700,33 @@ async function editorView(view: HTMLElement): Promise<void> {
       if (r.skipped) notify(tx('opSkipped', { n: r.skipped.toLocaleString('en') }), true);
       await drawMap();
     } catch (err) { notify((err as Error).message, true); } finally { busy--; runBtn.removeAttribute('disabled'); }
+  });
+
+  // Structures: the selection to a .nbt file, and a .nbt file placed at the selection's lowest corner.
+  toolEl.querySelector('#st-export')!.addEventListener('click', () => {
+    const n = { x1: Math.min(sel.x1, sel.x2), y1: Math.min(sel.y1, sel.y2), z1: Math.min(sel.z1, sel.z2), x2: Math.max(sel.x1, sel.x2), y2: Math.max(sel.y1, sel.y2), z2: Math.max(sel.z1, sel.z2) };
+    const a = document.createElement('a');
+    a.href = `/api/structure?dim=${dim}&${new URLSearchParams(Object.entries(n).map(([k, v]) => [k, String(v)]))}`;
+    a.download = ''; document.body.append(a); a.click(); a.remove();
+    notify(tx('structExported', { size: `${n.x2 - n.x1 + 1}×${n.y2 - n.y1 + 1}×${n.z2 - n.z1 + 1}` }));
+  });
+  const stFile = toolEl.querySelector<HTMLInputElement>('#st-file')!;
+  toolEl.querySelector('#st-place')!.addEventListener('click', () => { if (prefs.editLock) { notify(tx('editLocked'), true); return; } stFile.click(); });
+  stFile.addEventListener('change', async () => {
+    const f = stFile.files?.[0]; stFile.value = ''; if (!f) return;
+    const at = { x: Math.min(sel.x1, sel.x2), y: Math.min(sel.y1, sel.y2), z: Math.min(sel.z1, sel.z2) };
+    if (!await askConfirm(tx('structPlaceAsk', { name: f.name, x: at.x, y: at.y, z: at.z }), tx('structPlaceOk'))) return;
+    busy++;
+    try {
+      const r = await fetch(`/api/structure/place?dim=${dim}&x=${at.x}&y=${at.y}&z=${at.z}`, { method: 'POST', headers: { 'x-map-editor': '1', 'x-file-name': encodeURIComponent(f.name) }, body: f });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error ?? `${r.status}`);
+      play('success');
+      notify(tx('structPlaced', { name: f.name, n: j.changed.toLocaleString('en') }), false, { label: tx('undo'), run: () => undoLast() });
+      if (j.skipped) notify(tx('opSkipped', { n: j.skipped.toLocaleString('en') }), true);
+      document.dispatchEvent(new Event('history-changed'));
+      await drawMap();
+    } catch (err) { notify((err as Error).message, true); } finally { busy--; }
   });
 
   const canvas = root.querySelector<HTMLCanvasElement>('#map')!;

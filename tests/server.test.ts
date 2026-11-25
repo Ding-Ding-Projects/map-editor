@@ -145,6 +145,22 @@ describe('server', () => {
     expect(entries.map((e: { action: string }) => e.action)).toEqual(['restored', 'filled', 'opened']);
   });
 
+  it('exports the selection as a structure file and places one, recorded in history', async () => {
+    expect((await call('/api/worlds/open', { method: 'POST', body: { path: worldDir } })).status).toBe(200);
+    const res = await call('/api/structure?dim=overworld&x1=0&y1=62&z1=0&x2=1&y2=62&z2=1');
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-disposition')).toMatch(/\.nbt"/);
+    const file = Buffer.from(await res.arrayBuffer());
+    expect(file[0]).toBe(0x1f); // gzip
+    const place = await fetch(`${base}/api/structure/place?dim=overworld&x=4&y=70&z=4`, { method: 'POST', headers: { cookie, 'x-map-editor': '1', 'x-file-name': 'patch.nbt' }, body: file });
+    expect(place.status).toBe(200);
+    expect((await place.json()).changed).toBe(4);
+    const { entries } = await (await call('/api/history')).json();
+    expect(entries[0]).toMatchObject({ action: 'placed', message: 'Placed patch.nbt (2×1×2) at 4, 70, 4' });
+    expect((await fetch(`${base}/api/structure/place?dim=overworld&x=4&y=70&z=4`, { method: 'POST', headers: { cookie, 'x-map-editor': '1' }, body: 'nope' })).status).toBe(400);
+    expect((await fetch(`${base}/api/structure/place?dim=overworld&x=4&y=70&z=4`, { method: 'POST', headers: { cookie }, body: file })).status).toBe(403);
+  });
+
   it('keeps an activity record of accounts, worlds and settings', async () => {
     const { events } = await (await call('/api/activity')).json();
     const messages = events.map((e: { kind: string; message: string }) => `${e.kind}: ${e.message}`);

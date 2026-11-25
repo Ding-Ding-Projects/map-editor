@@ -13,7 +13,8 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Settings, account and instance records: the server keeps an append-only activity record (owner created, sign-ins, failed sign-ins, sign-outs, settings changes reported by the page, extension installs, consent, removal and the master switch, worlds created, uploaded and copied) as one commit per event in a local Git history in the data folder, never with passwords; History shows it as a searchable Activity panel with kind filters, also when no world is open. Map Editor Deploy keeps its own record of deploys, duplicates, drive writes and instance actions, listed under Instances. Unit and server tests; checked in headless Chrome.
 - [x] Passkey sign-in (WebAuthn) as well as the password: add, rename and remove passkeys in Settings › Account and passkeys, Sign in with a passkey on the sign-in screen, single-use challenges that expire in 5 minutes, counters stored, every change in the activity record; explained instead of offered on plain-http network addresses. Unit tested, and checked end to end in headless Chrome with a virtual authenticator (add, sign out, sign in with the passkey).
 - [ ] Bedrock Edition worlds (Amulet supports them; not ported).
-- [ ] 3D view, slice view, biome editing, import and export of structures.
+- [x] Structure files (.nbt, the structure block and /place template format): save the selection, air included, and place a .nbt file at the selection's lowest corner after a confirmation, recorded in history as Placed so Undo restores; block-state properties kept, chunks that do not exist skipped, files checked for size and palette. Unit and server tests; checked in headless Chrome. Block entities and entities are not carried yet.
+- [ ] 3D view, slice view, biome editing; block entities in structure files.
 
 ## Phase 2: desktop app
 

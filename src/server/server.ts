@@ -11,8 +11,9 @@ import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { Accounts } from './auth.js';
 import { EditSession, type OperationRequest } from '../core/session.js';
+import { decodeStructure } from '../core/structure.js';
 import { discoverWorlds, isWorldFolder, setLevelName, worldInfo, type Dimension } from '../core/world.js';
-import { volume, MAX_OPERATION_BLOCKS, OPERATIONS } from '../core/ops.js';
+import { volume, MAX_OPERATION_BLOCKS, OPERATIONS, type Box } from '../core/ops.js';
 import { importWorldZip, exportWorldZip, createFlatWorld } from '../core/archive.js';
 import { createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
@@ -102,7 +103,7 @@ export async function createServer(opts: ServerOptions) {
     if (p === '/api/changelog') return send(200, { entries: build.changelog ?? null });
 
     // Same-origin JSON only for state-changing calls (blocks cross-site form posts).
-    const isUpload = (p === '/api/worlds/upload' || p === '/api/extensions/upload') && req.method === 'POST';
+    const isUpload = (p === '/api/worlds/upload' || p === '/api/extensions/upload' || p === '/api/structure/place') && req.method === 'POST';
     // Same-origin JSON only for state-changing calls (blocks cross-site form posts). Uploads instead
     // carry a custom header, which a cross-site form cannot send.
     if (req.method !== 'GET' && !isUpload && !(req.headers['content-type'] ?? '').startsWith('application/json')) throw new HttpError(415, 'Send JSON');
@@ -325,6 +326,29 @@ export async function createServer(opts: ServerOptions) {
       const px = await session.renderChunks(dim, int(q.get('cx'), 'cx', -1_875_000, 1_875_000), int(q.get('cz'), 'cz', -1_875_000, 1_875_000), int(q.get('w'), 'w', 1, 64), int(q.get('h'), 'h', 1, 64));
       res.writeHead(200, { 'content-type': 'application/octet-stream', 'cache-control': 'no-store' });
       return res.end(Buffer.from(px.buffer, px.byteOffset, px.byteLength));
+    }
+    if (p === '/api/structure' && req.method === 'GET') {
+      const q = url.searchParams;
+      const dim = (q.get('dim') ?? 'overworld') as Dimension;
+      if (!DIMS.includes(dim)) throw new HttpError(400, 'Unknown dimension');
+      const box = Object.fromEntries((['x1', 'y1', 'z1', 'x2', 'y2', 'z2'] as const).map((k) => [k, int(q.get(k), k, -30_000_000, 30_000_000)])) as unknown as Box;
+      let data: Buffer;
+      try { data = await session.exportStructure(dim, box); } catch (e) { throw new HttpError(400, (e as Error).message); }
+      const file = `${path.basename(session.world.dir).replace(/[^\w.-]+/g, '_')}-${box.x1}_${box.y1}_${box.z1}.nbt`;
+      res.writeHead(200, { 'content-type': 'application/octet-stream', 'content-disposition': `attachment; filename="${file}"`, 'cache-control': 'no-store' });
+      return res.end(data);
+    }
+    if (p === '/api/structure/place' && req.method === 'POST') {
+      const q = url.searchParams;
+      const dim = (q.get('dim') ?? 'overworld') as Dimension;
+      if (!DIMS.includes(dim)) throw new HttpError(400, 'Unknown dimension');
+      const at = { x: int(q.get('x'), 'x', -30_000_000, 30_000_000), y: int(q.get('y'), 'y', -64, 319), z: int(q.get('z'), 'z', -30_000_000, 30_000_000) };
+      const chunks: Buffer[] = []; let size = 0;
+      for await (const c of req) { size += (c as Buffer).length; if (size > 64 * 1024 * 1024) throw new HttpError(413, 'Structure files are limited to 64 MiB.'); chunks.push(c as Buffer); }
+      let s;
+      try { s = decodeStructure(Buffer.concat(chunks)); } catch (e) { throw new HttpError(400, (e as Error).message); }
+      const name = decodeURIComponent(String(req.headers['x-file-name'] ?? 'a structure')).replace(/[\r\n]+/g, ' ').slice(0, 80);
+      return send(200, await session.placeStructure(dim, s, at, name));
     }
     if (p === '/api/op' && req.method === 'POST') {
       const r = (await body(req)) as OperationRequest;
