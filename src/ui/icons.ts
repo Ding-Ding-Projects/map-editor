@@ -80,7 +80,7 @@ export const iconSvg = (name: string, size = 18) => `<svg class="btn-ico" viewBo
 export const ICON_NAMES = Object.keys(P);
 
 const MD = 'md-filled-button, md-filled-tonal-button, md-outlined-button, md-text-button';
-const PLAIN = '.sc-key, .sc-exit, .map-toolbar [data-mode], .ctx-list button, .help-menu button, .select-button, .btn-primary, .sb-actions button, .export-menu button';
+const PLAIN = '.fold-toggle, .sc-key, .sc-exit, .map-toolbar [data-mode], .ctx-list button, .help-menu button, .select-button, .btn-primary, .sb-actions button, .export-menu button';
 
 /**
  * Give every button an icon, now and whenever buttons are added or relabelled.

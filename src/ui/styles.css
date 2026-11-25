@@ -896,3 +896,11 @@ body { background: var(--md-sys-color-surface-container); }
 .act-list li:hover, #h li:hover { border-radius: 24px 10px 24px 10px; }
 .cl-link { color: var(--md-sys-color-primary); }
 @media (prefers-reduced-motion: reduce) { .set-row, .set-nav .set-tab, .act-list li, #h li { transition: none; } }
+
+/* Collapsible filters. */
+.fold-bar { display: flex; align-items: center; gap: 12px; margin: 4px 0 8px; }
+.fold-toggle { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px; border: 0; border-radius: 20px; background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); font: inherit; font-weight: 700; cursor: pointer; transition: border-radius .25s cubic-bezier(.2,0,0,1); }
+.fold-toggle[aria-expanded="false"] { border-radius: 12px; background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface); }
+.fold-toggle:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; }
+#hf-body[hidden] { display: none; }
+.set-row md-outlined-text-field { flex: 1 1 200px; min-width: 0; }

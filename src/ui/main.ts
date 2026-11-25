@@ -40,10 +40,10 @@ import { levelUp, otpauthParts, qrSvg, superConfirm, vocabHeadline } from './mom
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
 
 // ---------- state ----------
-interface Prefs extends I18nState { tones: Record<string, string>; focusMode: boolean; schoolMode: boolean; dark: boolean; reduceMotion: boolean; largeText: boolean; dimSum: boolean; takeovers: boolean; lockedSettings: string[]; layoutLocked: boolean; tabsLocked: boolean; settingsLocked: boolean; quietHours: boolean; quietFrom: string; quietTo: string; narrate: boolean; narrateRate: number; darkSchedule: boolean; darkFrom: string; darkTo: string; editLock: boolean; tourOffered: boolean; tourResume: { name: string; step: number } | null; sounds: boolean; soundVolume: number; settingsSection: string; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
+interface Prefs extends I18nState { appName: string; emojiDialogs: boolean; filtersCollapsed: boolean; tones: Record<string, string>; focusMode: boolean; schoolMode: boolean; dark: boolean; reduceMotion: boolean; largeText: boolean; dimSum: boolean; takeovers: boolean; lockedSettings: string[]; layoutLocked: boolean; tabsLocked: boolean; settingsLocked: boolean; quietHours: boolean; quietFrom: string; quietTo: string; narrate: boolean; narrateRate: number; darkSchedule: boolean; darkFrom: string; darkTo: string; editLock: boolean; tourOffered: boolean; tourResume: { name: string; step: number } | null; sounds: boolean; soundVolume: number; settingsSection: string; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
 const PREFS_KEY = 'map-editor.prefs.v1';
 const DEFAULT_SEED = '#4c8c4a';
-const defaults: Prefs = { tones: {}, focusMode: false, schoolMode: false, lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, largeText: false, dimSum: true, takeovers: true, lockedSettings: [], layoutLocked: false, tabsLocked: false, settingsLocked: false, quietHours: false, quietFrom: '22:00', quietTo: '07:00', narrate: false, narrateRate: 10, darkSchedule: false, darkFrom: '19:00', darkTo: '07:00', editLock: false, tourOffered: false, tourResume: null, sounds: true, soundVolume: 40, settingsSection: 'language', closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
+const defaults: Prefs = { appName: '', emojiDialogs: false, filtersCollapsed: false, tones: {}, focusMode: false, schoolMode: false, lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, largeText: false, dimSum: true, takeovers: true, lockedSettings: [], layoutLocked: false, tabsLocked: false, settingsLocked: false, quietHours: false, quietFrom: '22:00', quietTo: '07:00', narrate: false, narrateRate: 10, darkSchedule: false, darkFrom: '19:00', darkTo: '07:00', editLock: false, tourOffered: false, tourResume: null, sounds: true, soundVolume: 40, settingsSection: 'language', closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
 function loadPrefs(): Prefs { try { return { ...defaults, ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') }; } catch { return { ...defaults }; } }
 let prefs = loadPrefs();
 // Settings history: every saved change to a user-facing setting keeps the previous values,
@@ -290,11 +290,11 @@ function askUnlock(what: string): Promise<boolean> {
 /** Material confirm dialog in place of the browser's confirm(): themed, translated and keyboard friendly. */
 function askConfirm(text: string, ok = tx('ok'), danger = false): Promise<boolean> {
   // Anything destructive needs two keys and a full slide, in every language mode.
-  if (danger) return superConfirm(text, { title: tx('superTitle'), key1: tx('superKey1'), key2: tx('superKey2'), keyOn: tx('superKeyOn'), slide: tx('superSlide'), slideLocked: tx('superSlideLocked'), exit: tx('superExit'), hint: tx('superHint'), done: tx('superDone') });
+  if (danger) return superConfirm(text, { title: emo('⚠️', tx('superTitle')), key1: tx('superKey1'), key2: tx('superKey2'), keyOn: tx('superKeyOn'), slide: tx('superSlide'), slideLocked: tx('superSlideLocked'), exit: tx('superExit'), hint: tx('superHint'), done: tx('superDone') });
   return new Promise((resolve) => {
     const dlg = document.createElement('md-dialog') as HTMLElement & { show: () => void; returnValue: string };
     dlg.setAttribute('type', 'alert');
-    dlg.innerHTML = `<form slot="content" id="ask-form" method="dialog"><p class="ask-text">${esc(text)}</p></form>
+    dlg.innerHTML = `<form slot="content" id="ask-form" method="dialog"><p class="ask-text">${esc(emo('❓', text))}</p></form>
       <div slot="actions"><md-text-button form="ask-form" value="cancel">${esc(tx('cancel'))}</md-text-button><md-filled-button form="ask-form" value="ok" class="${danger ? 'danger' : ''}" autofocus>${esc(ok)}</md-filled-button></div>`;
     document.body.append(dlg);
     dlg.addEventListener('closed', () => { resolve(dlg.returnValue === 'ok'); dlg.remove(); });
@@ -585,15 +585,20 @@ function helpMenu(anchor: HTMLElement) {
   m.querySelector<HTMLElement>('button')?.focus();
 }
 
+/** The name this copy of the app goes by: the one chosen in Settings, or the built-in name. */
+const appName = () => prefs.appName.trim().slice(0, 40) || tx('appName');
+/** One emoji in front of a dialog headline, only when the person switched that on. */
+const emo = (e: string, text: string) => (prefs.emojiDialogs && !prefs.schoolMode ? `${e} ${text}` : text);
 const RAIL_ICONS: Record<string, string> = { worlds: 'globe', editor: 'map', history: 'undo', tools: 'wrench', settings: 'sliders', about: 'info' };
 function shell() {
   const app = document.getElementById('app')!;
+  document.title = world ? `${world.name} · ${appName()}` : appName();
   const open = TABS.filter((x) => !prefs.closedTabs.includes(x));
   if (!open.includes(prefs.tab as Tab)) prefs.tab = open[0] ?? 'worlds';
   app.innerHTML = `
     <header class="top">
       <div class="brand"><div class="logo${customLogo() ? ' custom' : ''}" aria-hidden="true"${customLogo() ? ` style="background-image:url(${customLogo()})"` : ''}></div>
-        <div><div class="md-typescale-headline-medium title">${esc(world?.name ?? tx('appName'))}</div>
+        <div><div class="md-typescale-headline-medium title">${esc(world?.name ?? appName())}</div>
         <div class="md-typescale-body-small muted" id="prov">${esc(provenance())}</div></div></div>
       <button class="search-pill" id="cmd" aria-keyshortcuts="Control+Shift+F"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>${esc(tx('paletteHint'))}</span><kbd>Ctrl Shift F</kbd></button>
       <md-chip-set aria-label="${esc(tx('language'))}">
@@ -658,7 +663,7 @@ function authView(view: HTMLElement) {
   const point = (icon: string, key: Key) => `<li><span class="auth-ico" aria-hidden="true">${iconSvg(icon, 22)}</span><span>${esc(tx(key))}</span></li>`;
   view.innerHTML = `<div class="auth-split"><aside class="auth-hero">
       <div class="auth-blocks" aria-hidden="true">${Array.from({ length: 24 }, (_, i) => `<i style="--i:${i}"></i>`).join('')}</div>
-      <p class="auth-kicker">${esc(tx('appName'))}</p>
+      <p class="auth-kicker">${esc(appName())}</p>
       <h2>${esc(tx('authHero'))}</h2>
       <ul>${point('undo', 'authPoint1')}${point('cube', 'authPoint2')}${point('lock', 'authPoint3')}</ul></aside>
     <section class="card narrow auth-card">
@@ -1208,6 +1213,23 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
     const val = (id: string) => (view.querySelector(id) as HTMLInputElement).value;
     const hq = searchBox('history-search', tx('searchHistory'), rx);
     view.querySelector('#hq-host')!.replaceWith(hq.el);
+    // Filters fold away to give the list the room; the fold is remembered and says how many filters are still on.
+    {
+      const hEl = view.querySelector<HTMLElement>('#h')!, filters = hEl.querySelector<HTMLElement>('.h-filters')!, chipSet = hEl.querySelector<HTMLElement>('md-chip-set')!;
+      const fold = document.createElement('div'); fold.className = 'fold-bar';
+      fold.innerHTML = `<button type="button" id="hf-toggle" class="fold-toggle" aria-controls="hf-body" data-icon="sliders"></button><span class="muted" id="hf-note" aria-live="polite"></span>`;
+      const bodyEl = document.createElement('div'); bodyEl.id = 'hf-body';
+      filters.before(fold, bodyEl); bodyEl.append(filters, chipSet);
+      const active = () => (hq.query().trim() ? 1 : 0) + (hEl.querySelector<HTMLInputElement>('#hfrom')?.value ? 1 : 0) + (hEl.querySelector<HTMLInputElement>('#hto')?.value ? 1 : 0) + Array.from(hEl.querySelectorAll<HTMLElement & { selected: boolean }>('md-filter-chip')).filter((c) => c.selected).length;
+      const sync = () => {
+        const shut = prefs.filtersCollapsed; bodyEl.hidden = shut;
+        const b = fold.querySelector<HTMLElement>('#hf-toggle')!; b.setAttribute('aria-expanded', String(!shut));
+        b.querySelector('.lbl')?.remove(); b.insertAdjacentHTML('beforeend', `<span class="lbl">${esc(tx(shut ? 'filtersShow' : 'filtersHide'))}</span>`);
+        const n = active(); fold.querySelector('#hf-note')!.textContent = shut && n ? tx('filtersActive', { n }) : '';
+      };
+      fold.querySelector('#hf-toggle')!.addEventListener('click', () => { prefs.filtersCollapsed = !prefs.filtersCollapsed; savePrefs(); sync(); });
+      sync();
+    }
     hq.el.after(exportButton(tx('export'), exportNames(), (f) => downloadRows(
       entries.filter((_e, i) => !rows[i]?.hidden).map((e) => ({ time: new Date(e.time * 1000).toISOString(), action: e.action, message: e.message, commit: e.sha })),
       ['time', 'action', 'message', 'commit'], f, `${tx('history')}: ${world?.name ?? ''}`, 'map-editor-history')));
@@ -1471,6 +1493,8 @@ function settingsView(view: HTMLElement) {
         <label class="set-slider" data-find="${esc(tx('funnyEn'))}"><span><b>${esc(tx('funnyEn'))}</b><em>${prefs.funnyEn}</em></span><md-slider id="fen" min="1" max="5" step="1" ticks labeled value="${prefs.funnyEn}"></md-slider></label>
         <label class="set-slider" data-find="${esc(tx('funnyYue'))}"><span><b>${esc(tx('funnyYue'))}</b><em>${prefs.funnyYue}</em></span><md-slider id="fyue" min="1" max="5" step="1" ticks labeled value="${prefs.funnyYue}"></md-slider></label>
       </div><p class="muted">${esc(tx('funnyNote'))}</p>
+      <div class="set-row" data-find="${esc(tx('appNameSet'))} ${esc(tx('appNameNote'))}"><label for="app-name"><span><b>${esc(tx('appNameSet'))}</b><small>${esc(tx('appNameNote'))}</small></span></label><md-outlined-text-field id="app-name" maxlength="40" value="${esc(prefs.appName)}" placeholder="${esc(tx('appName'))}" aria-label="${esc(tx('appNameSet'))}"></md-outlined-text-field><md-text-button id="app-name-reset">${esc(tx('reset'))}</md-text-button></div>
+      ${sw('emoji', 'emojiDialogs', 'emojiDialogsNote', prefs.emojiDialogs)}
       <div class="set-row vocab-row" data-find="${esc(tx('vocab'))} ${esc(tx('vocabNote'))}"><span><b>${esc(tx('vocab'))}</b><small>${esc(tx('vocabNote'))} ${esc(tx('vocabCount', { n: Object.keys(loadVocab()).length }))}</small></span></div>
       <div class="row-actions"><md-filled-tonal-button id="vocab-up">${esc(tx('vocabUpload'))}</md-filled-tonal-button><md-outlined-button id="vocab-template">${esc(tx('vocabTemplate'))}</md-outlined-button>${Object.keys(loadVocab()).length ? `<md-text-button id="vocab-reset">${esc(tx('vocabReset'))}</md-text-button>` : ''}<input type="file" id="vocab-file" accept=".json,application/json" hidden></div>`,
     appearance: `${sw('dark', 'dark', 'darkNote', prefs.dark)}${sw('dsched', 'darkSchedule', 'darkScheduleNote', prefs.darkSchedule)}
@@ -1604,6 +1628,10 @@ function settingsView(view: HTMLElement) {
   });
   view.querySelector('#logo-reset')?.addEventListener('click', async () => { if (!await askConfirm(tx('logoResetAsk'), tx('logoReset'), true)) return; try { localStorage.removeItem(LOGO_KEY); } catch { /* ignore */ } render(); });
   view.querySelector('#focus')!.addEventListener('change', (e) => { prefs.focusMode = sel(e); if (prefs.focusMode) prefs.reduceMotion = true; savePrefs(); applyTheme(); render(); });
+  const nameField = view.querySelector<HTMLInputElement>('#app-name');
+  nameField?.addEventListener('change', () => { prefs.appName = nameField.value.trim().slice(0, 40); savePrefs(); render(); });
+  view.querySelector('#app-name-reset')?.addEventListener('click', () => { prefs.appName = ''; savePrefs(); render(); });
+  view.querySelector('#emoji')?.addEventListener('change', (e) => { prefs.emojiDialogs = (e.target as HTMLElement & { selected: boolean }).selected; savePrefs(); });
   view.querySelector('#school')!.addEventListener('change', async (e) => {
     const on = sel(e);
     if (on && !await askConfirm(tx('schoolAsk'), tx('schoolOn'))) { render(); return; }
@@ -1648,7 +1676,7 @@ function settingsView(view: HTMLElement) {
 async function aboutView(view: HTMLElement): Promise<void> {
   view.innerHTML = `<div class="about">
     <section class="about-card"><div class="about-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-      <h1>${esc(tx('appName'))}</h1>
+      <h1>${esc(appName())}</h1>
       <div class="about-stats"><div><small>${esc(tx('versionLabel'))}</small><b>${esc(health?.version ?? 'unavailable')}</b></div><div><small>${esc(tx('buildLabel'))}</small><code>${esc((health?.commit ?? 'unavailable').slice(0, 7))}</code></div></div>
       <p>${esc(provenance())}</p>
       <p class="fine">${esc(tx('aboutLegal'))}</p>
