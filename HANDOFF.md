@@ -37,35 +37,34 @@ this file covers testing.
   teleport, Update coming soon, extension link dialog, Material dialogs, Tools tab, and passkeys
   end to end with a virtual authenticator. The 40-combination screen sweep (1440 and 390 px, light and
   dark, Cantonese and bilingual) passed at `54cc0a4`, before the Tools tab was added.
-- **Real-world checks** (`.github/workflows/verify.yml`) all passed on release v0.1.58: Docker on the
-  same computer and over SSH, USB flashing with read-back, the Windows app updating itself from
-  v0.1.54, and the Pi image booting on QEMU until the web app answered.
+- **On the final feature commit `eef45aa`**, GitHub Actions ran the type check and the whole test suite
+  (passed). It also built the Docker image, the Windows apps and both appliance images, and published
+  release v0.1.73 with 12 files and line counts in its notes.
+- **Real-world checks** passed on v0.1.73: Docker on the same computer and over SSH, USB flashing with
+  read-back, the Windows app updating itself from the previous complete release, and the Pi image
+  booting on QEMU until the web app answered.
 
 ## Checks left to run
 
-Run these first; none of them has been run on the final commit.
+The test suite, the builds and the real-world checks have passed on the final feature commit (see
+above). These checks still need a person, a browser session or hardware:
 
-1. `npm ci && npm run typecheck && npm test` on the final commit. The whole suite has not been run
-   since `54cc0a4`.
-2. Watch **Build and release** and **Real-world checks** on GitHub Actions for the final commit. The
-   build gates on the tests, the release now needs the Docker and Windows jobs, and the Real-world
-   checks run after a successful release.
-3. Run the screen sweep again with the new **Tools** tab: every screen at 1440 and 390 px, light and
+1. Run the screen sweep again with the new **Tools** tab: every screen at 1440 and 390 px, light and
    dark, English, Cantonese and bilingual. Look for page errors, sideways scrolling and clipped text.
    The bottom bar on phones now has six destinations.
-4. **Appliance in-place updater** (`/usr/local/bin/map-editor-update`, daily through crond): it has
+2. **Appliance in-place updater** (`/usr/local/bin/map-editor-update`, daily through crond): it has
    never run on a booted appliance. On a running appliance, publish a newer image and run the script by
    hand. Check that it switches only after the health check, that it goes back to the old version when
    the new one does not answer, and what it writes to `/var/log/map-editor-update.log`.
-5. **Downloads page**: check the page after the next site build. It fills in from the release list the
+3. **Downloads page**: check the page after the next site build. It fills in from the release list the
    site workflow fetches.
-6. **Passkeys over https**: they were tested only on localhost. Test behind a real https address, with
+4. **Passkeys over https**: they were tested only on localhost. Test behind a real https address, with
    `MAP_EDITOR_ORIGIN` set when a proxy changes the host name. On a plain-http network address the
    page should explain why passkeys are not offered.
-7. **Biome edits in the game**: open an edited world in Minecraft Java 1.21 and check the biome in the
+5. **Biome edits in the game**: open an edited world in Minecraft Java 1.21 and check the biome in the
    F3 screen. The same goes for structure files: check that `/place template` and structure blocks
    accept the .nbt files, and that chest contents arrive.
-8. **Hardware** that CI cannot reach:
+6. **Hardware** that CI cannot reach:
    - the installer and the app on a real Windows PC;
    - the Compose start and the network link from another computer;
    - the appliance on VirtualBox, VMware and a spare PC from USB;
