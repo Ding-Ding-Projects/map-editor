@@ -150,3 +150,12 @@ article figure { margin: 16px 0 24px; } article figure img { width: 100%; height
 .dl-card { display: flex; flex-direction: column; gap: 10px; padding: 24px; border-radius: 28px; background: var(--sc); color: var(--on-sc); }
 .dl-card strong { font-size: 20px; } .dl-card .btn { align-self: flex-start; } .dl-card .btn small { opacity: .8; font-weight: 600; margin-left: 6px; }
 .dl-card code { font-size: 12px; overflow-wrap: anywhere; background: rgba(0,0,0,.06); padding: 10px; border-radius: 12px; }
+
+/* Interactive diagram */
+.diagram { margin: 0; overflow-x: auto; } .diagram svg { width: 100%; min-width: 640px; height: auto; }
+.dnode rect { fill: var(--sc); stroke: var(--p); stroke-width: 2; transition: fill .2s, rx .2s; }
+.dnode .dt { font: 800 18px 'Roboto Flex', system-ui, sans-serif; fill: var(--on-sc); } .dnode .db { font: 13px 'Roboto Flex', system-ui, sans-serif; fill: var(--on-sc); opacity: .8; }
+.dnode:hover rect, .dnode:focus-visible rect { fill: var(--pc); rx: 12px; } .dnode:focus-visible { outline: none; } .dnode:focus-visible rect { stroke-width: 4; }
+.dedge { fill: none; stroke: var(--p); stroke-width: 2.5; stroke-dasharray: 6 6; }
+@media (prefers-reduced-motion: no-preference) { .dedge { animation: dflow 1.6s linear infinite; } }
+@keyframes dflow { to { stroke-dashoffset: -24; } }
