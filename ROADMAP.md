@@ -142,6 +142,8 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Line counts in every release's notes; the README's feature list in collapsible sections that open like tabs.
 - [x] Screen recording in the README: an animated walk through setup, a new world, an edit, the map toolbar, History, Tools and the command palette, recorded in headless Chrome.
 
+- [x] Guide tab: the whole guide (13 articles) is bundled in the app and opens without a network, in English, Cantonese or both, with its own search and regex builder, related links, and a palette row per article. Unit tested for completeness against the site content; checked in headless Chrome at desktop and phone width with no outside requests.
+
 ## Decisions recorded
 
 - Licence: the upstream Amulet licence is kept unaltered in `LICENSE`; the owner holds an Amulet licence for this work.

@@ -35,6 +35,7 @@ import { argbFromHex, themeFromSourceColor, applyTheme as applyM3Theme } from '@
 import { notesPanel as notesPanelImpl } from './notes.js';
 import { contextMenu, initMenus } from './menu.js';
 import { iconSvg, initButtonIcons } from './icons.js';
+import { ARTICLES, docsView, docTitle, openDoc } from './docs.js';
 import { levelUp, otpauthParts, qrSvg, superConfirm, vocabHeadline } from './moments.js';
 
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
@@ -106,7 +107,7 @@ function importSettings(raw: unknown): number {
   return n;
 }
 
-const TABS = ['worlds', 'editor', 'history', 'tools', 'settings', 'about'] as const;
+const TABS = ['worlds', 'editor', 'history', 'tools', 'docs', 'settings', 'about'] as const;
 type Tab = typeof TABS[number];
 
 interface Health { version: string; commit: string; builtAt: string | null }
@@ -349,6 +350,7 @@ function paletteCommands(): Command[] {
   const go = (t: string) => () => { prefs.closedTabs = prefs.closedTabs.filter((x) => x !== t); prefs.tab = t; savePrefs(); render(); };
   const cmds: Command[] = [];
   for (const t of TABS) cmds.push({ id: `go-${t}`, label: `${tx('open')}: ${tx(t as Key)}`, where: 'Tabs', run: go(t) });
+  for (const a of ARTICLES) cmds.push({ id: `doc-${a.slug}`, label: docTitle(a, prefs.lang), where: tx('docs'), run: () => { openDoc(a.slug); go('docs')(); } });
   if (world) for (const [o, k] of [['fill', 'F'], ['replace', 'R'], ['delete', 'D'], ['clone', 'C'], ['waterlog', 'W'], ['biome', 'B']] as const) cmds.push({ id: `tool-${o}`, label: tx(o), where: `${tx('editor')} › Tools`, keys: k, run: () => { go('editor')(); setTimeout(() => selectTool?.(o), 50); } });
   if (world) for (const m of MAP_MODES) cmds.push({ id: `map-${m}`, label: tx(`mode_${m}` as Key), where: `${tx('editor')} › ${tx('mapTools')}`, keys: MAP_MODE_KEYS[m], run: () => { go('editor')(); setTimeout(() => setMapMode?.(m), 50); } });
   if (world) cmds.push({ id: 'undo', label: tx('undo'), where: tx('history'), keys: 'Ctrl+Z', run: () => undoLast() });
@@ -438,6 +440,7 @@ const TAB_ICON: Record<Tab, string> = {
   history: ico('<path d="M3 12a9 9 0 103-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>'),
   settings: ico('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>'),
   about: ico('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>'),
+  docs: ico('<path d="M5 4h10a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M9 9h6M9 13h6"/>'),
   tools: ico('<path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>'),
 };
 
@@ -593,7 +596,7 @@ function helpMenu(anchor: HTMLElement) {
 const appName = () => prefs.appName.trim().slice(0, 40) || tx('appName');
 /** One emoji in front of a dialog headline, only when the person switched that on. */
 const emo = (e: string, text: string) => (prefs.emojiDialogs && !prefs.schoolMode ? `${e} ${text}` : text);
-const RAIL_ICONS: Record<string, string> = { worlds: 'globe', editor: 'map', history: 'undo', tools: 'wrench', settings: 'sliders', about: 'info' };
+const RAIL_ICONS: Record<string, string> = { worlds: 'globe', editor: 'map', history: 'undo', tools: 'wrench', docs: 'book', settings: 'sliders', about: 'info' };
 function shell() {
   const app = document.getElementById('app')!;
   document.title = world ? `${world.name} · ${appName()}` : appName();
@@ -656,6 +659,7 @@ async function render(): Promise<void> {
     case 'history': return historyView(view);
     case 'settings': return settingsView(view);
     case 'about': return aboutView(view);
+    case 'docs': return docsView(view, { lang: prefs.lang, tx: (k, v) => tx(k as Key, v), esc, rx });
     case 'tools': return toolsView(view, (k, v) => tx(k as Key, v), esc, notify);
   }
 }

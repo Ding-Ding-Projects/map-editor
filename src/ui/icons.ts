@@ -44,6 +44,7 @@ const P: Record<string, string> = {
   wrench: '<path d="M14.5 6a4 4 0 0 0 5 5L11 19.5a2.1 2.1 0 0 1-3-3z"/><path d="m16 4 1.5 2.500L20 8"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v0"/>',
   map: '<path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>',
+  book: '<path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M9 9h6M9 13h6"/>',
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/>',
   code: '<path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/>',
   braces: '<path d="M9 4c-2 0-3 1-3 3v2c0 1.5-1 3-2 3 1 0 2 1.5 2 3v2c0 2 1 3 3 3M15 4c2 0 3 1 3 3v2c0 1.5 1 3 2 3-1 0-2 1.5-2 3v2c0 2-1 3-3 3"/>',

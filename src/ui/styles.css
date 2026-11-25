@@ -1028,3 +1028,22 @@ md-outlined-text-field { --md-outlined-text-field-container-shape: 16px; --md-ou
 .ob-results li.no .pill-state { background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); }
 .ob #ob-body .lang-switch { margin: 8px 0; }
 .ob h1[tabindex='-1']:focus { outline: none; }
+
+/* Guide inside the app. */
+.docs { display: grid; grid-template-columns: minmax(220px, 300px) minmax(0, 1fr); gap: 24px; align-items: start; }
+.docs-nav { position: sticky; top: 84px; max-height: calc(100dvh - 100px); overflow: auto; display: grid; gap: 8px; align-content: start; }
+.doc-group { margin: 12px 0 2px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--md-sys-color-on-surface-variant); }
+#doc-list { display: grid; gap: 2px; }
+.doc-item { all: unset; box-sizing: border-box; padding: 10px 14px; border-radius: 999px; cursor: pointer; font-weight: 600; transition: border-radius .25s cubic-bezier(.2,0,0,1), background-color .2s; }
+.doc-item:hover { background: var(--md-sys-color-surface-container-high); }
+.doc-item.on { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); border-radius: 22px 10px 22px 10px; }
+.doc-item:focus-visible, .doc-link:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; }
+.docs-article { max-width: 76ch; padding: 28px 32px; border-radius: 36px 12px 36px 12px; background: var(--md-sys-color-surface-container-low); outline: none; }
+.docs-article h2 { margin: 0 0 8px; font-family: 'Roboto Flex', sans-serif; font-size: clamp(30px, 3.4vw, 46px); line-height: 1.02; font-variation-settings: 'wdth' 120, 'wght' 850; letter-spacing: -.02em; }
+.docs-article h3 { margin: 22px 0 4px; font-size: 20px; font-weight: 800; }
+.docs-article p { margin: 0 0 8px; line-height: 1.55; } .doc-lead p { font-size: 18px; } .doc-yue { opacity: .9; }
+.doc-crumb { margin: 0 0 6px; font-weight: 700; color: var(--md-sys-color-primary); }
+.doc-related { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 16px; }
+.doc-link { border: 0; min-height: 40px; padding: 0 16px; border-radius: 20px; background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); font: inherit; font-weight: 700; cursor: pointer; }
+@media (max-width: 860px) { .docs { grid-template-columns: 1fr; } .docs-nav { position: static; max-height: none; } .docs-article { padding: 20px; } }
+@media (prefers-reduced-motion: reduce) { .doc-item { transition: none; } }
