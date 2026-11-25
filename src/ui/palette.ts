@@ -1,5 +1,6 @@
 // Command palette (Ctrl+Shift+F): every command and setting in one searchable list.
 // Settings are live switches in the result row; Enter runs, Esc closes. Matches the Palette board.
+import { searchBox, type RegexText } from './regex.js';
 export interface Command {
   id: string;
   label: string;
@@ -12,26 +13,33 @@ export interface Command {
 
 let open: HTMLElement | undefined;
 
-export function openPalette(commands: () => Command[], t: { title: string; hint: string; none: string }) {
-  if (open) { (open.querySelector('input') as HTMLInputElement).focus(); return; }
+export function openPalette(commands: () => Command[], t: { title: string; hint: string; none: string }, rx: RegexText) {
+  if (open) { (open.querySelector('[data-search] input') as HTMLInputElement).focus(); return; }
   const back = document.createElement('div');
   back.className = 'palette-scrim';
   back.innerHTML = `<section class="palette" role="dialog" aria-modal="true" aria-label="${t.title}">
     <div class="palette-search"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-      <input type="search" placeholder="${t.hint}" aria-label="${t.hint}" aria-controls="palette-list" autocomplete="off"></div>
+      <div id="palette-q"></div></div>
     <div id="palette-list" class="palette-list" role="listbox"></div>
     <div class="palette-foot"><span>Enter to run</span><span>Space toggles a setting</span><span>Esc to close</span></div></section>`;
   document.body.append(back);
   open = back;
-  const input = back.querySelector('input')!;
+  const box = searchBox('palette-search', t.hint, rx, { compact: true });
+  back.querySelector('#palette-q')!.replaceWith(box.el);
+  const input = box.input;
+  input.setAttribute('aria-controls', 'palette-list'); input.placeholder = t.hint;
   const listEl = back.querySelector<HTMLElement>('#palette-list')!;
   let items: Command[] = [];
   let active = 0;
   const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
-  function draw() {
-    const q = input.value.trim().toLowerCase();
-    items = commands().filter((c) => !q || `${c.label} ${c.where}`.toLowerCase().includes(q));
+  let run = 0;
+  async function draw() {
+    const my = ++run;
+    const all = commands();
+    const hits = await box.filter(all.map((c) => `${c.label} ${c.where}`)) ?? all.map(() => false);
+    if (my !== run || !open) return;
+    items = all.filter((_, i) => hits[i]);
     active = Math.min(active, Math.max(0, items.length - 1));
     const settings = items.filter((c) => c.toggle), cmds = items.filter((c) => !c.toggle);
     const row = (c: Command) => {
@@ -59,6 +67,8 @@ export function openPalette(commands: () => Command[], t: { title: string; hint:
   }
   function close() { back.remove(); open = undefined; document.removeEventListener('keydown', onKey, true); }
   function onKey(e: KeyboardEvent) {
+    // Keys inside the regex builder belong to the builder (its own Escape closes it).
+    if ((e.target as HTMLElement | null)?.closest?.('.sb-panel, .sb-rx, .sb-open')) return;
     if (e.key === 'Escape') { e.preventDefault(); close(); }
     else if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(items.length - 1, active + 1); draw(); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(0, active - 1); draw(); }
@@ -67,7 +77,7 @@ export function openPalette(commands: () => Command[], t: { title: string; hint:
   }
   document.addEventListener('keydown', onKey, true);
   back.addEventListener('click', (e) => { if (e.target === back) close(); });
-  input.addEventListener('input', () => { active = 0; draw(); });
+  box.onChange(() => { active = 0; draw(); });
   draw();
   input.focus();
 }

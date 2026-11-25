@@ -61,10 +61,11 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Rich text notes per world with self-hosted TinyMCE, autosaved; typing and saving checked in headless Chrome.
 - [ ] TinyMCE for every other rich text field.
 - [x] Command palette on Ctrl+Shift+F: every tab, tool, undo, language and appearance setting, with settings as live switches in the result row; checked in headless Chrome.
-- [ ] Palette: regex builder, teleport to the exact element, remembered size.
+- [ ] Palette: teleport to the exact element, remembered size.
 - [x] Infinite colour picker: continuous field, hue and opacity, any-notation translator (name, HEX, HEX8, RGB, HSL, HSV, HWB, LAB, LCH, OKLab, OKLCH, CMYK), gamut and contrast notes, copy, recent colours, animated rainbow marker with one global speed. Drives the theme seed live; checked in headless Chrome and unit tested.
 - [ ] Colour picker on every other colour control; per-element appearance editor; logo customization.
-- [ ] Regex builder on every search field.
+- [x] Regex builder beside every search field (settings, history, changelog, command palette): plain text by default, `.*` per field, worker-isolated ECMAScript engine stopped after 250 ms, raw pattern synced both ways, flags i m s u, sample with highlights and capture groups, copy and export, nothing saved; unit tested (zero-width, Unicode, multiline, limits, invalid) plus a catalogue test that fails on any search field outside the builder; checked in headless Chrome including a catastrophic pattern.
+- [ ] Search with the builder on dropdowns and right-click menus once the app has them.
 - [x] Settings in sections (Language and voice, Appearance, Comfort and focus, Backup and history, Coming later) with search across every section, Large text, Export and Import (only known settings with the right types are accepted) and a settings history where every change can be restored; checked in headless Chrome.
 - [ ] ADHD modes, narration, school mode, scheduled settings, personal vocabulary upload.
 - [x] Notification centre behind the bell with a count badge and Dismiss all.

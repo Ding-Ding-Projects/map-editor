@@ -26,6 +26,7 @@ try {
 writeFileSync(path.join(dist, 'build-info.json'), JSON.stringify({ version: pkg.version, commit, builtAt, changelog }, null, 2));
 
 const common = { bundle: true, sourcemap: true, logLevel: 'info', legalComments: 'linked' };
+await build({ ...common, entryPoints: [path.join(root, 'src/ui/regex-worker.ts')], outfile: path.join(dist, 'ui/regex-worker.js'), format: 'esm', platform: 'browser', target: 'es2022', minify: true });
 await build({ ...common, entryPoints: [path.join(root, 'src/ui/main.ts')], outfile: path.join(dist, 'ui/app.js'), format: 'esm', platform: 'browser', target: 'es2022', minify: true });
 copyFileSync(path.join(root, 'src/ui/index.html'), path.join(dist, 'ui/index.html'));
 copyFileSync(path.join(root, 'src/ui/styles.css'), path.join(dist, 'ui/app.css'));

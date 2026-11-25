@@ -3,6 +3,7 @@ import '@material/web/all.js';
 import { styles as typescaleStyles } from '@material/web/typography/md-typescale-styles.js';
 import { t as tr, type I18nState, type Key, type Lang } from './i18n.js';
 import { mountWorkspace, PHONE } from './workspace.js';
+import { searchBox, type RegexText } from './regex.js';
 import { worldsView } from './worlds.js';
 import { openPalette, type Command } from './palette.js';
 import { onboarding } from './onboarding.js';
@@ -74,6 +75,7 @@ let world: { name: string; versionName?: string; path: string; dimensions?: stri
 let fitPending = false; // centre the map on the world's chunks the next time the editor draws
 
 const tx = (k: Key, v: Record<string, string | number> = {}) => tr(prefs, k, v);
+const rx: RegexText = (k, v) => tx(k, v);
 const esc = (s: unknown) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
 // ---------- api ----------
@@ -135,7 +137,7 @@ function paletteCommands(): Command[] {
 
 function showPalette() {
   if (!user) return;
-  openPalette(paletteCommands, { title: tx('palette'), hint: tx('paletteHint'), none: tx('noMatches') });
+  openPalette(paletteCommands, { title: tx('palette'), hint: tx('paletteHint'), none: tx('noMatches') }, rx);
 }
 
 // ---------- theme ----------
@@ -415,7 +417,7 @@ async function historyView(view: HTMLElement): Promise<void> {
   try {
     const { entries } = await api<{ entries: Array<{ sha: string; message: string; action: string; time: number }> }>('/api/history');
     const counts = new Map<string, number>(); for (const e of entries) counts.set(e.action, (counts.get(e.action) ?? 0) + 1);
-    view.querySelector('#h')!.innerHTML = `<div class="h-filters"><md-outlined-text-field id="hq" type="search" label="${esc(tx('searchHistory'))}"></md-outlined-text-field>
+    view.querySelector('#h')!.innerHTML = `<div class="h-filters"><div id="hq-host"></div>
         <md-outlined-text-field id="hfrom" type="date" label="${esc(tx('fromDate'))}"></md-outlined-text-field><md-outlined-text-field id="hto" type="date" label="${esc(tx('toDate'))}"></md-outlined-text-field></div>
       <p class="muted" id="hcount" aria-live="polite"></p><md-chip-set>${[...counts].map(([a, n]) => `<md-filter-chip data-a="${esc(a)}" label="${esc(a)} · ${n}"></md-filter-chip>`).join('')}</md-chip-set>
       <md-list>${entries.map((e, i) => `<md-list-item data-row="${esc(e.action)}" data-t="${e.time}" data-text="${esc((e.message + ' ' + e.sha).toLowerCase())}"><div slot="headline">${esc(e.message)}</div>
@@ -423,14 +425,20 @@ async function historyView(view: HTMLElement): Promise<void> {
         ${i > 0 ? `<md-text-button slot="end" data-sha="${esc(e.sha)}">${esc(tx('rollBack'))}</md-text-button>` : ''}</md-list-item>`).join('')}</md-list>`;
     const active = new Set<string>();
     const val = (id: string) => (view.querySelector(id) as HTMLInputElement).value;
-    const filter = () => {
-      const q = val('#hq').trim().toLowerCase();
+    const hq = searchBox('history-search', tx('searchHistory'), rx);
+    view.querySelector('#hq-host')!.replaceWith(hq.el);
+    const rows = Array.from(view.querySelectorAll<HTMLElement>('[data-row]'));
+    let run = 0;
+    const filter = async () => {
+      const my = ++run;
+      const hits = await hq.filter(rows.map((r) => r.dataset.text!)) ?? rows.map(() => false);
+      if (my !== run) return;
       const from = val('#hfrom') ? new Date(val('#hfrom') + 'T00:00:00').getTime() / 1000 : -Infinity;
       const to = val('#hto') ? new Date(val('#hto') + 'T23:59:59').getTime() / 1000 : Infinity;
       let shown = 0;
       view.querySelectorAll<HTMLElement>('[data-row]').forEach((r) => {
         const t = Number(r.dataset.t);
-        r.hidden = (active.size > 0 && !active.has(r.dataset.row!)) || (q !== '' && !r.dataset.text!.includes(q)) || t < from || t > to;
+        r.hidden = (active.size > 0 && !active.has(r.dataset.row!)) || !hits[rows.indexOf(r)] || t < from || t > to;
         if (!r.hidden) shown++;
       });
       view.querySelector('#hcount')!.textContent = tx('historyCount', { shown, total: entries.length });
@@ -438,7 +446,8 @@ async function historyView(view: HTMLElement): Promise<void> {
     view.querySelectorAll<HTMLElement>('[data-a]').forEach((c) => c.addEventListener('click', () => {
       const a = c.dataset.a!; active.has(a) ? active.delete(a) : active.add(a); filter();
     }));
-    for (const id of ['#hq', '#hfrom', '#hto']) view.querySelector(id)!.addEventListener('input', filter);
+    hq.onChange(filter);
+    for (const id of ['#hfrom', '#hto']) view.querySelector(id)!.addEventListener('input', filter);
     filter();
     view.querySelectorAll<HTMLElement>('[data-sha]').forEach((b) => b.addEventListener('click', async () => {
       try { await api('/api/history/restore', { method: 'POST', body: { sha: b.dataset.sha } }); notify(tx('restored')); historyView(view); }
@@ -469,7 +478,7 @@ function settingsView(view: HTMLElement) {
   };
   view.innerHTML = `<div class="settings">
     <nav class="set-nav" aria-label="${esc(tx('settings'))}"><h1>${esc(tx('settings'))}</h1>
-      <md-outlined-text-field id="ss" type="search" label="${esc(tx('searchSettings'))}"></md-outlined-text-field>
+      <div id="ss-host"></div>
       <div role="tablist" aria-orientation="vertical">${SECTIONS.map(([id, k]) => `<button role="tab" class="set-tab${id === sec ? ' on' : ''}" aria-selected="${id === sec}" data-sec="${id}">${esc(tx(k))}</button>`).join('')}</div></nav>
     <main class="set-main" id="set-main">${SECTIONS.map(([id, k]) => `<section class="set-sec" data-sec-body="${id}" ${id === sec ? '' : 'hidden'}><h2>${esc(tx(k))}</h2>${body[id]}</section>`).join('')}
       <p class="muted" id="ss-none" hidden></p></main></div>`;
@@ -480,16 +489,23 @@ function settingsView(view: HTMLElement) {
     tabs[(i + (ke.key === 'ArrowDown' ? 1 : tabs.length - 1)) % tabs.length]?.focus(); ke.preventDefault();
   });
   // Search shows every matching row across all sections at once.
-  const ss = view.querySelector<HTMLInputElement>('#ss')!;
-  ss.addEventListener('input', () => {
-    const q = ss.value.trim().toLowerCase(); let hits = 0;
+  const ss = searchBox('settings-search', tx('searchSettings'), rx);
+  view.querySelector('#ss-host')!.replaceWith(ss.el);
+  const findRows = Array.from(view.querySelectorAll<HTMLElement>('[data-sec-body] [data-find]'));
+  let ssRun = 0;
+  ss.onChange(async () => {
+    const my = ++ssRun;
+    const q = ss.query().trim();
+    const hits = await ss.filter(findRows.map((r) => r.dataset.find!)) ?? findRows.map(() => false);
+    if (my !== ssRun) return;
+    let count = 0;
     view.querySelectorAll<HTMLElement>('[data-sec-body]').forEach((secEl) => {
       if (!q) { secEl.hidden = secEl.dataset.secBody !== sec; secEl.querySelectorAll<HTMLElement>('[data-find]').forEach((r) => r.hidden = false); return; }
       let any = false;
-      secEl.querySelectorAll<HTMLElement>('[data-find]').forEach((r) => { const m = r.dataset.find!.toLowerCase().includes(q); r.hidden = !m; any ||= m; if (m) hits++; });
+      secEl.querySelectorAll<HTMLElement>('[data-find]').forEach((r) => { const m = hits[findRows.indexOf(r)]; r.hidden = !m; any ||= m; if (m) count++; });
       secEl.hidden = !any;
     });
-    const none = view.querySelector<HTMLElement>('#ss-none')!; none.hidden = !q || hits > 0; none.textContent = tx('noSettingMatch', { q: ss.value.trim() });
+    const none = view.querySelector<HTMLElement>('#ss-none')!; none.hidden = !q || count > 0; none.textContent = tx('noSettingMatch', { q });
   });
   view.querySelectorAll<HTMLElement>('[data-set-lang]').forEach((b) => b.addEventListener('click', () => { prefs.lang = b.dataset.setLang as Prefs['lang']; savePrefs(); applyTheme(); render(); }));
   const num = (id: string) => Number((view.querySelector(id) as HTMLInputElement).value);
@@ -539,7 +555,7 @@ async function aboutView(view: HTMLElement): Promise<void> {
       <p class="fine">${esc(tx('aboutLegal'))}</p>
       <div class="row-actions"><md-filled-button id="copy-ver">${esc(tx('copyDetails'))}</md-filled-button></div></section>
     <section class="changelog"><div class="cl-head"><h2>${esc(tx('changelog'))}</h2>
-      <md-outlined-text-field id="cl-q" label="${esc(tx('searchChanges'))}" type="search"></md-outlined-text-field></div>
+      <div id="cl-q-host"></div></div>
       <ol id="cl" aria-live="polite"><li class="muted">${esc(tx('loading'))}</li></ol></section></div>`;
   view.querySelector('#copy-ver')!.addEventListener('click', () => navigator.clipboard?.writeText(`Map Editor ${health?.version} ${health?.commit} ${health?.builtAt ?? ''}`).then(() => notify(tx('copied')), () => notify(tx('copyFailed'), true)));
   const listEl = view.querySelector<HTMLElement>('#cl')!;
@@ -547,16 +563,22 @@ async function aboutView(view: HTMLElement): Promise<void> {
   let entries: Entry[] | null = null;
   try { entries = (await api<{ entries: Entry[] | null }>('/api/changelog')).entries; } catch (e) { notify((e as Error).message, true); }
   const kind = (s: string) => /^(add|new|build|introduc)/i.test(s) ? 'added' : /^(fix|repair|correct)/i.test(s) ? 'fixed' : 'changed';
-  const draw = () => {
+  const clq = searchBox('changelog-search', tx('searchChanges'), rx);
+  view.querySelector('#cl-q-host')!.replaceWith(clq.el);
+  let clRun = 0;
+  const draw = async () => {
     if (!listEl.isConnected) return;
     if (!entries) { listEl.innerHTML = `<li class="muted">${esc(tx('changelogUnavailable'))}</li>`; return; }
-    const q = ((view.querySelector('#cl-q') as HTMLInputElement | null)?.value ?? '').trim().toLowerCase();
+    const my = ++clRun;
+    const q = clq.query().trim();
     const all: Entry[] = entries;
-    const shown = all.filter((e) => !q || e.subject.toLowerCase().includes(q) || e.sha.startsWith(q));
+    const hits = await clq.filter(all.map((e) => `${e.subject} ${e.sha}`)) ?? all.map(() => false);
+    if (my !== clRun || !listEl.isConnected) return;
+    const shown = all.filter((_, i) => hits[i]);
     listEl.innerHTML = shown.length ? shown.map((e, i) => `<li class="cl-entry${i === 0 && !q ? ' newest' : ''}" style="--i:${Math.min(i, 12)}"><span class="cl-kind ${kind(e.subject)}">${esc(tx(kind(e.subject) as Key))}</span>
       <span class="cl-text"><b>${esc(e.subject)}</b><small>${esc(new Date(e.date).toLocaleString('en-GB'))} · <code>${esc(e.sha.slice(0, 7))}</code></small></span></li>`).join('') : `<li class="muted">${esc(tx('noMatches'))}</li>`;
   };
-  view.querySelector('#cl-q')!.addEventListener('input', draw);
+  clq.onChange(draw);
   draw();
 }
 

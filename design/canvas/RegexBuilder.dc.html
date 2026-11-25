@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map Editor search with regex builder</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,100..125,400..800&amp;family=Roboto+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid #8FD88A;outline-offset:2px}
+mark{border-radius:4px;padding:0 1px}
+@keyframes dc-rise{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+.moving section,.moving aside,.moving header,.moving main,.moving nav,.moving footer{animation:dc-rise .6s cubic-bezier(.2,0,0,1) both}
+.moving aside{animation-delay:.08s}.moving main{animation-delay:.05s}.moving footer{animation-delay:.14s}
+.moving button,.moving a{transition:border-radius .22s cubic-bezier(.2,0,0,1),background-color .2s,transform .2s,box-shadow .2s}
+.moving button:hover,.moving a:hover{transform:translateY(-1px)}
+.moving button:active{transform:scale(.97)}
+.still *{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div class="{{motionClass}}" style="min-height: 900px; padding: 24px; box-sizing: border-box; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif; font-size: 14px">
+  <div style="max-width: 1360px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start">
+    <main style="flex: 1 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 24px; border-radius: 32px; background: {{t.surfaceContainerLow}}">
+      <h1 style="margin: 0; font-size: 32px; line-height: 40px; font-weight: 800; letter-spacing: -0.5px">Search edits</h1>
+      <div style="display: flex; gap: 4px; align-items: stretch">
+        <div style="flex: 1; min-width: 0; height: 56px; padding: 0 16px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; border: 2px solid {{fieldBorder}}; border-radius: 16px 4px 4px 16px">
+          <span style="font-size: 12px; color: {{t.onSurfaceVariant}}">Search edits</span>
+          <span style="font-size: 16px; font-family: {{fieldFont}}">{{pattern}}</span>
+        </div>
+        <button aria-pressed="{{regex}}" aria-label="Use regular expression" onClick="{{flipRegex}}" style="{{rxStyle}}">.*</button>
+        <button aria-expanded="{{panel}}" aria-label="Regex builder" onClick="{{flipPanel}}" style="{{openStyle}}">⚙</button>
+      </div>
+      <sc-if value="{{hasState}}" hint-placeholder-val="{{ false }}">
+        <p role="status" style="margin: 0; font-size: 12px; color: {{t.error}}">{{stateText}}</p>
+      </sc-if>
+      <p style="margin: 0; color: {{t.onSurfaceVariant}}">{{countText}}</p>
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+          <div style="{{r.style}}"><span style="font-weight: 600">{{r.text}}</span><span style="font-size: 12px; color: {{t.onSurfaceVariant}}">{{r.when}}</span></div>
+        </sc-for>
+      </div>
+    </main>
+
+    <sc-if value="{{panel}}" hint-placeholder-val="{{ true }}">
+      <aside aria-label="Regex builder" style="flex: 0 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 20px; border-radius: 28px; background: {{t.surfaceContainerHigh}}">
+        <p style="margin: 0; font-size: 12px; line-height: 18px; color: {{t.onSurfaceVariant}}">JavaScript RegExp (ECMAScript), the engine this search uses. Runs on this device in a separate worker and stops after 250 ms. Pattern up to 512 characters, sample up to 10,000, first 500 matches shown. Nothing is saved or sent.</p>
+        <span style="font-size: 12px; font-weight: 600; color: {{t.onSurfaceVariant}}">Pattern presets</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px">
+          <sc-for list="{{presets}}" as="p" hint-placeholder-count="5">
+            <button onClick="{{p.pick}}" style="{{p.style}}">{{p.label}}</button>
+          </sc-for>
+        </div>
+        <span style="font-size: 12px; font-weight: 600; color: {{t.onSurfaceVariant}}">Insert</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px">
+          <sc-for list="{{tokens}}" as="k" hint-placeholder-count="12">
+            <button onClick="{{k.add}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid {{t.outlineVariant}}; background: {{t.surfaceContainerHighest}}; color: {{t.onSurface}}; font-family: 'Roboto Mono', monospace; font-size: 13px">{{k.tok}}</button>
+          </sc-for>
+        </div>
+        <span style="font-size: 12px; font-weight: 600; color: {{t.onSurfaceVariant}}">Flags</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px">
+          <sc-for list="{{flags}}" as="f" hint-placeholder-count="4">
+            <button role="checkbox" aria-checked="{{f.on}}" onClick="{{f.flip}}" style="{{f.style}}"><code>{{f.f}}</code> {{f.label}}</button>
+          </sc-for>
+        </div>
+        <span style="font-size: 12px; font-weight: 600; color: {{t.onSurfaceVariant}}">Sample text</span>
+        <div aria-hidden="true" style="padding: 10px 12px; border-radius: 12px; background: {{t.surface}}; font-family: 'Roboto Mono', monospace; font-size: 13px; line-height: 1.7; white-space: pre-wrap">
+          <sc-for list="{{pieces}}" as="s" hint-placeholder-count="5"><span style="{{s.style}}">{{s.text}}</span></sc-for>
+        </div>
+        <p style="margin: 0; font-weight: 600">{{sampleCount}}</p>
+        <div style="display: flex; flex-direction: column; gap: 2px; font-size: 12px">
+          <sc-for list="{{groups}}" as="g" hint-placeholder-count="2">
+            <span style="font-family: 'Roboto Mono', monospace">{{g}}</span>
+          </sc-for>
+        </div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap">
+          <button style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 600">Copy pattern</button>
+          <button style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 600">Export .json</button>
+          <button onClick="{{flipPanel}}" style="height: 36px; padding: 0 14px; border-radius: 18px; border: 0; background: {{t.secondaryContainer}}; color: {{t.onSecondaryContainer}}; font-weight: 600">Close builder</button>
+        </div>
+      </aside>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"seed":{"editor":"color","default":"#4C8C4A"},"motion":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { const v = this.baseVals(); const s = this.props.seed ?? '#4C8C4A'; if (v.t && s.toLowerCase() !== '#4c8c4a') { v.t.primary = s; v.t.onPrimary = '#FFFFFF'; } v.motionClass = (this.props.motion ?? true) ? 'moving' : 'still'; return v; }
+  baseVals() {
+    const dark = this.props.dark ?? true;
+    const t = dark ? {
+      primary:'#8FD88A', onPrimary:'#00390A', secondaryContainer:'#3B4B38', onSecondaryContainer:'#D6E8CF', error:'#FFB4AB',
+      tertiaryContainer:'#1F4D53', onTertiaryContainer:'#BCEBF0',
+      surface:'#10140F', surfaceContainerLow:'#181D17', surfaceContainerHigh:'#262B25', surfaceContainerHighest:'#31362F',
+      onSurface:'#E0E4DA', onSurfaceVariant:'#C2C9BD', outline:'#8C9388', outlineVariant:'#42493F'
+    } : {
+      primary:'#2E6B2C', onPrimary:'#FFFFFF', secondaryContainer:'#D6E8CF', onSecondaryContainer:'#111F0F', error:'#BA1A1A',
+      tertiaryContainer:'#BCEBF0', onTertiaryContainer:'#002023',
+      surface:'#F7FBF1', surfaceContainerLow:'#F1F5EB', surfaceContainerHigh:'#E5EAE0', surfaceContainerHighest:'#E0E4DA',
+      onSurface:'#181D17', onSurfaceVariant:'#42493F', outline:'#72796E', outlineVariant:'#C2C9BD'
+    };
+    const regex = this.state.regex ?? true;
+    const panel = this.state.panel ?? true;
+    const pattern = this.state.pattern ?? '^(Fill|Replace) (\\d+)×';
+    const fl = this.state.fl ?? { i: true, m: false, s: false, u: false };
+    const flagStr = Object.keys(fl).filter((k) => fl[k]).join('');
+    const items = [
+      ['Fill 8×1×8 with minecraft:gold_block', 'Today 02:12'], ['Replace 16×4×16 stone with deepslate', 'Today 01:58'], ['Clone 4×4×4 to 120, 64, -30', 'Yesterday 21:40'],
+      ['Restore to 87a6612', 'Yesterday 21:02'], ['Waterlog 12×1×12 oak_stairs', 'Mon 18:30'], ['World opened · baseline', 'Mon 18:02']
+    ];
+    let re = null, err = '';
+    if (pattern.length > 512) err = 'Too large: patterns are limited to 512 characters.';
+    else if (/\(a\+\)\+\$/.test(pattern)) err = 'Stopped after 250 ms; this pattern takes too long.';
+    else { try { re = new RegExp(pattern, flagStr); } catch (e) { err = 'Not a valid pattern: ' + String(e.message).replace(/^Invalid regular expression: \/.*\/[a-z]*: /s, ''); } }
+    const hit = (s) => !regex ? s.toLowerCase().includes(pattern.toLowerCase()) : re ? re.test(s) : false;
+    const shown = items.filter(([s]) => hit(s));
+    const rows = items.map(([text, when]) => ({ text, when, style: 'display: ' + (hit(text) ? 'flex' : 'none') + '; flex-direction: column; gap: 2px; padding: 12px 16px; border-radius: 16px; background: ' + t.surfaceContainerHigh }));
+    const sample = 'Fill 8×8 then Replace 16×2\nclone 4×4';
+    const pieces = []; let sampleCount = 'No matches in the sample.'; const groups = [];
+    if (re) {
+      const g = new RegExp(pattern, flagStr + 'g'); let at = 0, m, n = 0;
+      while ((m = g.exec(sample)) && n < 500) {
+        pieces.push({ text: sample.slice(at, m.index), style: '' });
+        pieces.push({ text: m[0] || '│', style: 'background: ' + t.tertiaryContainer + '; color: ' + t.onTertiaryContainer + '; border-radius: 4px; outline: 1px solid ' + t.primary });
+        if (m.length > 1) groups.push('#' + (n + 1) + '  0 = ' + m[0] + m.slice(1).map((x, i) => '   ' + (i + 1) + ' = ' + (x ?? '–')).join(''));
+        at = m.index + m[0].length; n++; if (m[0] === '') g.lastIndex++;
+      }
+      pieces.push({ text: sample.slice(at), style: '' });
+      if (n) sampleCount = n + ' matches';
+    } else { pieces.push({ text: sample, style: '' }); sampleCount = err || 'Regex is off: plain text search.'; }
+    const presetList = [['^(Fill|Replace) (\\d+)×', 'Starts with Fill or Replace'], ['\\d+×\\d+', 'Sizes'], ['(?<sha>[0-9a-f]{7})', 'Commit ids'], ['(bad', 'Invalid'], ['(a+)+$', 'Too slow']];
+    const presets = presetList.map(([p, label]) => ({ label, pick: () => this.setState({ pattern: p, regex: true }), style: 'height: 32px; padding: 0 12px; border-radius: 16px; font-size: 13px; font-weight: 600; ' + (p === pattern ? 'border: 0; background: ' + t.secondaryContainer + '; color: ' + t.onSecondaryContainer : 'border: 1px solid ' + t.outline + '; background: transparent; color: ' + t.onSurface) }));
+    const tokens = ['\\d', '\\w', '\\s', '.', '[a-z]', '^', '$', '\\b', '( )', '|', '+', '?'].map((tok) => ({ tok, add: () => this.setState({ pattern: pattern + tok.replace(' ', ''), regex: true }) }));
+    const labels = { i: 'ignore case', m: '^ and $ per line', s: '. matches new lines', u: 'Unicode' };
+    const flags = Object.keys(labels).map((f) => ({ f, label: labels[f], on: !!fl[f], flip: () => this.setState({ fl: { ...fl, [f]: !fl[f] }, regex: true }),
+      style: 'height: 32px; padding: 0 12px; border-radius: 8px; font-size: 13px; ' + (fl[f] ? 'border: 0; background: ' + t.primary + '; color: ' + t.onPrimary : 'border: 1px solid ' + t.outline + '; background: transparent; color: ' + t.onSurface) }));
+    const bad = regex && !!err;
+    return {
+      t, regex, panel, pattern, rows, presets, tokens, flags, pieces, sampleCount, groups,
+      hasState: bad, stateText: err,
+      countText: bad ? 'Showing 0 of 6 edits' : 'Showing ' + shown.length + ' of 6 edits',
+      fieldBorder: bad ? t.error : t.primary,
+      fieldFont: regex ? "'Roboto Mono', monospace" : 'inherit',
+      flipRegex: () => this.setState({ regex: !regex }),
+      flipPanel: () => this.setState({ panel: !panel }),
+      rxStyle: 'width: 56px; border-radius: ' + (regex ? '14px' : '4px') + '; font-family: Roboto Mono, monospace; font-weight: 700; font-size: 16px; ' + (regex ? 'border: 0; background: ' + t.primary + '; color: ' + t.onPrimary : 'border: 1px solid ' + t.outline + '; background: transparent; color: ' + t.onSurfaceVariant),
+      openStyle: 'width: 56px; border-radius: 4px 16px 16px 4px; font-size: 18px; ' + (panel ? 'border: 0; background: ' + t.secondaryContainer + '; color: ' + t.onSecondaryContainer : 'border: 1px solid ' + t.outline + '; background: transparent; color: ' + t.onSurfaceVariant)
+    };
+  }
+}
+</script>
+</body>
+</html>
