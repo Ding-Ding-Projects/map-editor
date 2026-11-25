@@ -43,6 +43,10 @@
    "name": "Help and tours"
   },
   {
+   "id": "tools",
+   "name": "Tools"
+  },
+  {
    "id": "mobile",
    "name": "Phone"
   },
@@ -190,6 +194,16 @@
    "page": "help",
    "is_interactive": true
   },
+  "Tools.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Tools: Base64, JSON to TypeScript, coordinates",
+   "expand": "fill",
+   "page": "tools",
+   "is_interactive": true
+  },
   "SiteHome.dc.html": {
    "x": 0,
    "y": 0,
@@ -215,6 +229,7 @@
   "DeployManage.dc.html",
   "About.dc.html",
   "Tour.dc.html",
+  "Tools.dc.html",
   "SiteHome.dc.html"
  ],
  "notes": {
@@ -285,12 +300,20 @@
   "t8": {
    "x": 0,
    "y": -300,
+   "text": "Tools",
+   "kind": "title1",
+   "maxW": 2400,
+   "page": "tools"
+  },
+  "t9": {
+   "x": 0,
+   "y": -300,
    "text": "Phone",
    "kind": "title1",
    "maxW": 2400,
    "page": "mobile"
   },
-  "t9": {
+  "t10": {
    "x": 0,
    "y": -300,
    "text": "Deploy app",
@@ -298,7 +321,7 @@
    "maxW": 2400,
    "page": "deploy"
   },
-  "t10": {
+  "t11": {
    "x": 0,
    "y": -300,
    "text": "Docs site",
@@ -310,7 +333,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Editor workspace. Shows the panel layout: tab strip docked left with Close and Open every tab, map, Fill tool, floating Block palette group, floating toolbar, snackbar.\nTry: Tweaks dark, showFloat, showDrop, seed, motion; click tabs, tools, toolbar modes.\nIn the app: panels, map, the five tools, history, notes, language chips. Also: a Biome tool, world presets, a Tools tab (no board yet), the Side view panel, structure files (.nbt save and place, undoable), the Blocks panel and the floating map toolbar with Pan, Select, Pick block, Measure and Go to. Not in the app yet: per-element appearance.",
+   "text": "Editor workspace. Shows the panel layout: tab strip docked left with Close and Open every tab, map, Fill tool, floating Block palette group, floating toolbar, snackbar.\nTry: Tweaks dark, showFloat, showDrop, seed, motion; click tabs, tools, toolbar modes.\nIn the app: panels, map, the five tools, history, notes, language chips. Also: a Biome tool, world presets, a Tools tab (its own board), the Side view panel, structure files (.nbt save and place, undoable), the Blocks panel and the floating map toolbar with Pan, Select, Pick block, Measure and Go to. Not in the app yet: per-element appearance.",
    "fill": "yellow",
    "page": "editor"
   },
@@ -417,6 +440,14 @@
    "text": "Guided Take a tour: coach card beside the real control with a highlight ring, Step N of M, Back, Skip this step, Next, Close. Try: Back, Skip, Next, Close; Tweaks dark, seed, motion.\nIn the app: whole-app tour plus one per destination (Worlds, Editor, History, Settings, About), offered once after onboarding, reachable from the ? Help menu, Settings \u203a Comfort and the palette, resumes where it stopped, focus moves to the control, Esc and arrow keys, screen-reader announcement, reduced motion, English and Cantonese. Steps whose control is off screen say so and offer to reveal it. The deploy app and the docs site have their own tours with the same card. Also: the appliance console shows a four-step text tour under its version and link (a console has no pointer to anchor a coach card).",
    "fill": "yellow",
    "page": "help"
+  },
+  "n_tools": {
+   "x": 1520,
+   "y": 0,
+   "w": 420,
+   "text": "Tools tab. Try: Encode and Decode; Tweaks dark, seed, motion.\nIn the app: Base64 for text and files up to 20 MiB, JSON to TypeScript (lists merged, missing keys optional), coordinates (chunk, place in chunk, region file, Nether and Overworld), all in the page with a tour. Not yet: general file converter, Ollama suite, server manager.",
+   "fill": "yellow",
+   "page": "tools"
   },
   "n_sitehome": {
    "x": 1520,

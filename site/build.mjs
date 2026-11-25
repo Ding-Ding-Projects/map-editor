@@ -94,6 +94,25 @@ for (const f of features) {
 <article>${f.body.map(([h, t, img], i) => `<h2 id="s${i}">${esc(h)}</h2><p>${esc(t)}</p>${img ? `<figure><img src="${base}screenshots/${esc(img.src)}" alt="${esc(img.alt)}" loading="lazy" width="1440" height="900"><figcaption>${esc(img.alt)}</figcaption></figure>` : ''}`).join('')}</article></div>
 <section class="band-wrap suggested"><h2>Suggested articles</h2><div class="grid">${rel.map((r) => `<a class="card" href="${base}${r.slug}/"><small>${esc(r.group)}</small><strong>${esc(r.title)}</strong><span>${esc(r.summary)}</span></a>`).join('')}</div></section>`));
 }
+// Phone edition: every article on one page, laid out for a phone-sized PDF page. The site workflow
+// prints it to map-editor-guide-phone.pdf with headless Chrome.
+mkdirSync(path.join(out, 'phone'), { recursive: true });
+writeFileSync(path.join(out, 'phone', 'index.html'), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map Editor guide, phone edition</title><link rel="stylesheet" href="${base}site.css"><style>
+@page { size: 90mm 160mm; margin: 8mm 6mm; }
+body { font-size: 11pt; line-height: 1.45; background: #fff; color: #181d17; }
+main { max-width: 560px; margin: 0 auto; padding: 12px; }
+h1 { font-size: 26pt; line-height: 1; margin: 0 0 8px; font-stretch: 120%; font-weight: 950; }
+h2.art { font-size: 17pt; margin: 18px 0 4px; break-before: page; font-weight: 900; }
+h3 { font-size: 12pt; margin: 12px 0 2px; }
+p { margin: 0 0 8px; } img { max-width: 100%; height: auto; border-radius: 8px; } figure { margin: 6px 0 10px; } figcaption { font-size: 8pt; color: #42493f; }
+.toc { position: static; background: none; padding: 0; border-radius: 0; margin: 8px 0; } .toc a { display: block; color: inherit; text-decoration: none; padding: 1px 0; font-size: 10pt; } .muted { color: #42493f; font-size: 9pt; }
+</style></head><body><main>
+<h1>Map Editor guide</h1><p class="muted">Phone edition · v${esc(pkg.version)} · built from ${esc(commit.slice(0, 7) || 'an unknown commit')} on ${esc(stamp)}</p>
+<nav class="toc">${features.map((f, i) => `<a href="#a${i}">${esc(f.title)}</a>`).join('')}</nav>
+${features.map((f, i) => `<h2 class="art" id="a${i}">${esc(f.title)}</h2><p><em>${esc(f.summary)}</em></p>${f.body.map(([h, t, img]) => `<h3>${esc(h)}</h3><p>${esc(t)}</p>${img ? `<figure><img src="${base}screenshots/${esc(img.src)}" alt="${esc(img.alt)}"><figcaption>${esc(img.alt)}</figcaption></figure>` : ''}`).join('')}`).join('')}
+</main></body></html>`);
+
 // Downloads: buttons for the newest release that carries the Windows installer, from the release
 // list the workflow saves (SITE_RELEASES). Without it, the page points at the releases list.
 let releases = [];
@@ -113,6 +132,6 @@ writeFileSync(path.join(out, 'downloads', 'index.html'), page('Downloads · Map 
 <section class="article-hero"><p class="crumb"><a href="${base}">Guide</a> › Downloads</p><h1>Downloads</h1><p class="lead">${rel ? `Map Editor ${esc(rel.tag_name)}, published ${esc(String(rel.published_at).slice(0, 10))}. Every file below comes from that release.` : 'The newest files are on the releases page.'}</p></section>
 <section class="band-wrap"><div class="dl-grid">${rel ? DOWNLOADS.filter(([n]) => asset(n)).map(([n, t, b, slug]) => `<div class="dl-card"><strong>${esc(t)}</strong><span>${esc(b)}</span><a class="btn filled" href="${esc(asset(n).browser_download_url)}" download>Download <small>${esc(mib(asset(n).size))}</small></a><a href="${base}${slug}/">How it works →</a></div>`).join('') : ''}
 <div class="dl-card"><strong>Docker</strong><span>Run the web app on any machine with Docker.</span><code>docker run -d -p 8420:8420 -v map-editor-data:/data -v "$PWD/worlds:/worlds" ghcr.io/ding-ding-projects/map-editor:${rel ? esc(rel.tag_name.replace(/^v/, '')) : 'latest'}</code><a href="${base}web-app/">How it works →</a></div></div>
-<p class="muted">${rel ? `Checksums: <a href="${esc(rel.html_url)}">${esc(rel.tag_name)} on GitHub</a> lists SHA256SUMS for the appliance images. ` : ''}The Windows installers are not code-signed, so Windows SmartScreen may ask before running them. All releases: <a href="${repo}/releases">${repo.replace('https://', '')}/releases</a>.</p></section>`, 'downloads'));
+<p class="muted">Reading on a phone? <a href="${base}map-editor-guide-phone.pdf">The whole guide as a phone-sized PDF</a>. ${rel ? `Checksums: <a href="${esc(rel.html_url)}">${esc(rel.tag_name)} on GitHub</a> lists SHA256SUMS for the appliance images. ` : ''}The Windows installers are not code-signed, so Windows SmartScreen may ask before running them. All releases: <a href="${repo}/releases">${repo.replace('https://', '')}/releases</a>.</p></section>`, 'downloads'));
 writeFileSync(path.join(out, '.nojekyll'), '');
 console.log(`Site built: ${features.length + 1} pages in ${out}`);

@@ -76,13 +76,12 @@ above). These checks still need a person, a browser session or hardware:
   is left in place so it can be deleted on purpose.
 - An empty `/worlds` folder may be left on the build machine from an earlier check. A safety rule
   stopped its removal.
-- The design canvas has no board for the **Tools** tab yet; its notes describe the other screens.
 - Still to do, from `ROADMAP.md`:
   - a 3D view and Bedrock worlds;
   - a separate data partition on the appliance;
   - the remaining built-in tools (file converter, Ollama suite, server manager, virtual disk manager);
   - per-element appearance and logo customization, and TinyMCE in other fields;
   - ADHD and school modes, exports in every format, the element unlock ladder, and an authenticator;
-  - the phone PDF edition of the site and interactive diagrams;
+  - interactive diagrams on the site;
   - a tabbed README and a screen recording.
 - Code-signed extension sources are not planned: this project does not sign code.

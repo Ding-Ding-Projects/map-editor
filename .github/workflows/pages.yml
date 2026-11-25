@@ -25,6 +25,14 @@ jobs:
         run: gh api "repos/${{ github.repository }}/releases?per_page=20" > site/releases.json || echo '[]' > site/releases.json
       - run: node site/build.mjs
         env: { SITE_BASE: /map-editor/ }
+      - name: Phone edition of the guide as a PDF
+        run: |
+          # Serve the built site under its base path so the page's links and pictures resolve, then print it.
+          mkdir -p /tmp/serve && ln -s "$PWD/site/dist" /tmp/serve/map-editor
+          (cd /tmp/serve && python3 -m http.server 8765 >/dev/null 2>&1 &) ; sleep 2
+          google-chrome --headless=new --no-sandbox --disable-gpu --no-pdf-header-footer \
+            --print-to-pdf=site/dist/map-editor-guide-phone.pdf http://127.0.0.1:8765/map-editor/phone/
+          test -s site/dist/map-editor-guide-phone.pdf && ls -l site/dist/map-editor-guide-phone.pdf
       - name: Squirrel update feeds from the latest release
         env: { GH_TOKEN: '${{ github.token }}' }
         run: node scripts/update-feed.mjs site/dist/updates
