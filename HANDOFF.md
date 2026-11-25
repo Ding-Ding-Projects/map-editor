@@ -78,7 +78,7 @@ above). These checks still need a person, a browser session or hardware:
   stopped its removal.
 - The design canvas has no board for the **Tools** tab yet; its notes describe the other screens.
 - Still to do, from `ROADMAP.md`:
-  - a 3D view, entities in structure files, and Bedrock worlds;
+  - a 3D view and Bedrock worlds;
   - a separate data partition on the appliance;
   - the remaining built-in tools (file converter, Ollama suite, server manager, virtual disk manager);
   - per-element appearance and logo customization, and TinyMCE in other fields;

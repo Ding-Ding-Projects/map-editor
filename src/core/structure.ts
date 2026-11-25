@@ -1,7 +1,7 @@
 // Structure files (.nbt), the format of Minecraft's structure blocks and /place template:
 // a gzip NBT compound with size, a block-state palette, and block positions relative to the origin.
-// Block entities (chest contents, sign text and the like) travel with their blocks; entities
-// (mobs, item frames, armour stands) are not carried in this version.
+// Block entities (chest contents, sign text and the like) travel with their blocks, and entities
+// (mobs, item frames, armour stands) inside the box travel too; placed copies get new UUIDs.
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { nbt, readNbt, writeNbt, getList, getNumber, getString, getCompound, TagType, type Tag, type CompoundTag } from './nbt.js';
 import { blockKey, type BlockState } from './chunk.js';
@@ -10,7 +10,8 @@ import type { World, Dimension } from './world.js';
 
 export const MAX_STRUCTURE_BLOCKS = 48 * 48 * 48 * 8; // vanilla structure blocks stop at 48³; files may be larger
 
-export interface Structure { size: [number, number, number]; dataVersion: number; blocks: Array<{ pos: [number, number, number]; state: BlockState; nbt?: CompoundTag }> }
+export interface StructureEntity { pos: [number, number, number]; blockPos: [number, number, number]; nbt: CompoundTag }
+export interface Structure { size: [number, number, number]; dataVersion: number; blocks: Array<{ pos: [number, number, number]; state: BlockState; nbt?: CompoundTag }>; entities?: StructureEntity[] }
 
 /** Read the blocks of a box (air included, so placing it clears what was there) into a structure. */
 export async function captureStructure(world: World, dim: Dimension, box: Box, dataVersion: number): Promise<Structure> {
@@ -23,7 +24,13 @@ export async function captureStructure(world: World, dim: Dimension, box: Box, d
     const be = await world.getBlockEntity(dim, x, y, z);
     blocks.push({ pos: [x - b.x1, y - b.y1, z - b.z1], state, ...(be ? { nbt: be } : {}) });
   }
-  return { size: [b.x2 - b.x1 + 1, b.y2 - b.y1 + 1, b.z2 - b.z1 + 1], dataVersion, blocks };
+  const entities: StructureEntity[] = (await world.entitiesIn(dim, b)).map((e) => {
+    const p = (getList(e, 'Pos') ?? []).map((v) => (v.type === TagType.Double ? v.value : 0));
+    const rel: [number, number, number] = [p[0] - b.x1, p[1] - b.y1, p[2] - b.z1];
+    const m = new Map(e.value); m.delete('UUID'); m.delete('Pos');
+    return { pos: rel, blockPos: rel.map(Math.floor) as [number, number, number], nbt: nbt.compound(m) };
+  });
+  return { size: [b.x2 - b.x1 + 1, b.y2 - b.y1 + 1, b.z2 - b.z1 + 1], dataVersion, blocks, entities };
 }
 
 export function encodeStructure(s: Structure): Buffer {
@@ -43,7 +50,11 @@ export function encodeStructure(s: Structure): Buffer {
       ...(p.properties && Object.keys(p.properties).length ? { Properties: nbt.compound(Object.fromEntries(Object.entries(p.properties).map(([k, v]) => [k, nbt.string(v)]))) } : {}),
     }))),
     blocks: nbt.list(TagType.Compound, blocks),
-    entities: nbt.list(TagType.Compound, []),
+    entities: nbt.list(TagType.Compound, (s.entities ?? []).map((e) => nbt.compound({
+      pos: nbt.list(TagType.Double, e.pos.map((v) => nbt.double(v))),
+      blockPos: nbt.list(TagType.Int, e.blockPos.map((v) => nbt.int(v))),
+      nbt: e.nbt,
+    }))),
   });
   return gzipSync(writeNbt({ name: '', tag: root }));
 }
@@ -74,7 +85,13 @@ export function decodeStructure(buf: Uint8Array): Structure {
     const be = getCompound(b, 'nbt');
     return be ? { pos, state, nbt: be } : { pos, state };
   });
-  return { size: size as [number, number, number], dataVersion: getNumber(root, 'DataVersion') ?? 0, blocks };
+  const entities: StructureEntity[] = (getList(root, 'entities') ?? []).flatMap((e) => {
+    const pos = (getList(e, 'pos') ?? []).map((v) => (v.type === TagType.Double ? v.value : NaN));
+    const tag = getCompound(e, 'nbt');
+    if (pos.length !== 3 || pos.some((v) => !Number.isFinite(v)) || !tag) return [];
+    return [{ pos: pos as [number, number, number], blockPos: pos.map(Math.floor) as [number, number, number], nbt: tag }];
+  });
+  return { size: size as [number, number, number], dataVersion: getNumber(root, 'DataVersion') ?? 0, blocks, entities };
 }
 
 /** Place a structure with its origin at a corner. Chunks that do not exist are skipped, never invented. */
@@ -90,6 +107,11 @@ export async function placeStructure(world: World, dim: Dimension, s: Structure,
       await world.setBlockEntity(dim, x, y, z, be);
       changed++; chunks.add(`${Math.floor(x / 16)},${Math.floor(z / 16)}`);
     } else skipped++;
+  }
+  for (const e of s.entities ?? []) {
+    const m = new Map(e.nbt.value);
+    m.set('Pos', nbt.list(TagType.Double, [at.x + e.pos[0], at.y + e.pos[1], at.z + e.pos[2]].map((v) => nbt.double(v))));
+    if (await world.addEntity(dim, nbt.compound(m))) changed++; else skipped++;
   }
   return { changed, skipped, chunks: chunks.size, ms: Date.now() - t0 };
 }

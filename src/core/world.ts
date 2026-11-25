@@ -4,7 +4,8 @@ import path from 'node:path';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { Chunk, type BlockState } from './chunk.js';
 import { RegionFile } from './region.js';
-import { getCompound, getNumber, getString, readNbt, writeNbt, type CompoundTag, type NamedTag } from './nbt.js';
+import { getCompound, getList, getNumber, getString, readNbt, writeNbt, nbt, TagType, type CompoundTag, type NamedTag } from './nbt.js';
+import { randomBytes } from 'node:crypto';
 
 export type Dimension = 'overworld' | 'nether' | 'end';
 
@@ -75,6 +76,10 @@ export async function discoverWorlds(roots: string[]): Promise<WorldInfo[]> {
 }
 
 export class World {
+  // Entities (mobs, item frames, armour stands) live in their own region files under entities/.
+  private entityRegions = new Map<string, RegionFile>();
+  private entityChunks = new Map<string, NamedTag>();
+  private dirtyEntities = new Set<string>();
   private regions = new Map<string, RegionFile>();
   private chunks = new Map<string, Chunk>();
   private dirtyChunks = new Set<string>();
@@ -174,10 +179,78 @@ export class World {
     return c?.getBiome(((x % 16) + 16) % 16, y, ((z % 16) + 16) % 16);
   }
 
+  private entityRegionPath(dim: Dimension, rx: number, rz: number) {
+    return path.join(this.dir, path.dirname(DIMENSION_DIRS[dim]), 'entities', `r.${rx}.${rz}.mca`);
+  }
+
+  private async entityChunk(dim: Dimension, cx: number, cz: number, create = false): Promise<NamedTag | undefined> {
+    const key = `${dim}:${cx}:${cz}`;
+    const hit = this.entityChunks.get(key);
+    if (hit) return hit;
+    const rx = Math.floor(cx / 32), rz = Math.floor(cz / 32), rkey = `${dim}:${rx}:${rz}`;
+    let r = this.entityRegions.get(rkey);
+    if (!r) {
+      const p = this.entityRegionPath(dim, rx, rz);
+      if (existsSync(p)) r = RegionFile.parse(new Uint8Array(await fs.readFile(p)));
+      else if (create) r = RegionFile.empty();
+      else return undefined;
+      this.entityRegions.set(rkey, r);
+    }
+    let tag = r.read(cx, cz);
+    if (!tag && create) tag = { name: '', tag: nbt.compound({ DataVersion: nbt.int(this.info.dataVersion ?? 4189), Position: nbt.intArray(Int32Array.from([cx, cz])), Entities: nbt.list(TagType.Compound, []) }) };
+    if (tag) this.entityChunks.set(key, tag);
+    return tag;
+  }
+
+  /** Entities whose position lies inside a box (block coordinates, inclusive). */
+  async entitiesIn(dim: Dimension, box: { x1: number; y1: number; z1: number; x2: number; y2: number; z2: number }): Promise<CompoundTag[]> {
+    const out: CompoundTag[] = [];
+    for (let cx = Math.floor(box.x1 / 16); cx <= Math.floor(box.x2 / 16); cx++) for (let cz = Math.floor(box.z1 / 16); cz <= Math.floor(box.z2 / 16); cz++) {
+      const t = await this.entityChunk(dim, cx, cz);
+      for (const e of getList(t?.tag, 'Entities') ?? []) {
+        const pos = getList(e, 'Pos')?.map((v) => (v.type === TagType.Double ? v.value : NaN)) ?? [];
+        if (pos.length === 3 && e.type === TagType.Compound && pos[0] >= box.x1 && pos[0] < box.x2 + 1 && pos[1] >= box.y1 && pos[1] < box.y2 + 1 && pos[2] >= box.z1 && pos[2] < box.z2 + 1) out.push(e);
+      }
+    }
+    return out;
+  }
+
+  /** Add an entity at its Pos. A fresh UUID is given so a copy never clashes with the original. */
+  async addEntity(dim: Dimension, entity: CompoundTag): Promise<boolean> {
+    const pos = getList(entity, 'Pos')?.map((v) => (v.type === TagType.Double ? v.value : NaN)) ?? [];
+    if (pos.length !== 3 || pos.some((v) => !Number.isFinite(v))) return false;
+    const cx = Math.floor(pos[0] / 16), cz = Math.floor(pos[2] / 16);
+    if (!(await this.chunk(dim, cx, cz))) return false; // never invent terrain for an entity
+    const t = (await this.entityChunk(dim, cx, cz, true))!;
+    const m = new Map(entity.value);
+    const id = randomBytes(16);
+    m.set('UUID', nbt.intArray(Int32Array.from([0, 4, 8, 12].map((i) => id.readInt32BE(i)))));
+    const list = [...(getList(t.tag, 'Entities') ?? []), nbt.compound(m)];
+    (t.tag as CompoundTag).value.set('Entities', nbt.list(TagType.Compound, list));
+    this.dirtyEntities.add(`${dim}:${cx}:${cz}`);
+    return true;
+  }
+
   get unsavedChunks() { return this.dirtyChunks.size; }
 
-  /** Write every changed chunk back to its region file. Returns the changed file paths. */
+  /** Write every changed chunk (and entity chunk) back to its region file. Returns the changed file paths. */
   async save(): Promise<string[]> {
+    const entityFiles = new Set<string>();
+    for (const key of this.dirtyEntities) {
+      const [dim, cxs, czs] = key.split(':') as [Dimension, string, string];
+      const cx = Number(cxs), cz = Number(czs), rx = Math.floor(cx / 32), rz = Math.floor(cz / 32);
+      const r = this.entityRegions.get(`${dim}:${rx}:${rz}`)!;
+      r.write(cx, cz, this.entityChunks.get(key)!);
+      entityFiles.add(`${dim}:${rx}:${rz}`);
+    }
+    this.dirtyEntities.clear();
+    for (const k of entityFiles) {
+      const [dim, rx, rz] = k.split(':') as [Dimension, string, string];
+      const p = this.entityRegionPath(dim, Number(rx), Number(rz));
+      await fs.mkdir(path.dirname(p), { recursive: true });
+      await fs.writeFile(p + '.tmp', this.entityRegions.get(k)!.serialize());
+      await fs.rename(p + '.tmp', p);
+    }
     const touched = new Map<string, { dim: Dimension; rx: number; rz: number }>();
     for (const key of this.dirtyChunks) {
       const [dim, cxs, czs] = key.split(':') as [Dimension, string, string];

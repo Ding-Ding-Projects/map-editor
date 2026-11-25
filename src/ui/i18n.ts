@@ -62,7 +62,7 @@ const S = {
   sliceAlongZ: { en: 'Along z', yue: '沿 z' },
   sliceAtSel: { en: 'Through the selection', yue: '穿過範圍' },
   sliceInfo: { en: '{axis} {from} to {to} at {other} {at}, height {ylo} to {yhi}. The outline is the selection.', yue: '{axis} 由 {from} 到 {to}，{other} = {at}，高度 {ylo} 到 {yhi}。框住嘅係範圍。' },
-  structuresNote: { en: 'Structure files (.nbt) work with Minecraft structure blocks and /place template. Chest contents and sign text come along; mobs and item frames are not included yet.', yue: '結構檔（.nbt）同 Minecraft 結構方塊同 /place template 通用。箱入面嘅物品同牌上面啲字會跟埋；生物同物品展示框暫時未包。' },
+  structuresNote: { en: 'Structure files (.nbt) work with Minecraft structure blocks and /place template. Chest contents, sign text, mobs and item frames inside the selection come along.', yue: '結構檔（.nbt）同 Minecraft 結構方塊同 /place template 通用。範圍入面嘅箱、牌、生物同物品展示框都會跟埋。' },
   structExport: { en: 'Save selection as .nbt', yue: '將範圍存做 .nbt' },
   structPlace: { en: 'Place a .nbt file…', yue: '放一個 .nbt 檔…' },
   structExported: { en: 'Saving the {size} selection as a structure file.', yue: '將 {size} 嘅範圍存做結構檔。' },
@@ -499,7 +499,7 @@ export function t(state: I18nState, key: Key, vars: Record<string, string | numb
   const yue = fill(pick(e, 'yue', state.funnyYue), vars);
   if (state.lang === 'en') return en;
   if (state.lang === 'yue') return yue;
-  return `${en} · ${yue}`;
+  return en === yue ? en : `${en} · ${yue}`; // a name that is the same in both is shown once
 }
 
 export const ALL_KEYS = Object.keys(S) as Key[];
