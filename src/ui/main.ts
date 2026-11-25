@@ -227,6 +227,8 @@ function toggleNoteCentre() {
   if (list) {
     const box = searchBox('notification-search', tx('searchNotifications'), rx, { compact: true });
     list.before(box.el);
+    box.el.after(exportButton(tx('export'), exportNames(), (f) => downloadRows(
+      notes.filter((_n, i) => !items[i]?.hidden).map((n) => ({ time: n.at, kind: n.error ? 'problem' : 'message', text: n.text })), ['time', 'kind', 'text'], f, tx('notifications'), 'map-editor-notifications')));
     const items = Array.from(list.querySelectorAll<HTMLElement>('li'));
     const none = document.createElement('p'); none.className = 'muted'; none.hidden = true; none.setAttribute('role', 'status'); list.after(none);
     let run = 0;
@@ -1697,6 +1699,10 @@ async function aboutView(view: HTMLElement): Promise<void> {
   const kind = (s: string) => /^(add|new|build|introduc)/i.test(s) ? 'added' : /^(fix|repair|correct)/i.test(s) ? 'fixed' : 'changed';
   const clq = searchBox('changelog-search', tx('searchChanges'), rx);
   view.querySelector('#cl-q-host')!.replaceWith(clq.el);
+  // Export exactly what the search is showing.
+  let clShown: Entry[] = [];
+  clq.el.after(exportButton(tx('export'), exportNames(), (f) => downloadRows(
+    clShown.map((e) => ({ date: new Date(e.date).toISOString(), kind: kind(e.subject), change: e.subject, commit: e.sha })), ['date', 'kind', 'change', 'commit'], f, tx('changelog'), 'map-editor-changelog')));
   let clRun = 0;
   const draw = async () => {
     if (!entries) { listEl.innerHTML = `<li class="muted">${esc(tx('changelogUnavailable'))}</li>`; return; }
@@ -1705,7 +1711,7 @@ async function aboutView(view: HTMLElement): Promise<void> {
     const all: Entry[] = entries;
     const hits = await clq.filter(all.map((e) => `${e.subject} ${e.sha}`)) ?? all.map(() => false);
     if (my !== clRun) return; // a hidden panel (phone width) is still filled, ready when shown
-    const shown = all.filter((_, i) => hits[i]);
+    const shown = all.filter((_, i) => hits[i]); clShown = shown;
     listEl.innerHTML = shown.length ? shown.map((e, i) => `<li class="cl-entry${i === 0 && !q ? ' newest' : ''}" style="--i:${Math.min(i, 12)}"><span class="cl-kind ${kind(e.subject)}">${esc(tx(kind(e.subject) as Key))}</span>
       <span class="cl-text"><b>${esc(e.subject)}</b><small>${esc(new Date(e.date).toLocaleString('en-GB'))} · <a class="cl-link" href="https://github.com/Ding-Ding-Projects/map-editor/commit/${esc(e.sha)}" target="_blank" rel="noopener noreferrer"><code>${esc(e.sha.slice(0, 7))}</code></a></small></span></li>`).join('') : `<li class="muted">${esc(tx('noMatches'))}</li>`;
   };
