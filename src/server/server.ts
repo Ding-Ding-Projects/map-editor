@@ -363,6 +363,11 @@ export async function createServer(opts: ServerOptions) {
       if (!DIMS.includes(dim)) throw new HttpError(400, 'Unknown dimension');
       return send(200, { info: session.world.info, chunks: await session.world.listChunks(dim) });
     }
+    if (p === '/api/blocks' && req.method === 'GET') {
+      // Bedrock worlds take only blocks they already hold; this is that list, as far as the world has been read.
+      const w = session.world as unknown as { knownBlocks?: () => string[] };
+      return send(200, { blocks: (w.knownBlocks?.() ?? []).slice(0, 2000) });
+    }
     if (p === '/api/top' && req.method === 'GET') {
       const dim = (url.searchParams.get('dim') ?? 'overworld') as Dimension;
       if (!DIMS.includes(dim)) throw new HttpError(400, 'Unknown dimension');

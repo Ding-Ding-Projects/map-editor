@@ -239,6 +239,9 @@ export class BedrockWorld {
   async entitiesIn() { return []; }
   async addEntity() { return false; }
 
+  /** Every block read from this world so far (the map fills this in as it draws). These are the blocks Fill accepts. */
+  knownBlocks(): string[] { return [...this.raw.keys()].filter((k) => k !== 'minecraft:air').sort(); }
+
   get unsavedChunks() { return this.dirty.size; }
 
   /** Write every changed sub-chunk as one new log file. Returns the files written. */

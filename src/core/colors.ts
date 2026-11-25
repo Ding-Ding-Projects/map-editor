@@ -27,6 +27,14 @@ const EXACT: Record<string, [number, number, number]> = {
   dirt_path: [148, 121, 65], farmland: [81, 44, 15], rooted_dirt: [144, 103, 76], calcite: [223, 224, 220], dripstone_block: [134, 107, 92],
 };
 
+// Bedrock Edition names for blocks that Java Edition calls something else.
+const BEDROCK: Record<string, string> = {
+  grass: 'grass_block', stonebrick: 'stone_bricks', tallgrass: 'short_grass', double_plant: 'tall_grass', seagrass: 'water', kelp: 'water',
+  flowing_water: 'water', flowing_lava: 'lava', snow_layer: 'snow', brick_block: 'bricks', planks: 'oak_planks', log: 'oak_log', log2: 'oak_log',
+  leaves: 'oak_leaves', leaves2: 'acacia_leaves', hardened_clay: 'terracotta', stained_hardened_clay: 'terracotta', end_bricks: 'end_stone',
+  grass_path: 'dirt', farmland: 'dirt', waterlily: 'oak_leaves', reeds: 'short_grass', deadbush: 'oak_log',
+};
+
 const FALLBACKS: Array<[RegExp, [number, number, number]]> = [
   [/leaves$/, [60, 110, 35]], [/_log$|_wood$/, [102, 76, 51]], [/planks$/, [150, 120, 75]],
   [/wool$|carpet$|concrete$/, [200, 200, 200]], [/glass/, [200, 228, 234]], [/ore$/, [125, 125, 125]],
@@ -35,7 +43,7 @@ const FALLBACKS: Array<[RegExp, [number, number, number]]> = [
 
 export function blockColor(name: string): [number, number, number] {
   const short = name.includes(':') ? name.slice(name.indexOf(':') + 1) : name;
-  const hit = EXACT[short];
+  const hit = EXACT[short] ?? EXACT[BEDROCK[short]];
   if (hit) return hit;
   for (const [re, c] of FALLBACKS) if (re.test(short)) return c;
   let h = 0;

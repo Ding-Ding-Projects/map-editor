@@ -25,7 +25,7 @@ const S = {
   extOffOk: { en: 'Switch off', yue: '熄' },
   extOffDone: { en: 'Switched off {n} extensions.', yue: '熄咗 {n} 個擴充功能。' },
   bedrockNote: { en: 'Bedrock Edition world. Fill, Replace, Delete blocks and Clone work; use blocks picked from the map.', yue: '基岩版世界。填充、替換、刪除方塊同複製都用得；方塊要喺地圖吸返嚟用。' },
-  bedrockEditorNote: { en: 'Bedrock Edition world: Fill and Replace take blocks that are already in this world. Use Pick block (I) on the map, or type minecraft:air. Biomes, waterlogging and structure files are for Java Edition worlds.', yue: '基岩版世界：填充同替換只收呢個世界本身有嘅方塊。喺地圖用「吸方塊」(I) 揀，或者打 minecraft:air。生態域、加水同結構檔只限 Java 版世界。' },
+  bedrockEditorNote: { en: 'Bedrock Edition world: Fill and Replace take blocks that are already in this world. Choose one in the Blocks panel (it lists the blocks found so far), use Pick block (I) on the map, or type minecraft:air. Biomes, waterlogging and structure files are for Java Edition worlds.', yue: '基岩版世界：填充同替換只收呢個世界本身有嘅方塊。喺「方塊」面板揀（會列出暫時搵到嘅方塊），或者喺地圖用「吸方塊」(I)，又或者打 minecraft:air。生態域、加水同結構檔只限 Java 版世界。' },
   vocab: { en: 'Your own words', yue: '自己嘅用字' },
   vocabNote: { en: 'Upload a JSON file to change any wording in this browser, in English, Cantonese or both. Download the template to see every id.', yue: '上載 JSON 檔，喺呢個瀏覽器改任何用字，英文、廣東話或者兩樣都得。下載範本就睇到所有 id。' },
   vocabCount: { en: '{n} words changed now.', yue: '而家改咗 {n} 個。' },

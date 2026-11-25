@@ -673,7 +673,7 @@ function worldsScreen(view: HTMLElement) {
     browse: desktopBridge?.pickFolder,
     open: async (w) => {
       const r = await api('/api/worlds/open', { method: 'POST', body: { path: w.path } });
-      world = { ...r.info }; dim = 'overworld'; fitPending = true; mapView = undefined; pickedBlocks = [];
+      world = { ...r.info }; dim = 'overworld'; fitPending = true; mapView = undefined; pickedBlocks = []; worldBlocks = [];
       const sp = world!.spawn ?? { x: 0, y: 64, z: 0 };
       Object.assign(sel, { x1: sp.x - 8, y1: sp.y - 1, z1: sp.z - 8, x2: sp.x + 7, y2: sp.y - 1, z2: sp.z + 7 }); prefs.tab = 'editor'; savePrefs(); render(); },
   });
@@ -706,6 +706,7 @@ let mapMode: MapMode = 'pan';
 const PALETTE_BLOCKS = ['minecraft:stone_bricks', 'minecraft:oak_planks', 'minecraft:grass_block', 'minecraft:water', 'minecraft:sand', 'minecraft:glass', 'minecraft:deepslate', 'minecraft:cherry_leaves',
   'minecraft:stone', 'minecraft:dirt', 'minecraft:cobblestone', 'minecraft:gold_block', 'minecraft:lava', 'minecraft:snow_block', 'minecraft:spruce_planks', 'minecraft:air'];
 let pickedBlocks: string[] = [];
+let worldBlocks: string[] = []; // Bedrock: blocks found in the open world so far
 async function editorView(view: HTMLElement): Promise<void> {
   if (!world) { prefs.tab = 'worlds'; return render(); }
   const root = document.createElement('div');
@@ -851,6 +852,7 @@ async function editorView(view: HTMLElement): Promise<void> {
       const buf = await api<ArrayBuffer>(`/api/render?dim=${dim}&cx=${cx0}&cz=${cz0}&w=${w}&h=${h}`);
       image = await createImageBitmap(new ImageData(new Uint8ClampedArray(buf), w * 16, h * 16));
       imgCx = cx0; imgCz = cz0;
+      void loadWorldBlocks();
     } catch (err) { notify((err as Error).message, true); }
     drawSel();
   }
@@ -1009,13 +1011,18 @@ async function editorView(view: HTMLElement): Promise<void> {
   new ResizeObserver(() => { const z = `${sliceEl.clientWidth}x${sliceEl.clientHeight}`; if (z !== lastSize) { lastSize = z; void drawSlice(); } }).observe(sliceEl);
   document.addEventListener('world-changed', () => { void drawSlice(); });
   document.addEventListener('history-changed', () => { void drawSlice(); });
+  // Bedrock: the blocks found in the world so far, refreshed as more of the map is read.
+  async function loadWorldBlocks() {
+    if (world?.edition !== 'bedrock') return;
+    try { const r = await api<{ blocks: string[] }>('/api/blocks'); if (r.blocks.length !== worldBlocks.length) { worldBlocks = r.blocks; drawPalette(); } } catch { /* the palette keeps what it has */ }
+  }
   function drawPalette() {
     // A Bedrock world only takes blocks it already holds, so its palette is what has been picked, plus air.
     const bedrock = world?.edition === 'bedrock';
-    const list = bedrock ? [...pickedBlocks, ...(pickedBlocks.includes('minecraft:air') ? [] : ['minecraft:air'])] : [...pickedBlocks, ...PALETTE_BLOCKS.filter((b) => !pickedBlocks.includes(b))];
+    const list = bedrock ? [...pickedBlocks, ...['minecraft:air', ...worldBlocks].filter((b) => !pickedBlocks.includes(b))] : [...pickedBlocks, ...PALETTE_BLOCKS.filter((b) => !pickedBlocks.includes(b))];
     blocksEl.innerHTML = `<p class="muted">${esc(tx(bedrock ? 'bedrockEditorNote' : 'paletteNote'))}</p><div class="bp-grid" role="list">${list.map((b) => {
-      const [r, g, bl] = blockColor(b);
-      return `<button type="button" role="listitem" class="bp-swatch${pickedBlocks.includes(b) ? ' picked' : ''}" data-pb="${esc(b)}" title="${esc(b)}" aria-label="${esc(b.slice(10))}"><span style="background: rgb(${r} ${g} ${bl})"></span><small>${esc(b.slice(10).replace(/_/g, ' '))}</small></button>`;
+      const [r, g, bl] = blockColor(b.split('[')[0]);
+      return `<button type="button" role="listitem" class="bp-swatch${pickedBlocks.includes(b) ? ' picked' : ''}" data-pb="${esc(b)}" title="${esc(b)}" aria-label="${esc(b.slice(10))}"><span style="background: rgb(${r} ${g} ${bl})"></span><small>${esc(b.slice(b.indexOf(':') + 1).replace(/\[(.*)\]$/, ' ($1)').replace(/_/g, ' '))}</small></button>`;
     }).join('')}</div>`;
     blocksEl.querySelectorAll<HTMLElement>('[data-pb]').forEach((sw) => sw.addEventListener('click', () => { useBlock(sw.dataset.pb!); status.textContent = tx('blockSet', { block: sw.dataset.pb! }); }));
   }
@@ -1149,7 +1156,7 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
           const r = await api<{ path: string; name: string }>('/api/history/copy', { method: 'POST', body: { sha: e.sha } });
           notify(tx('hCopyMade', { name: r.name }), false, { label: tx('hCopyOpen'), run: async () => {
             const o = await api('/api/worlds/open', { method: 'POST', body: { path: r.path } });
-            world = { ...o.info }; dim = 'overworld'; fitPending = true; mapView = undefined; pickedBlocks = []; prefs.tab = 'editor'; savePrefs(); render();
+            world = { ...o.info }; dim = 'overworld'; fitPending = true; mapView = undefined; pickedBlocks = []; worldBlocks = []; prefs.tab = 'editor'; savePrefs(); render();
           } });
           play('success');
         } catch (err) { notify((err as Error).message, true); } finally { b.disabled = false; }

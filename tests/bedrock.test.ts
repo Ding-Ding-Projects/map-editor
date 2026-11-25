@@ -145,3 +145,17 @@ describe('Bedrock worlds', () => {
     await rm(dir, { recursive: true, force: true }); await rm(data, { recursive: true, force: true });
   });
 });
+
+describe('Bedrock block list and colours', () => {
+  it('lists the blocks read so far, without air, and colours Bedrock names', async () => {
+    const dir = await makeWorld();
+    const w = await BedrockWorld.open(dir);
+    expect(w.knownBlocks()).toEqual([]);
+    await w.chunk('overworld', 0, 0);
+    expect(w.knownBlocks()).toEqual(['minecraft:bedrock[infiniburn_bit=0]', 'minecraft:dirt[dirt_type=normal]', 'minecraft:fence[wood_type=oak]', 'minecraft:grass']);
+    const { blockColor } = await import('../src/core/colors.js');
+    expect(blockColor('minecraft:grass')).toEqual(blockColor('minecraft:grass_block'));
+    expect(blockColor('minecraft:stonebrick')).toEqual(blockColor('minecraft:stone_bricks'));
+    await rm(dir, { recursive: true, force: true });
+  });
+});
