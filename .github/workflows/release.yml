@@ -113,7 +113,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with: { name: image-tar-arm64 }
-      - run: sudo apt-get update && sudo apt-get install -y qemu-user-static binfmt-support dosfstools fdisk e2fsprogs parted xz-utils
+      # Registers static qemu for arm64 with the fix-binary flag, so arm64 programs run inside the chroot.
+      - uses: docker/setup-qemu-action@v3
+        with: { platforms: arm64 }
+      - run: sudo apt-get update && sudo apt-get install -y dosfstools fdisk e2fsprogs parted xz-utils
       - name: Build Raspberry Pi appliance image
         run: sudo appliance/build-pi.sh map-editor-image-arm64.tar ${{ needs.meta.outputs.version }}
       - uses: actions/upload-artifact@v4
