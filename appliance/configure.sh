@@ -45,6 +45,8 @@ start_pre() {
     i=$((i + 1)); [ "$i" -ge 90 ] && { eerror "Docker did not become ready"; return 1; }
     sleep 1
   done
+  # Data lives on its own partition; say so on the console (the boot checks look for this line).
+  if grep -q ' /var/lib/map-editor ' /proc/mounts; then echo "Data partition mounted at /var/lib/map-editor" > /dev/console; else ewarn "The data partition is not mounted; data is kept on the system partition"; fi
   # Load the preloaded image once, then keep using it (an update replaces image.tar).
   if [ ! -f /var/lib/map-editor/.loaded-$(cat /opt/map-editor/VERSION) ]; then
     docker load -i /opt/map-editor/image.tar && touch /var/lib/map-editor/.loaded-$(cat /opt/map-editor/VERSION)

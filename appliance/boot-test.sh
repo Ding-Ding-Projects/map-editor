@@ -7,7 +7,11 @@ qemu-system-x86_64 -m 2048 -smp 2 -nographic -drive file="$IMG",format=raw,if=vi
 QEMU=$!
 trap 'kill $QEMU 2>/dev/null || true' EXIT
 for i in $(seq 1 90); do
-  if curl -fsS http://127.0.0.1:18420/api/health; then echo; echo "Appliance booted and answered its health check."; exit 0; fi
+  if curl -fsS http://127.0.0.1:18420/api/health; then
+    echo; echo "Appliance booted and answered its health check."
+    if grep -aq 'Data partition mounted at /var/lib/map-editor' boot.log; then echo "Data partition: mounted."; exit 0; fi
+    echo "The data partition was not mounted. Last boot log lines:"; tail -40 boot.log; exit 1
+  fi
   sleep 5
 done
 echo "Appliance did not answer within 450 s. Last boot log lines:"; tail -50 boot.log; exit 1

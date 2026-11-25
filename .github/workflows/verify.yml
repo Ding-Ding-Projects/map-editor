@@ -123,6 +123,7 @@ jobs:
           grep -aq 'Starting Map Editor' serial.log || { echo 'FAIL: the Map Editor service did not start'; exit 1; }
           ! grep -aq 'does not match the detected host\|but this machine' serial.log || { echo 'FAIL: the preloaded image is for the wrong processor'; exit 1; }
           grep -aq 'Map Editor is ready' serial.log || { echo 'FAIL: the web app did not answer its health check'; exit 1; }
+          grep -aq 'Data partition mounted at /var/lib/map-editor' serial.log || { echo 'FAIL: the data partition was not mounted'; exit 1; }
           echo 'PASS: Pi image kernel, initramfs, root file system, services and web app health check on raspi4b'
       - uses: actions/upload-artifact@v4
         if: always()
