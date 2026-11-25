@@ -14,6 +14,8 @@ import { currentLang } from './lang.js';
 import { ARTICLES, docsView, docTitle, openDoc } from '../ui/docs.js';
 import { invert, pickItem, selectAll } from '../ui/select.js';
 let guideOpened = false;
+/** Text made at run time, in the chosen language (fixed phrases go through the phrase list instead). */
+const by = (en: string, yue: string) => currentLang() === 'yue' ? yue : currentLang() === 'both' ? `${en} · ${yue}` : en;
 
 interface Step { label: string; state: 'waiting' | 'running' | 'done' | 'failed'; detail?: string }
 interface Disk { id: string; name: string; sizeBytes: number }
@@ -293,7 +295,7 @@ async function render() {
       const picked = new Set<number>(); let anchor: number | undefined;
       const paint = () => {
         boxes.forEach((b, k) => { b.checked = picked.has(k); });
-        main.querySelector('#inst-count')!.textContent = `${picked.size} of ${list.length} selected`;
+        main.querySelector('#inst-count')!.textContent = by(`${picked.size} of ${list.length} selected`, `揀咗 ${picked.size} 個，共 ${list.length} 個`);
         main.querySelectorAll('[data-bulk]').forEach((b) => b.toggleAttribute('disabled', !picked.size));
       };
       boxes.forEach((b, k) => b.addEventListener('click', (ev) => { ev.stopPropagation(); anchor = pickItem(picked, k, anchor, ev.shiftKey); paint(); }));
@@ -306,7 +308,8 @@ async function render() {
         const failed: string[] = []; let ok = 0;
         for (const i of chosen) { try { const r = await d.action(i.name, action, false); if (r.ok) ok++; else failed.push(`${i.name}: ${r.message}`); } catch (e) { failed.push(`${i.name}: ${(e as Error).message}`); } }
         const report = main.querySelector<HTMLElement>('#inst-report');
-        const text = `${action === 'start' ? 'Started' : action === 'stop' ? 'Stopped' : 'Restarted'} ${ok} of ${chosen.length}.${failed.length ? ` Not done: ${failed.join('; ')}` : ''}`;
+        const text = by(`${action === 'start' ? 'Started' : action === 'stop' ? 'Stopped' : 'Restarted'} ${ok} of ${chosen.length}.${failed.length ? ` Not done: ${failed.join('; ')}` : ''}`,
+          `${action === 'start' ? '啟動' : action === 'stop' ? '停止' : '重新啟動'}咗 ${ok} 個，共 ${chosen.length} 個。${failed.length ? `未搞掂：${failed.join('；')}` : ''}`);
         if (report) { report.hidden = false; report.textContent = text; }
         toast(text, failed.length > 0); paintStates(); paint();
       }));

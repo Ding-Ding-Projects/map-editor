@@ -9,6 +9,12 @@ this file covers testing.
 | Area | What | Where |
 | --- | --- | --- |
 | Editor | Map toolbar (Pan, Select, Pick block, Measure, Go to; keys H S I M G) | `src/ui/main.ts` |
+| Guide | The whole guide inside the app and the deploy wizard, offline, in English, Cantonese or both, with its own search | `src/ui/docs.ts`, `src/deploy/ui.ts` |
+| Guide | The same guide as Markdown, one page per feature, kept current by a test | `scripts/feature-docs.mjs`, `docs/features/` |
+| Selection | Tick boxes with Shift+click, Select all and Invert on Worlds (download), notifications (dismiss), History and Activity (export), Extensions (export, switch off) and deploy Instances (start, stop, restart, with a report) | `src/ui/select.ts`, `src/ui/worlds.ts`, `src/ui/main.ts`, `src/deploy/ui.ts` |
+| About | Each change in the changelog opens to its full note, through a small safe Markdown renderer | `src/ui/markdown.ts`, `scripts/build.mjs` |
+| About | A code name for each release from the public dim sum catalogue, also in the release notes | `scripts/code-name.mjs` |
+| Desktop | Open the world folder in an outside editor or the file manager | `src/desktop/editors.ts`, `src/desktop/main.ts` |
 | Editor | Right-click menu on the map and searchable dropdowns everywhere, each with the regex builder; map view kept when you leave and return; phone toolbar clear of the bottom bar | `src/ui/menu.ts`, `src/ui/main.ts` |
 | Deploy app | Virtual disks view for Windows: list, create, attach, detach through diskpart with the permission prompt | `src/deploy/targets.ts`, `src/deploy/ui.ts` |
 | Core | Bedrock Edition worlds: LevelDB reader and log appender, sub-chunk decoder and encoder, same tools as Java worlds | `src/core/leveldb.ts`, `src/core/bedrock.ts`, `tests/bedrock.test.ts` |
@@ -93,4 +99,6 @@ above). These checks still need a person, a browser session or hardware:
   - Bedrock Edition: blocks the world does not hold yet, biomes, entities and block entities.
 - Not yet tried for real: a Bedrock Edition world opened in the game after an edit here (the stock LevelDB library reads the result correctly; the game itself has not been run), the Virtual disks view of the deploy app on a Windows PC (create, attach, attach read-only, detach, and declining the permission prompt), the local AI helper against a running Ollama, and the server.properties editor
   with a file from a live server.
+- Not yet tried on a real Windows PC: opening the world folder in an outside editor (detection and the hand-off are unit tested and checked with a stand-in in a browser).
+- There is no way to delete a world from the app, and so no bulk delete; this is left out on purpose until it is asked for.
 - Code-signed extension sources are not planned: this project does not sign code.

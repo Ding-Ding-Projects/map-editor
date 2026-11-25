@@ -146,6 +146,13 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 
 - [x] Worlds: Select mode. Click or tick worlds, Shift+click for a range, Ctrl+A or Select all, Invert, then Download selected saves each one in turn; Esc or Done leaves. Unit tested; checked in headless Chrome at desktop and phone width.
 
+- [x] Selection everywhere it helps: notifications (dismiss the ticked ones), History and Activity (export the ticked rows), Extensions (export or switch off the ticked ones), deploy Instances (start, stop or restart the ticked ones, with a report of what was not done). Checked in headless Chrome.
+- [x] Deploy wizard: the Guide view, with a tour step and palette rows.
+- [x] Feature guide as Markdown under `docs/features`, generated from the site content and guarded by a test.
+- [x] Changelog details: each change opens to its full note through a safe Markdown renderer (escape first, fixed tags, web and mail links only, bounded work on long lines).
+- [x] Desktop app: Open world folder in an outside editor or the file manager. Not yet run on a real Windows PC.
+- [x] Release code names from the public dim sum catalogue, shown in About and in the release notes.
+
 ## Decisions recorded
 
 - Licence: the upstream Amulet licence is kept unaltered in `LICENSE`; the owner holds an Amulet licence for this work.
