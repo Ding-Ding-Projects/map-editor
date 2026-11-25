@@ -40,7 +40,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [ ] Booted on real VirtualBox, VMware and a spare PC from USB.
 - [x] Raspberry Pi arm64 image with a QEMU boot test after each release (raspi4b, through to the web app's health check).
 - [x] In-place updater on the appliance (built, not yet run on a booted appliance): a daily job pulls the newest image, switches only after its health check answers and falls back otherwise, then upgrades the Alpine packages, logging to /var/log/map-editor-update.log; the image carries its version label for it.
-- [ ] Separate data partition on the appliance.
+- [x] Separate data partition on the appliance (x86 and Raspberry Pi): accounts, history, notes and worlds live on their own ext4 partition (label me-data) mounted at /var/lib/map-editor, so the system partition can be replaced without touching them. Built and boot-checked in CI.
 - [x] Worlds can be uploaded as a .zip, created as a flat world and downloaded as a .zip from the web UI (unpack checks every path and refuses archives without level.dat; idiots and a headless Chrome run).
 
 ## Phase 5: deploy app

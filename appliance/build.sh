@@ -34,20 +34,27 @@ rm -rf "$ROOT"
   --fs-skel-dir "$OUT/payload" --fs-skel-chown root:root \
   --script-chroot "$ROOT" -- "$HERE/configure.sh"
 
-# Disk: one bootable ext4 partition, BIOS boot through syslinux.
+# Disk: a bootable ext4 system partition (3 GiB, BIOS boot through syslinux) and a separate ext4 data
+# partition for accounts, history, notes and worlds, so the system can be replaced without touching data.
 rm -f "$RAW"
 truncate -s 4G "$RAW"
-echo 'start=2048, type=83, bootable' | sfdisk -q "$RAW"
+printf 'start=2048, size=6291456, type=83, bootable\nstart=6293504, type=83\n' | sfdisk -q "$RAW"
 LOOP=$(losetup --find --show --partscan "$RAW")
 cleanup() { for fs in sys proc dev; do umount "$OUT/mnt/$fs" 2>/dev/null || true; done; umount "$OUT/mnt" 2>/dev/null || true; losetup -d "$LOOP" 2>/dev/null || true; }
 trap cleanup EXIT
-for i in $(seq 1 30); do [ -b "${LOOP}p1" ] && break; partprobe "$LOOP" 2>/dev/null || true; udevadm settle 2>/dev/null || true; sleep 1; done
-[ -b "${LOOP}p1" ] || { echo "partition of $LOOP did not appear"; exit 1; }
+for i in $(seq 1 30); do [ -b "${LOOP}p1" ] && [ -b "${LOOP}p2" ] && break; partprobe "$LOOP" 2>/dev/null || true; udevadm settle 2>/dev/null || true; sleep 1; done
+[ -b "${LOOP}p1" ] && [ -b "${LOOP}p2" ] || { echo "partitions of $LOOP did not appear"; exit 1; }
 mkfs.ext4 -q -L map-editor -O ^64bit "${LOOP}p1"
+mkfs.ext4 -q -L me-data -O ^64bit "${LOOP}p2"
 mkdir -p "$OUT/mnt"
 mount "${LOOP}p1" "$OUT/mnt"
 cp -a "$ROOT"/. "$OUT/mnt"/
-echo 'LABEL=map-editor / ext4 defaults,noatime 0 1' > "$OUT/mnt/etc/fstab"
+# The data partition starts with what the image prepared under /var/lib/map-editor, then is mounted there.
+mkdir -p "$OUT/data"
+mount "${LOOP}p2" "$OUT/data"
+cp -a "$OUT/mnt/var/lib/map-editor"/. "$OUT/data"/
+umount "$OUT/data"
+printf 'LABEL=map-editor / ext4 defaults,noatime 0 1\nLABEL=me-data /var/lib/map-editor ext4 defaults,noatime 0 2\n' > "$OUT/mnt/etc/fstab"
 mkdir -p "$OUT/mnt/boot/syslinux"
 cp "$ROOT"/usr/share/syslinux/*.c32 "$OUT/mnt/boot/syslinux/"
 cat > "$OUT/mnt/boot/syslinux/syslinux.cfg" <<CFG

@@ -42,15 +42,18 @@ for f in start4.elf fixup4.dat vmlinuz-rpi initramfs-rpi; do [ -e "$ROOT/boot/$f
 
 rm -f "$IMG"
 truncate -s 4G "$IMG"
-printf 'start=2048, size=524288, type=c, bootable\nstart=526336, type=83\n' | sfdisk -q "$IMG"
+# Boot (FAT, 256 MiB), system (ext4, about 2.75 GiB) and a separate data partition (ext4) for accounts,
+# history, notes and worlds, so the system can be replaced without touching data.
+printf 'start=2048, size=524288, type=c, bootable\nstart=526336, size=5767168, type=83\nstart=6293504, type=83\n' | sfdisk -q "$IMG"
 LOOP=$(losetup --find --show --partscan "$IMG")
 cleanup() { umount "$OUT/pi-boot" 2>/dev/null || true; umount "$OUT/pi-mnt" 2>/dev/null || true; losetup -d "$LOOP" 2>/dev/null || true; }
 trap cleanup EXIT
 # The partition devices can take a moment to appear on busy runners.
-for i in $(seq 1 30); do [ -b "${LOOP}p1" ] && [ -b "${LOOP}p2" ] && break; partprobe "$LOOP" 2>/dev/null || true; udevadm settle 2>/dev/null || true; sleep 1; done
-[ -b "${LOOP}p1" ] && [ -b "${LOOP}p2" ] || { echo "partitions of $LOOP did not appear"; lsblk "$LOOP"; exit 1; }
+for i in $(seq 1 30); do [ -b "${LOOP}p1" ] && [ -b "${LOOP}p2" ] && [ -b "${LOOP}p3" ] && break; partprobe "$LOOP" 2>/dev/null || true; udevadm settle 2>/dev/null || true; sleep 1; done
+[ -b "${LOOP}p1" ] && [ -b "${LOOP}p2" ] && [ -b "${LOOP}p3" ] || { echo "partitions of $LOOP did not appear"; lsblk "$LOOP"; exit 1; }
 mkfs.vfat -F 32 -n MEBOOT "${LOOP}p1" >/dev/null
 mkfs.ext4 -q -L map-editor "${LOOP}p2"
+mkfs.ext4 -q -L me-data "${LOOP}p3"
 
 mkdir -p "$OUT/pi-mnt" "$OUT/pi-boot"
 mount "${LOOP}p2" "$OUT/pi-mnt"
@@ -69,7 +72,8 @@ enable_uart=1
 disable_overscan=1
 CFG
 echo 'root=LABEL=map-editor rootfstype=ext4 modules=ext4 rootwait quiet console=serial0,115200 console=tty1' > "$OUT/pi-boot/cmdline.txt"
-printf 'LABEL=map-editor / ext4 defaults,noatime 0 1\nLABEL=MEBOOT /boot vfat defaults,noatime 0 2\n' > "$OUT/pi-mnt/etc/fstab"
+printf 'LABEL=map-editor / ext4 defaults,noatime 0 1\nLABEL=MEBOOT /boot vfat defaults,noatime 0 2\nLABEL=me-data /var/lib/map-editor ext4 defaults,noatime 0 2\n' > "$OUT/pi-mnt/etc/fstab"
+mkdir -p "$OUT/pi-data" && mount "${LOOP}p3" "$OUT/pi-data" && cp -a "$OUT/pi-mnt/var/lib/map-editor"/. "$OUT/pi-data"/ && umount "$OUT/pi-data"
 # The root keeps its own /boot empty; the boot partition is mounted there at runtime.
 rm -rf "$OUT/pi-mnt/boot"/*
 ls "$OUT/pi-boot" | head -40
