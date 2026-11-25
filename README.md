@@ -16,6 +16,10 @@ A separate **Map Editor Deploy** app does each of those in one click and gives y
 
 ## A look around
 
+A one-minute walk through: sign in, make a water world, fill, measure, check History and Tools, then switch to the dark theme from the command palette.
+
+![Walkthrough of Map Editor: setup, a new world, an edit, the map toolbar, History, Tools and the command palette](docs/screenshots/walkthrough.gif)
+
 New here? **Take a tour**: after setup the app offers a short guided tour that points at each real control. Start it again any time from the **?** Help menu, Settings › Comfort and focus, or the command palette (Ctrl+Shift+F). Every page has its own tour too, and so do the deploy app and the documentation site.
 
 ![The guided tour pointing at the command palette search](docs/screenshots/tour.png)

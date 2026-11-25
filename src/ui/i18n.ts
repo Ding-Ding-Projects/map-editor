@@ -426,7 +426,7 @@ const S = {
   notesSaved: { en: 'Notes saved.', yue: '筆記已儲存。' },
   uploadZip: { en: 'Upload world .zip', yue: '上載世界 .zip' },
   newFlat: { en: 'New flat world', yue: '新平地世界' },
-  newFlatBody: { en: 'An 8 by 8 chunk flat world (bedrock, dirt, grass) to try the tools on.', yue: '8 乘 8 區塊嘅平地世界（基岩、泥、草），試工具啱晒。' },
+  newFlatBody: { en: 'A flat world to try the tools on. Pick what it is made of and how big it is.', yue: '開個平地世界試工具。揀佢用乜整同幾大。' },
   browse: { en: 'Browse folder…', yue: '瀏覽資料夾…' },
   loading: { en: 'Loading', yue: '載入中' },
   worldsFrom: { en: 'From {roots} · Java Edition 1.18 and newer', yue: '來自 {roots} · Java 版 1.18 或以上' },

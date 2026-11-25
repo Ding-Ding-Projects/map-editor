@@ -110,7 +110,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Appliance console tour: the console banner carries a four-step guided walk ending at the web app's Take a tour; documented in the Appliance article.
 - [x] Guided Take a tour: whole-app tour and one per destination, coach card with highlight ring on the real control, Step N of M, Back, Skip this step, Next, Close, Esc and arrow keys, screen-reader announcements, reduced motion, English and Cantonese, offered once after onboarding, reachable from the Help menu, Settings and the palette, resumes where it stopped, off-screen steps offer to reveal the control. Same tour in the deploy app and on the documentation site. Checked in headless Chrome (start, next, skip, back, close, resume, a missing control at phone width); screenshot in the README.
 - [x] Line counts in every release's notes; the README's feature list in collapsible sections that open like tabs.
-- [ ] Screen recording in the README.
+- [x] Screen recording in the README: an animated walk through setup, a new world, an edit, the map toolbar, History, Tools and the command palette, recorded in headless Chrome.
 
 ## Decisions recorded
 
