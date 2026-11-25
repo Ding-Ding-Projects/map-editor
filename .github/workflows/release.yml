@@ -203,6 +203,14 @@ jobs:
             echo "Docker image: ${{ env.IMAGE }}:${{ needs.meta.outputs.version }} (digest in image-digest.txt)."
             echo "The Windows installers are not code-signed, so Windows SmartScreen may warn before running them."
             echo
+            # Line counts of the tracked source at this commit, by kind of file.
+            echo "Lines of code at this commit:"
+            for kind in "TypeScript:ts" "JavaScript:mjs" "CSS:css" "HTML:html" "Shell:sh" "PowerShell:ps1" "Python:py" "Markdown:md" "YAML:yml"; do
+              name=${kind%%:*}; ext=${kind##*:}
+              n=$(git ls-files "*.$ext" | grep -v '^design/' | xargs -r cat 2>/dev/null | wc -l)
+              [ "$n" -gt 0 ] && echo "- $name: $n"
+            done
+            echo
             echo "Workflow started: ${{ needs.meta.outputs.started }}"
             echo "Workflow completed: $DONE"
             echo "Workflow duration: ${DUR}s"
