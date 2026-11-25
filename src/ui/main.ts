@@ -1138,6 +1138,25 @@ async function editorView(view: HTMLElement): Promise<void> {
 }
 
 /** Activity panel: accounts, settings, extensions and worlds from the server's activity record. */
+/** Tick boxes on list rows, with a bar (count, Select all shown, Invert) placed before the list. Returns the ticked row numbers. */
+function pickBar(rows: HTMLElement[], before: Element, name: (i: number) => string): Set<number> {
+  const picked = new Set<number>(); let anchor: number | undefined;
+  const bar = document.createElement('div'); bar.className = 'h-selbar'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', tx('selectMode'));
+  bar.innerHTML = `<b role="status"></b><md-text-button data-pick="all">${esc(tx('selectAll'))}</md-text-button><md-text-button data-pick="inv">${esc(tx('selectInvert'))}</md-text-button><span class="muted" id="hsel-note">${esc(tx('selectExportNote'))}</span>`;
+  before.before(bar);
+  const shown = () => rows.map((r, i) => r.hidden ? -1 : i).filter((i) => i >= 0);
+  const paint = () => { rows.forEach((r, i) => { r.querySelector<HTMLInputElement>('.h-pick')!.checked = picked.has(i); r.classList.toggle('ticked', picked.has(i)); }); bar.querySelector('b')!.textContent = tx('selectedN', { n: picked.size, total: rows.length }); };
+  rows.forEach((r, i) => {
+    const box = document.createElement('input'); box.type = 'checkbox'; box.className = 'h-pick'; box.setAttribute('aria-label', tx('selectWorld', { name: name(i).slice(0, 60) }));
+    r.prepend(box);
+    box.addEventListener('click', (ev) => { ev.stopPropagation(); anchor = pickItem(picked, i, anchor, ev.shiftKey); paint(); });
+  });
+  bar.querySelector('[data-pick=all]')!.addEventListener('click', () => { const vis = shown(); const all = vis.length > 0 && vis.every((i) => picked.has(i)); vis.forEach((i) => { if (all) picked.delete(i); else picked.add(i); }); paint(); });
+  bar.querySelector('[data-pick=inv]')!.addEventListener('click', () => { shown().forEach((i) => { if (picked.has(i)) picked.delete(i); else picked.add(i); }); paint(); });
+  paint();
+  return picked;
+}
+
 function activityPanel(): HTMLElement {
   const el = document.createElement('section');
   el.className = 'card panel-scroll activity';
@@ -1154,9 +1173,10 @@ function activityPanel(): HTMLElement {
       const box = searchBox('activity-search', tx('searchActivity'), rx);
       host.querySelector('#aq-host')!.replaceWith(box.el);
       box.el.after(exportButton(tx('export'), exportNames(), (f) => downloadRows(
-        events.filter((_e, i) => !rows[i]?.hidden).map((e) => ({ time: new Date(e.time * 1000).toISOString(), kind: e.kind, who: e.who, message: e.message, commit: e.sha ?? '' })),
+        events.filter((_e, i) => !rows[i]?.hidden && (!aPicked.size || aPicked.has(i))).map((e) => ({ time: new Date(e.time * 1000).toISOString(), kind: e.kind, who: e.who, message: e.message, commit: e.sha ?? '' })),
         ['time', 'kind', 'who', 'message', 'commit'], f, tx('activity'), 'map-editor-activity')));
       const rows = Array.from(host.querySelectorAll<HTMLElement>('.act-list li'));
+      const aPicked = rows.length ? pickBar(rows, host.querySelector('.act-list')!, (i) => events[i].message) : new Set<number>();
       const on = new Set<string>();
       let run = 0;
       const filter = async () => {

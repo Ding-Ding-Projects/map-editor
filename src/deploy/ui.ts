@@ -235,7 +235,7 @@ function deployTour(start = 0) {
     { target: '#v-disks', title: 'Virtual disks', body: 'On Windows: make a disk that lives in one file, attach one you already have, or detach it. Files are never deleted here.' },
     { target: '#v-guide', title: 'Guide', body: 'The whole guide is inside this app and opens without a network.' },
     { target: '#tour', title: 'Come back any time', body: 'Take a tour starts this walk-through again.' },
-  ], { stepOf: (n, m) => `Step ${n} of ${m} of the deploy tour`, back: 'Back', skip: 'Skip this step', next: 'Next', done: 'Finish', close: 'Close', notHere: 'This part is not on screen right now.' }, {
+  ], { stepOf: (n, m) => currentLang() === 'yue' ? `部署導覽第 ${n} 步，共 ${m} 步` : currentLang() === 'both' ? `Step ${n} of ${m} of the deploy tour · 第 ${n} 步，共 ${m} 步` : `Step ${n} of ${m} of the deploy tour`, back: 'Back', skip: 'Skip this step', next: 'Next', done: 'Finish', close: 'Close', notHere: 'This part is not on screen right now.' }, {
     start,
     onStep: (i) => { try { localStorage.setItem('map-editor-deploy.tour', String(i)); } catch { /* ignore */ } },
     onEnd: (done) => { try { localStorage.setItem('map-editor-deploy.tour', done ? 'done' : localStorage.getItem('map-editor-deploy.tour') ?? '0'); } catch { /* ignore */ } },
