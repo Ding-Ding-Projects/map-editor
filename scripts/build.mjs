@@ -41,8 +41,8 @@ export const FONT_FILES = [
   ['@fontsource-variable/roboto-mono/files/roboto-mono-latin-ext-wght-normal.woff2', 'roboto-mono-latin-ext.woff2'],
 ];
 for (const app of ['ui', 'deploy']) {
-  copyFileSync(path.join(root, 'src/ui/favicon.svg'), path.join(dist, app, 'favicon.svg'));
   mkdirSync(path.join(dist, app, 'fonts'), { recursive: true });
+  copyFileSync(path.join(root, 'src/ui/favicon.svg'), path.join(dist, app, 'favicon.svg'));
   for (const [from, to] of FONT_FILES) copyFileSync(path.join(root, 'node_modules', from), path.join(dist, app, 'fonts', to));
   copyFileSync(path.join(root, 'node_modules/@fontsource-variable/roboto-flex/LICENSE'), path.join(dist, app, 'fonts', 'OFL-roboto-flex.txt'));
   copyFileSync(path.join(root, 'node_modules/@fontsource-variable/roboto-mono/LICENSE'), path.join(dist, app, 'fonts', 'OFL-roboto-mono.txt'));

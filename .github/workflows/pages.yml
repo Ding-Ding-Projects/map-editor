@@ -17,7 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22 }
+        with: { node-version: 22, cache: npm }
+      # The site bundles its fonts from the font packages.
+      - run: npm ci --no-audit --no-fund --ignore-scripts
       - run: node site/build.mjs
         env: { SITE_BASE: /map-editor/ }
       - name: Squirrel update feeds from the latest release
