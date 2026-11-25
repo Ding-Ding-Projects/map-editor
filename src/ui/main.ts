@@ -192,6 +192,34 @@ function askConfirm(text: string, ok = tx('ok'), danger = false): Promise<boolea
   });
 }
 
+/** Every setting a palette row can teleport to: [control selector, settings section, label key]. */
+const SETTING_TARGETS: Array<[string, string, Key]> = [
+  ['.set-langs', 'language', 'secLanguage'], ['#fen', 'language', 'funnyEn'], ['#fyue', 'language', 'funnyYue'],
+  ['#dark', 'appearance', 'dark'], ['#dsched', 'appearance', 'darkSchedule'], ['#dfrom', 'appearance', 'darkFrom'], ['#ds', 'appearance', 'dimSum'], ['#seed-picker', 'appearance', 'seed'], ['#reset-layouts', 'appearance', 'resetLayouts'],
+  ['#rm', 'comfort', 'reduceMotion'], ['#lt', 'comfort', 'largeText'], ['#elock', 'comfort', 'editLock'], ['#tko', 'comfort', 'takeovers'], ['#llock', 'comfort', 'layoutLocked'], ['#tlock', 'comfort', 'tabsLocked'], ['#slock', 'comfort', 'settingsLocked'],
+  ['#snd', 'sounds', 'soundEffects'], ['#vol', 'sounds', 'soundVolume'], ['#quiet', 'sounds', 'quietHours'], ['#qfrom', 'sounds', 'quietFrom'], ['#nar', 'sounds', 'narrate'], ['#nar-rate', 'sounds', 'narrateRate'],
+  ['#exp', 'backup', 'exportSettings'], ['#imp', 'backup', 'importSettings'], ['#sh', 'backup', 'settingsHistory'],
+];
+const SECTION_KEY: Record<string, Key> = { language: 'secLanguage', appearance: 'secAppearance', comfort: 'secComfort', sounds: 'secSounds', extensions: 'secExtensions', backup: 'secBackup' };
+
+/** Open Settings at the section holding a control, scroll it into view, focus it and flash a ring round it. */
+function showSetting(selector: string, section: string) {
+  prefs.closedTabs = prefs.closedTabs.filter((x) => x !== 'settings');
+  prefs.tab = 'settings'; prefs.settingsSection = section; savePrefs(); render();
+  let tries = 0;
+  const find = () => {
+    const el = document.querySelector<HTMLElement>(`#view ${selector}`);
+    if (!el && ++tries < 20) { requestAnimationFrame(find); return; }
+    if (!el) return;
+    const ring = el.closest<HTMLElement>('.set-row, .set-slider, .set-times, .row-actions, .set-langs, .seed-row') ?? el;
+    ring.scrollIntoView({ block: 'center', behavior: prefs.reduceMotion ? 'auto' : 'smooth' });
+    ring.classList.remove('teleport-flash'); void ring.offsetWidth; ring.classList.add('teleport-flash');
+    setTimeout(() => ring.classList.remove('teleport-flash'), 1700);
+    (el.matches('button, input, md-switch, md-slider, md-outlined-text-field, md-outlined-button, md-filled-button, [tabindex]') ? el : el.querySelector<HTMLElement>('button, input, md-switch, md-slider, md-outlined-text-field, md-outlined-button, [tabindex]') ?? ring).focus?.();
+  };
+  requestAnimationFrame(find);
+}
+
 function tabSearch() {
   showTabSearch({
     tabs: () => TABS.map((x) => ({ id: x, label: tx(x as Key), open: !prefs.closedTabs.includes(x), active: x === prefs.tab, busy: x === 'editor' && busy > 0 })),
@@ -226,6 +254,15 @@ function paletteCommands(): Command[] {
   for (const [l, label] of [['en', 'English'], ['yue', '粵語'], ['both', 'EN + 粵']] as const) cmds.push({ id: `lang-${l}`, label: `${tx('language')}: ${label}`, where: `${tx('settings')} › ${tx('language')}`, run: () => { prefs.lang = l; savePrefs(); render(); } });
   cmds.push({ id: 'notes', label: tx('notifications'), where: 'Header', run: () => toggleNoteCentre() });
   cmds.push({ id: 'welcome', label: tx('welcome'), where: `${tx('settings')}`, run: () => { prefs.onboarded = false; prefs.onboardStep = 0; savePrefs(); render(); } });
+  // Every setting can be teleported to (Shift+Enter or the arrow): toggles get it as a second action,
+  // and settings that are not switches get a row of their own that teleports.
+  const gotoOf: Record<string, string> = { dark: '#dark', motion: '#rm', 'large-text': '#lt', sounds: '#snd', 'edit-lock': '#elock', narrate: '#nar', 'dim-sum-toggle': '#ds', 'reset-layouts': '#reset-layouts' };
+  for (const c of cmds) { const sel = gotoOf[c.id]; const t = sel && SETTING_TARGETS.find(([x]) => x === sel); if (t) c.goto = () => showSetting(t[0], t[1]); }
+  const covered = new Set(Object.values(gotoOf));
+  for (const [selector, section, key] of SETTING_TARGETS) {
+    if (covered.has(selector)) continue;
+    cmds.push({ id: `set-${selector.replace(/\W/g, '')}`, label: tx(key), where: `${tx('settings')} › ${tx(SECTION_KEY[section])}`, run: () => showSetting(selector, section), goto: () => showSetting(selector, section) });
+  }
   // A setting locked in Settings is locked here too: its row says so instead of switching.
   const SWITCH_OF: Record<string, string> = { dark: 'dark', motion: 'rm', 'large-text': 'lt', sounds: 'snd', 'edit-lock': 'elock', narrate: 'nar', 'dim-sum-toggle': 'ds' };
   for (const c of cmds) {

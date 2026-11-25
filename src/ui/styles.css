@@ -587,3 +587,13 @@ canvas#map[data-mode="pick"] { cursor: copy; } canvas#map[data-mode="goto"] { cu
 .bp-swatch.picked { background: var(--md-sys-color-tertiary-container); }
 .bp-swatch:hover { background: var(--md-sys-color-surface-container-high); }
 .bp-swatch:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; }
+
+/* Palette: resizable from the corner (size remembered), and a Show button that teleports to the control. */
+.palette { resize: both; min-width: 320px; min-height: 240px; }
+.pr-goto { all: unset; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 18px; cursor: pointer; color: var(--md-sys-color-on-surface-variant); flex: none; }
+.pr-goto:hover { background: var(--md-sys-color-surface-container-highest); }
+.pr-goto:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; }
+/* Teleport target: a ring that pulses twice on the exact control. */
+.teleport-flash { outline: 3px solid var(--md-sys-color-tertiary); outline-offset: 4px; border-radius: 16px; animation: me-teleport 1.6s cubic-bezier(.2,0,0,1) 1; }
+@keyframes me-teleport { 0%, 40%, 80% { outline-color: var(--md-sys-color-tertiary); } 20%, 60% { outline-color: transparent; } 100% { outline-color: transparent; } }
+@media (prefers-reduced-motion: reduce) { .teleport-flash { animation: none; } }
