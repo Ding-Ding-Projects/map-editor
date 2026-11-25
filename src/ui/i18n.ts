@@ -24,6 +24,8 @@ const S = {
   tabSearch: { en: 'Find tabs', yue: '搵分頁' },
   mapTools: { en: 'Map tools', yue: '地圖工具' },
   structures: { en: 'Structures', yue: '結構' },
+  biome: { en: 'Biome', yue: '生態域' },
+  biomeNote: { en: 'Set per 4×4×4 cell, as the game stores biomes; the edges round out to whole cells.', yue: '遊戲係每 4×4×4 格記一次生態域，所以邊位會擴到成格。' },
   sliceView: { en: 'Side view', yue: '側面' },
   sliceAxis: { en: 'Direction of the cut', yue: '切面方向' },
   sliceAlongX: { en: 'Along x', yue: '沿 x' },

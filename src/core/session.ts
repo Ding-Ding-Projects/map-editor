@@ -13,10 +13,11 @@ export interface OperationRequest {
   block?: string;
   from?: string;
   to?: string;
+  biome?: string;
   dest?: { x: number; y: number; z: number };
 }
 
-const PAST: Record<ops.OperationName, HistoryAction> = { fill: 'filled', replace: 'replaced', delete: 'deleted', clone: 'cloned', waterlog: 'waterlogged' };
+const PAST: Record<ops.OperationName, HistoryAction> = { fill: 'filled', replace: 'replaced', delete: 'deleted', clone: 'cloned', waterlog: 'waterlogged', biome: 'biome set' };
 
 export class EditSession {
   private queue: Promise<unknown> = Promise.resolve();
@@ -43,6 +44,7 @@ export class EditSession {
         case 'replace': res = await ops.replace(world, req.dimension, req.box, parseBlock(req.from ?? ''), parseBlock(req.to ?? '')); break;
         case 'delete': res = await ops.deleteBlocks(world, req.dimension, req.box); break;
         case 'waterlog': res = await ops.waterlog(world, req.dimension, req.box); break;
+        case 'biome': res = await ops.setBiome(world, req.dimension, req.box, req.biome ?? ''); break;
         case 'clone':
           if (!req.dest) throw new Error('Clone needs a destination');
           res = await ops.clone(world, req.dimension, req.box, req.dest); break;
@@ -52,7 +54,7 @@ export class EditSession {
       await world.save();
       const n = ops.normalize(req.box);
       const size = `${n.x2 - n.x1 + 1}×${n.y2 - n.y1 + 1}×${n.z2 - n.z1 + 1}`;
-      const what = req.op === 'fill' ? ` with ${req.block}` : req.op === 'replace' ? ` ${req.from} with ${req.to}` : req.op === 'clone' ? ` to ${req.dest!.x}, ${req.dest!.y}, ${req.dest!.z}` : '';
+      const what = req.op === 'fill' ? ` with ${req.block}` : req.op === 'replace' ? ` ${req.from} with ${req.to}` : req.op === 'clone' ? ` to ${req.dest!.x}, ${req.dest!.y}, ${req.dest!.z}` : req.op === 'biome' ? ` to ${req.biome}` : '';
       let entry;
       try { entry = await this.history.record(PAST[req.op], `${req.op[0].toUpperCase()}${req.op.slice(1)} ${size}${what}`); }
       catch (e) { console.error('History write failed; the edit itself was saved.', e); } // never fail the edit for a history write

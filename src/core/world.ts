@@ -147,6 +147,20 @@ export class World {
     return true;
   }
 
+  /** Set the biome of the cell holding a block; missing chunks are skipped. */
+  async setBiome(dim: Dimension, x: number, y: number, z: number, biome: string): Promise<boolean> {
+    const c = await this.chunk(dim, Math.floor(x / 16), Math.floor(z / 16));
+    if (!c) return false;
+    c.setBiome(((x % 16) + 16) % 16, y, ((z % 16) + 16) % 16, biome);
+    this.dirtyChunks.add(`${dim}:${c.cx}:${c.cz}`);
+    return true;
+  }
+
+  async getBiome(dim: Dimension, x: number, y: number, z: number): Promise<string | undefined> {
+    const c = await this.chunk(dim, Math.floor(x / 16), Math.floor(z / 16));
+    return c?.getBiome(((x % 16) + 16) % 16, y, ((z % 16) + 16) % 16);
+  }
+
   get unsavedChunks() { return this.dirtyChunks.size; }
 
   /** Write every changed chunk back to its region file. Returns the changed file paths. */

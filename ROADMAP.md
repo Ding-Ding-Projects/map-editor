@@ -15,7 +15,8 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [ ] Bedrock Edition worlds (Amulet supports them; not ported).
 - [x] Structure files (.nbt, the structure block and /place template format): save the selection, air included, and place a .nbt file at the selection's lowest corner after a confirmation, recorded in history as Placed so Undo restores; block-state properties kept, chunks that do not exist skipped, files checked for size and palette. Unit and server tests; checked in headless Chrome. Block entities and entities are not carried yet.
 - [x] Side view: a panel with a vertical cut through the world along x or z at any position (through the selection by default), the selection outlined, fitted to the panel and redrawn after edits; server test of the cut, checked in headless Chrome.
-- [ ] 3D view, biome editing; block entities in structure files.
+- [x] Biome editing: a Biome tool (key B) sets the biome over the selection per 4×4×4 cell, the unit the game stores, with common biomes as chips; saved packed in each section and recorded in history so Undo restores it. Unit tested.
+- [ ] 3D view; block entities in structure files.
 
 ## Phase 2: desktop app
 

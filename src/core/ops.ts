@@ -97,5 +97,23 @@ export async function clone(world: World, dim: Dimension, box: Box, dest: { x: n
   return { changed, skipped, chunks: chunks.size, ms: Date.now() - t0 };
 }
 
-export const OPERATIONS = ['fill', 'replace', 'delete', 'clone', 'waterlog'] as const;
+/** Biome ids: namespaced lower-case names such as minecraft:cherry_grove. */
+export const BIOME_RE = /^[a-z0-9_.-]+:[a-z0-9_./-]+$/;
+
+/** Set the biome over a box, one 4×4×4 cell at a time (the smallest unit the game stores). */
+export async function setBiome(world: World, dim: Dimension, box: Box, biome: string): Promise<OpResult> {
+  const t0 = Date.now();
+  if (!BIOME_RE.test(biome)) throw new Error(`Not a biome id: ${biome}`);
+  const b = normalize(box);
+  check(b);
+  let changed = 0, skipped = 0;
+  const chunks = new Set<string>();
+  const step = (lo: number, hi: number) => { const out: number[] = []; for (let v = lo - (((lo % 4) + 4) % 4); v <= hi; v += 4) out.push(v); return out; };
+  for (const x of step(b.x1, b.x2)) for (const z of step(b.z1, b.z2)) for (const y of step(b.y1, b.y2)) {
+    if (await world.setBiome(dim, x, y, z, biome)) { changed++; chunks.add(`${Math.floor(x / 16)},${Math.floor(z / 16)}`); } else skipped++;
+  }
+  return { changed, skipped, chunks: chunks.size, ms: Date.now() - t0 };
+}
+
+export const OPERATIONS = ['fill', 'replace', 'delete', 'clone', 'waterlog', 'biome'] as const;
 export type OperationName = typeof OPERATIONS[number];

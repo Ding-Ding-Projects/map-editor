@@ -264,7 +264,7 @@ function paletteCommands(): Command[] {
   const go = (t: string) => () => { prefs.closedTabs = prefs.closedTabs.filter((x) => x !== t); prefs.tab = t; savePrefs(); render(); };
   const cmds: Command[] = [];
   for (const t of TABS) cmds.push({ id: `go-${t}`, label: `${tx('open')}: ${tx(t as Key)}`, where: 'Tabs', run: go(t) });
-  if (world) for (const [o, k] of [['fill', 'F'], ['replace', 'R'], ['delete', 'D'], ['clone', 'C'], ['waterlog', 'W']] as const) cmds.push({ id: `tool-${o}`, label: tx(o), where: `${tx('editor')} › Tools`, keys: k, run: () => { go('editor')(); setTimeout(() => selectTool?.(o), 50); } });
+  if (world) for (const [o, k] of [['fill', 'F'], ['replace', 'R'], ['delete', 'D'], ['clone', 'C'], ['waterlog', 'W'], ['biome', 'B']] as const) cmds.push({ id: `tool-${o}`, label: tx(o), where: `${tx('editor')} › Tools`, keys: k, run: () => { go('editor')(); setTimeout(() => selectTool?.(o), 50); } });
   if (world) for (const m of MAP_MODES) cmds.push({ id: `map-${m}`, label: tx(`mode_${m}` as Key), where: `${tx('editor')} › ${tx('mapTools')}`, keys: MAP_MODE_KEYS[m], run: () => { go('editor')(); setTimeout(() => setMapMode?.(m), 50); } });
   if (world) cmds.push({ id: 'undo', label: tx('undo'), where: tx('history'), keys: 'Ctrl+Z', run: () => undoLast() });
   cmds.push({ id: 'dark', label: tx('dark'), where: `${tx('settings')} › Appearance`, toggle: { get: () => prefs.dark, set: (v) => { prefs.dark = v; savePrefs(); applyTheme(); } } });
@@ -626,6 +626,7 @@ const sel = { x1: 0, y1: 60, z1: 0, x2: 15, y2: 70, z2: 15 };
 let dim = 'overworld';
 // Map toolbar modes: what a drag or click on the map does. Shift+drag always selects.
 const MAP_MODES = ['pan', 'select', 'pick', 'measure', 'goto'] as const;
+const BIOMES = ['plains', 'forest', 'cherry_grove', 'desert', 'snowy_plains', 'jungle', 'swamp', 'mushroom_fields', 'ocean', 'badlands', 'meadow', 'dark_forest'];
 type MapMode = typeof MAP_MODES[number];
 const MAP_MODE_KEYS: Record<MapMode, string> = { pan: 'H', select: 'S', pick: 'I', measure: 'M', goto: 'G' };
 let mapMode: MapMode = 'pan';
@@ -648,7 +649,7 @@ async function editorView(view: HTMLElement): Promise<void> {
       <div class="mt-status" id="mt-status" aria-live="polite"></div>
       <form class="goto-form" id="goto" hidden><md-outlined-text-field name="gx" type="number" label="x"></md-outlined-text-field><md-outlined-text-field name="gz" type="number" label="z"></md-outlined-text-field><md-filled-button type="submit">${esc(tx('mode_goto'))}</md-filled-button><md-text-button type="button" id="goto-x">${esc(tx('close'))}</md-text-button></form></section>
     <aside class="card tool">
-      <md-chip-set id="ops" role="radiogroup" aria-label="Tools">${(['fill', 'replace', 'delete', 'clone', 'waterlog'] as const).map((o, i) => `<md-filter-chip data-op="${o}" label="${esc(tx(o))}" ${i === 0 ? 'selected' : ''}></md-filter-chip>`).join('')}</md-chip-set>
+      <md-chip-set id="ops" role="radiogroup" aria-label="Tools">${(['fill', 'replace', 'delete', 'clone', 'waterlog', 'biome'] as const).map((o, i) => `<md-filter-chip data-op="${o}" label="${esc(tx(o))}" ${i === 0 ? 'selected' : ''}></md-filter-chip>`).join('')}</md-chip-set>
       <div class="coords-grid">${(['x1', 'y1', 'z1', 'x2', 'y2', 'z2'] as const).map((k) => `<md-outlined-text-field type="number" label="${k}" name="${k}" value="${sel[k]}"></md-outlined-text-field>`).join('')}</div>
       <div id="op-fields" class="stack"></div>
       <div class="muted" id="sel-size"></div>
@@ -659,7 +660,7 @@ async function editorView(view: HTMLElement): Promise<void> {
   // dockview moves these panels out of root, so every later lookup goes through the panel itself
   const mapEl = root.querySelector<HTMLElement>('.map')!;
   const toolEl = root.querySelector<HTMLElement>('.tool')!;
-  let op: 'fill' | 'replace' | 'delete' | 'clone' | 'waterlog' = 'fill';
+  let op: 'fill' | 'replace' | 'delete' | 'clone' | 'waterlog' | 'biome' = 'fill';
   const fields = root.querySelector('#op-fields')!;
   const runBtn = root.querySelector('#run')!;
   const size = () => { const n = (a: number, b: number) => Math.abs(b - a) + 1; toolEl.querySelector('#sel-size')!.textContent = tx('selection', { n: (n(sel.x1, sel.x2) * n(sel.y1, sel.y2) * n(sel.z1, sel.z2)).toLocaleString('en') }); };
@@ -671,9 +672,11 @@ async function editorView(view: HTMLElement): Promise<void> {
     runBtn.textContent = tx('run', { op: tx(o) });
     fields.innerHTML = o === 'fill' ? `<md-outlined-text-field name="block" label="${esc(tx('block'))}" value="minecraft:stone_bricks"></md-outlined-text-field>`
       : o === 'replace' ? `<md-outlined-text-field name="from" label="${esc(tx('from'))}" value="minecraft:water"></md-outlined-text-field><md-outlined-text-field name="to" label="${esc(tx('to'))}" value="minecraft:air"></md-outlined-text-field>`
-      : o === 'clone' ? `<md-outlined-text-field name="dest" label="${esc(tx('dest'))}" value="0, 64, 0"></md-outlined-text-field>` : '';
+      : o === 'clone' ? `<md-outlined-text-field name="dest" label="${esc(tx('dest'))}" value="0, 64, 0"></md-outlined-text-field>`
+      : o === 'biome' ? `<md-outlined-text-field name="biome" label="${esc(tx('biome'))}" value="minecraft:cherry_grove" supporting-text="${esc(tx('biomeNote'))}"></md-outlined-text-field><md-chip-set class="block-chips" aria-label="${esc(tx('biome'))}">${BIOMES.map((b) => `<md-assist-chip data-biome="minecraft:${b}" label="${b}"></md-assist-chip>`).join('')}</md-chip-set>` : '';
     if (o === 'fill') fields.insertAdjacentHTML('beforeend', chips('block'));
     if (o === 'replace') fields.insertAdjacentHTML('beforeend', chips('to'));
+    fields.querySelectorAll<HTMLElement>('[data-biome]').forEach((c) => c.addEventListener('click', () => { (fields.querySelector('[name=biome]') as HTMLInputElement).value = c.dataset.biome!; }));
     fields.querySelectorAll<HTMLElement>('[data-block]').forEach((c) => c.addEventListener('click', () => { (fields.querySelector(`[name=${c.dataset.for}]`) as HTMLInputElement).value = c.dataset.block!; }));
   };
   selectTool = (o) => setOp(o as typeof op);
@@ -688,6 +691,7 @@ async function editorView(view: HTMLElement): Promise<void> {
     const body: Record<string, unknown> = { op, dimension: dim, box: { ...sel } };
     if (op === 'fill') body.block = v('block');
     if (op === 'replace') { body.from = v('from'); body.to = v('to'); }
+    if (op === 'biome') body.biome = v('biome').trim();
     if (op === 'clone') { const [x, y, z] = v('dest').split(',').map((s) => Math.trunc(Number(s.trim()))); body.dest = { x, y, z }; }
     if (prefs.editLock) { notify(tx('editLocked'), true); return; }
     runBtn.setAttribute('disabled', '');
@@ -1432,7 +1436,7 @@ document.addEventListener('keydown', (e) => {
   if (typing(e) || document.querySelector('.palette-scrim, .onboarding')) return;
   if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && world) { e.preventDefault(); undoLast(); return; }
   if (!e.ctrlKey && !e.metaKey && !e.altKey && prefs.tab === 'editor' && selectTool) {
-    const map: Record<string, string> = { f: 'fill', r: 'replace', d: 'delete', c: 'clone', w: 'waterlog' };
+    const map: Record<string, string> = { f: 'fill', r: 'replace', d: 'delete', c: 'clone', w: 'waterlog', b: 'biome' };
     const op = map[e.key.toLowerCase()];
     if (op) { e.preventDefault(); selectTool(op); return; }
     const mode = MAP_MODES.find((m) => MAP_MODE_KEYS[m].toLowerCase() === e.key.toLowerCase());

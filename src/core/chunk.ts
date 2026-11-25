@@ -98,8 +98,12 @@ function blockToTag(b: BlockState): CompoundTag {
   return nbt.compound(m);
 }
 
+/** Biomes of one section: 4×4×4 cells, index = (y*4 + z)*4 + x, each naming a biome. */
+export interface SectionBiomes { palette: string[]; indices: Uint8Array }
+
 export class Chunk {
   sections = new Map<number, Section>();
+  biomes = new Map<number, SectionBiomes>();
   constructor(public cx: number, public cz: number, public root: NamedTag) {}
 
   static fromNbt(cx: number, cz: number, root: NamedTag): Chunk {
@@ -117,6 +121,13 @@ export class Chunk {
       if (palette.length <= 1 || !data) indices = new Uint16Array(4096);
       else indices = unpack(data, Math.max(4, Math.ceil(Math.log2(palette.length))), 4096);
       c.sections.set(y, new Section(y, palette.length ? palette : [AIR], indices));
+      const bi = getCompound(s, 'biomes');
+      if (bi) {
+        const bp = (getList(bi, 'palette') ?? []).map((t) => (t.type === TagType.String ? t.value : 'minecraft:plains'));
+        const bd = getLongArray(bi, 'data');
+        const idx = bp.length > 1 && bd ? Uint8Array.from(unpack(bd, Math.ceil(Math.log2(bp.length)), 64)) : new Uint8Array(64);
+        c.biomes.set(y, { palette: bp.length ? bp : ['minecraft:plains'], indices: idx });
+      }
     }
     return c;
   }
@@ -147,6 +158,22 @@ export class Chunk {
     let s = this.sections.get(sy);
     if (!s) { s = new Section(sy); this.sections.set(sy, s); }
     s.set(x & 15, ((y % 16) + 16) % 16, z & 15, b);
+  }
+
+  getBiome(x: number, y: number, z: number): string | undefined {
+    const b = this.biomes.get(Math.floor(y / 16));
+    if (!b) return undefined;
+    return b.palette[b.indices[((((y % 16) + 16) % 16 >> 2) * 4 + ((z & 15) >> 2)) * 4 + ((x & 15) >> 2)]];
+  }
+
+  /** Set the biome of the 4×4×4 cell holding a block (biomes are stored per cell, not per block). */
+  setBiome(x: number, y: number, z: number, biome: string) {
+    const sy = Math.floor(y / 16);
+    let b = this.biomes.get(sy);
+    if (!b) { b = { palette: ['minecraft:plains'], indices: new Uint8Array(64) }; this.biomes.set(sy, b); }
+    let i = b.palette.indexOf(biome);
+    if (i < 0) { i = b.palette.length; b.palette.push(biome); }
+    b.indices[((((y % 16) + 16) % 16 >> 2) * 4 + ((z & 15) >> 2)) * 4 + ((x & 15) >> 2)] = i;
   }
 
   /** Highest non-air block in a column, or undefined. */
@@ -180,6 +207,17 @@ export class Chunk {
       const m = new Map<string, Tag>(prev ? prev.value : []);
       m.set('Y', nbt.byte(y));
       m.set('block_states', nbt.compound(bs));
+      const bio = this.biomes.get(y);
+      if (bio) {
+        // Keep only used biomes, then pack like block states (1 bit minimum, no data for a single biome).
+        const used = [...new Set(bio.indices)].sort((a, b) => a - b);
+        const pal = used.map((u) => bio.palette[u]);
+        const remap = new Map(used.map((u, k) => [u, k]));
+        const idx = Uint16Array.from(bio.indices, (v) => remap.get(v) ?? 0);
+        const t: Record<string, Tag> = { palette: nbt.list(TagType.String, pal.map((p) => nbt.string(p))) };
+        if (pal.length > 1) t.data = nbt.longArray(pack(idx, Math.ceil(Math.log2(pal.length))));
+        m.set('biomes', nbt.compound(t));
+      }
       out.push(nbt.compound(m));
     }
     root.value.set('sections', nbt.list(TagType.Compound, out));
