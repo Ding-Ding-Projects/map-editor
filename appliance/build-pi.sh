@@ -22,9 +22,17 @@ rm -rf "$OUT/pi-payload"; mkdir -p "$OUT/pi-payload"
 cp "$IMAGE_TAR" "$OUT/pi-payload/map-editor-image.tar"
 echo "$VERSION" > "$OUT/pi-payload/VERSION"
 
+# The arm64 package index is signed with Alpine's aarch64 keys. Take them from the alpine-keys
+# package, installed (and signature-checked) into a tiny native rootfs first.
+rm -rf "$OUT/keys-rootfs"
+"$OUT/alpine-make-rootfs" --branch v3.21 --mirror-uri https://dl-cdn.alpinelinux.org/alpine --packages "alpine-keys" "$OUT/keys-rootfs"
+KEYS="$OUT/keys-rootfs/usr/share/apk/keys/aarch64"
+ls "$KEYS"/*.pub >/dev/null
+
 rm -rf "$ROOT"
 # alpine-make-rootfs v0.7.2 has no --arch option; apk itself installs arm64 packages with --arch.
 APK_OPTS="--no-progress --arch aarch64" "$OUT/alpine-make-rootfs" --branch v3.21 \
+  --mirror-uri https://dl-cdn.alpinelinux.org/alpine --keys-dir "$KEYS" \
   --packages "alpine-base linux-rpi raspberrypi-bootloader docker openrc chrony e2fsprogs dosfstools" \
   --fs-skel-dir "$OUT/pi-payload" --fs-skel-chown root:root \
   --script-chroot "$ROOT" -- "$HERE/configure.sh"
