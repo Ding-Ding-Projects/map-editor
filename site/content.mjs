@@ -80,6 +80,7 @@ export const features = [
     ], related: ['editing', 'edit-history', 'languages'] },
   { slug: 'appearance', title: 'Theme colours and the colour picker', group: 'Settings', summary: 'Pick any colour and the whole Material 3 theme follows it.',
     body: [
+      ['Comfort', 'Read messages aloud (Settings › Sounds) speaks every message with your device\'s own voices at the speed you pick. Dark theme on a schedule (Appearance) switches to dark between two times, even across midnight. Lock editing (Comfort and focus) lets you look around safely: tools, undo, rollback and extension edits are blocked on that device until you unlock it.'],
       ['Dim sum surprise', 'Now and then, when Map Editor starts after setup, a small card in the corner shows a dish from the public Hong Kong dim sum catalogue with its English and Chinese names, jyutping and a short description. It closes by itself after a few seconds and never blocks anything. Turn it off in Settings › Appearance, or call one up from the command palette. The catalogue is downloaded by the server and kept in the data folder, so it still works offline after the first time.'],
       ['Sounds', 'Settings › Sounds turns short sound effects on or off and sets their volume. They play after an edit, an undo or restore, a new or uploaded world, and when something goes wrong, always together with the on-screen message. Turning them off silences them straight away.'],
       ['Clearing a field', 'Every text box shows a small × once it has text in it. It empties that box only and puts the cursor back in it.'],

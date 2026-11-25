@@ -488,3 +488,6 @@ md-list-item[hidden] { display: none; }
 .ext-runs li { display: flex; gap: 12px; align-items: flex-start; padding: 10px 14px; border-radius: 16px; background: var(--md-sys-color-surface-container-high); }
 .ext-runs li > span:last-child { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; } .ext-runs small { color: var(--md-sys-color-on-surface-variant); }
 .ext-runs .dot { flex: none; width: 10px; height: 10px; margin-top: 6px; border-radius: 5px; background: var(--md-sys-color-primary); } .ext-runs li.bad .dot { background: var(--md-sys-color-error); }
+.set-times { display: flex; flex-wrap: wrap; gap: 12px; padding: 4px 4px 12px; }
+.edit-locked #run, .edit-locked #undo { opacity: .45; }
+.edit-locked .map-bar::after { content: '🔒'; font-size: 18px; margin-left: 8px; }
