@@ -1064,3 +1064,8 @@ md-outlined-text-field { --md-outlined-text-field-container-shape: 16px; --md-ou
 .note-centre .nc-bar b { flex: 1 1 auto; font-weight: 600; }
 .note-centre li .nc-pick { inline-size: 18px; block-size: 18px; margin: 2px 0 0; flex: none; accent-color: var(--md-sys-color-primary); cursor: pointer; }
 .note-centre li.picked { background: var(--md-sys-color-secondary-container); }
+
+/* History: selection for export */
+.h-selbar { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; margin: 0 0 8px; font-size: 13px; }
+.h-selbar b { font-weight: 600; } .h-selbar #hsel-note { flex: 1 1 200px; font-size: 12px; }
+md-list-item .h-pick { inline-size: 18px; block-size: 18px; margin: 0; accent-color: var(--md-sys-color-primary); cursor: pointer; }

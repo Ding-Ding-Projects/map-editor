@@ -1203,8 +1203,8 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
     const counts = new Map<string, number>(); for (const e of entries) counts.set(e.action, (counts.get(e.action) ?? 0) + 1);
     view.querySelector('#h')!.innerHTML = `<div class="h-filters"><div id="hq-host"></div>
         <md-outlined-text-field id="hfrom" type="date" label="${esc(tx('fromDate'))}"></md-outlined-text-field><md-outlined-text-field id="hto" type="date" label="${esc(tx('toDate'))}"></md-outlined-text-field></div>
-      <p class="muted" id="hcount" aria-live="polite"></p><md-chip-set>${[...counts].map(([a, n]) => `<md-filter-chip data-a="${esc(a)}" label="${esc(a)} · ${n}"></md-filter-chip>`).join('')}</md-chip-set>
-      <md-list>${entries.map((e, i) => `<md-list-item data-row="${esc(e.action)}" data-t="${e.time}" data-text="${esc((e.message + ' ' + e.sha).toLowerCase())}"><div slot="headline">${esc(e.message)}</div>
+      <p class="muted" id="hcount" aria-live="polite"></p><div class="h-selbar" role="toolbar" aria-label="${esc(tx('selectMode'))}"><b id="hsel-count" role="status"></b><md-text-button id="hsel-all">${esc(tx('selectAll'))}</md-text-button><md-text-button id="hsel-inv">${esc(tx('selectInvert'))}</md-text-button><span class="muted" id="hsel-note">${esc(tx('selectExportNote'))}</span></div><md-chip-set>${[...counts].map(([a, n]) => `<md-filter-chip data-a="${esc(a)}" label="${esc(a)} · ${n}"></md-filter-chip>`).join('')}</md-chip-set>
+      <md-list>${entries.map((e, i) => `<md-list-item data-row="${esc(e.action)}" data-t="${e.time}" data-text="${esc((e.message + ' ' + e.sha).toLowerCase())}"><input type="checkbox" slot="start" class="h-pick" aria-label="${esc(tx('selectWorld', { name: e.message.slice(0, 60) }))}"><div slot="headline">${esc(e.message)}</div>
         <div slot="supporting-text">${esc(new Date(e.time * 1000).toLocaleString('en-GB'))} · <code>${esc(e.sha.slice(0, 7))}</code></div>
         ${i > 0 ? `<md-text-button slot="end" data-sha="${esc(e.sha)}">${esc(tx('rollBack'))}</md-text-button>` : ''}</md-list-item>`).join('')}</md-list>`;
     // Selecting an edit shows its details in the other panel.
@@ -1239,7 +1239,7 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
     };
     view.querySelectorAll<HTMLElement>('[data-row]').forEach((r, i) => {
       r.setAttribute('type', 'button');
-      r.addEventListener('click', (ev) => { if (!(ev.target as HTMLElement).closest('[data-sha]')) showDetail(i); });
+      r.addEventListener('click', (ev) => { if (!(ev.target as HTMLElement).closest('[data-sha], .h-pick')) showDetail(i); });
     });
     showDetail(0);
     const active = new Set<string>();
@@ -1264,9 +1264,20 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
       sync();
     }
     hq.el.after(exportButton(tx('export'), exportNames(), (f) => downloadRows(
-      entries.filter((_e, i) => !rows[i]?.hidden).map((e) => ({ time: new Date(e.time * 1000).toISOString(), action: e.action, message: e.message, commit: e.sha })),
+      entries.filter((_e, i) => !rows[i]?.hidden && (!hPicked.size || hPicked.has(i))).map((e) => ({ time: new Date(e.time * 1000).toISOString(), action: e.action, message: e.message, commit: e.sha })),
       ['time', 'action', 'message', 'commit'], f, `${tx('history')}: ${world?.name ?? ''}`, 'map-editor-history')));
     const rows = Array.from(view.querySelectorAll<HTMLElement>('[data-row]'));
+    // Ticked edits narrow the export; nothing ticked exports everything shown.
+    const hPicked = new Set<number>(); let hAnchor: number | undefined;
+    const hShown = () => rows.map((r, i) => r.hidden ? -1 : i).filter((i) => i >= 0);
+    const hPaint = () => {
+      rows.forEach((r, i) => { r.querySelector<HTMLInputElement>('.h-pick')!.checked = hPicked.has(i); });
+      view.querySelector('#hsel-count')!.textContent = tx('selectedN', { n: hPicked.size, total: entries.length });
+    };
+    rows.forEach((r, i) => r.querySelector('.h-pick')!.addEventListener('click', (ev) => { ev.stopPropagation(); hAnchor = pickItem(hPicked, i, hAnchor, (ev as MouseEvent).shiftKey); hPaint(); }));
+    view.querySelector('#hsel-all')!.addEventListener('click', () => { const vis = hShown(); const all = vis.length > 0 && vis.every((i) => hPicked.has(i)); vis.forEach((i) => { if (all) hPicked.delete(i); else hPicked.add(i); }); hPaint(); });
+    view.querySelector('#hsel-inv')!.addEventListener('click', () => { hShown().forEach((i) => { if (hPicked.has(i)) hPicked.delete(i); else hPicked.add(i); }); hPaint(); });
+    hPaint();
     let run = 0;
     const filter = async () => {
       const my = ++run;
