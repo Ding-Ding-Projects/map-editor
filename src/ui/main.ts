@@ -969,17 +969,6 @@ async function aboutView(view: HTMLElement): Promise<void> {
     <section class="changelog"><div class="cl-head"><h2>${esc(tx('changelog'))}</h2>
       <div id="cl-q-host"></div></div>
       <ol id="cl" aria-live="polite"><li class="muted">${esc(tx('loading'))}</li></ol></section></div>`;
-  // The about card and the changelog are docked panels like the editor's, with their own saved layout.
-  {
-    const wrap = view.querySelector<HTMLElement>('.about')!;
-    const card = wrap.querySelector<HTMLElement>('.about-card')!, log = wrap.querySelector<HTMLElement>('.changelog')!;
-    card.classList.add('panel-scroll'); log.classList.add('panel-scroll');
-    const dock = Object.assign(document.createElement('div'), { id: 'dock', className: 'dock' });
-    view.append(dock);
-    mountWorkspace(dock, { about: card, changes: log }, { about: tx('about'), changes: tx('changelog') }, document.documentElement.dataset.theme === 'dark',
-      { key: 'about', arrange: [['about'], ['changes', { ref: 'about', dir: 'right' }, 820]], active: 'about' }, prefs.layoutLocked);
-    wrap.remove();
-  }
   view.querySelector('#upd-check')?.addEventListener('click', () => checkForUpdates());
   view.querySelector('#copy-ver')!.addEventListener('click', () => navigator.clipboard?.writeText(`Map Editor ${health?.version} ${health?.commit} ${health?.builtAt ?? ''}`).then(() => notify(tx('copied')), () => notify(tx('copyFailed'), true)));
   const listEl = view.querySelector<HTMLElement>('#cl')!;
@@ -991,19 +980,30 @@ async function aboutView(view: HTMLElement): Promise<void> {
   view.querySelector('#cl-q-host')!.replaceWith(clq.el);
   let clRun = 0;
   const draw = async () => {
-    if (!listEl.isConnected) return;
     if (!entries) { listEl.innerHTML = `<li class="muted">${esc(tx('changelogUnavailable'))}</li>`; return; }
     const my = ++clRun;
     const q = clq.query().trim();
     const all: Entry[] = entries;
     const hits = await clq.filter(all.map((e) => `${e.subject} ${e.sha}`)) ?? all.map(() => false);
-    if (my !== clRun || !listEl.isConnected) return;
+    if (my !== clRun) return; // a hidden panel (phone width) is still filled, ready when shown
     const shown = all.filter((_, i) => hits[i]);
     listEl.innerHTML = shown.length ? shown.map((e, i) => `<li class="cl-entry${i === 0 && !q ? ' newest' : ''}" style="--i:${Math.min(i, 12)}"><span class="cl-kind ${kind(e.subject)}">${esc(tx(kind(e.subject) as Key))}</span>
       <span class="cl-text"><b>${esc(e.subject)}</b><small>${esc(new Date(e.date).toLocaleString('en-GB'))} · <code>${esc(e.sha.slice(0, 7))}</code></small></span></li>`).join('') : `<li class="muted">${esc(tx('noMatches'))}</li>`;
   };
   clq.onChange(draw);
   draw();
+  // Dock last: dockview detaches the content of a panel that is not showing (phone width), so
+  // everything above is wired up while both sections are still on the page.
+  {
+    const wrap = view.querySelector<HTMLElement>('.about')!;
+    const card = wrap.querySelector<HTMLElement>('.about-card')!, log = wrap.querySelector<HTMLElement>('.changelog')!;
+    card.classList.add('panel-scroll'); log.classList.add('panel-scroll');
+    const dock = Object.assign(document.createElement('div'), { id: 'dock', className: 'dock' });
+    view.append(dock);
+    mountWorkspace(dock, { about: card, changes: log }, { about: tx('about'), changes: tx('changelog') }, document.documentElement.dataset.theme === 'dark',
+      { key: 'about', arrange: [['about'], ['changes', { ref: 'about', dir: 'right' }, 820]], active: 'about' }, prefs.layoutLocked);
+    wrap.remove();
+  }
 }
 
 function notesPanel(el: HTMLElement) {
