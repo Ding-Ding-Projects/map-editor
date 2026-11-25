@@ -35,7 +35,7 @@ import { argbFromHex, themeFromSourceColor, applyTheme as applyM3Theme } from '@
 import { notesPanel as notesPanelImpl } from './notes.js';
 import { contextMenu, initMenus } from './menu.js';
 import { iconSvg, initButtonIcons } from './icons.js';
-import { levelUp, otpauthParts, qrSvg, superConfirm, vocabHeadline } from './uh.js';
+import { levelUp, otpauthParts, qrSvg, superConfirm, vocabHeadline } from './moments.js';
 
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
 

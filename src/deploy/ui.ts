@@ -5,7 +5,7 @@ import { startTour } from '../ui/tour.js';
 import { showTakeover } from '../ui/takeover.js';
 import { downloadRows, exportButton } from '../ui/exporter.js';
 import { iconSvg, initButtonIcons } from '../ui/icons.js';
-import { superConfirm } from '../ui/uh.js';
+import { superConfirm } from '../ui/moments.js';
 
 interface Step { label: string; state: 'waiting' | 'running' | 'done' | 'failed'; detail?: string }
 interface Disk { id: string; name: string; sizeBytes: number }

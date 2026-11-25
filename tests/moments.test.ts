@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { qrMatrix, qrSvg, otpauthParts, vocabHeadline } from '../src/ui/uh.js';
+import { qrMatrix, qrSvg, otpauthParts, vocabHeadline } from '../src/ui/moments.js';
 
 describe('authenticator pairing QR', () => {
   const uri = 'otpauth://totp/Map%20Editor:Alex?secret=JBSWY3DPEHPK3PXP&issuer=Map%20Editor&algorithm=SHA1&digits=6&period=30';

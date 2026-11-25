@@ -18,7 +18,7 @@ Counts (126 features): built 11 / partial 74 / unbuilt 27 / not applicable 14
 `language` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/ui/i18n.ts, src/ui/main.ts (shell language chips, Settings) | MISSING: Deploy app is English only (src/deploy/ui.ts has no language state); site is English only (site/build.mjs `lang="en"`, no mode switch); no narrow-width longest-bilingual-string test in repo
 `funny-emoji` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/ui/i18n.ts (en5/yue5), main.ts `#fen` `#fyue`, onboarding.ts | MISSING: "Show emojis in dialogs and message boxes" switch (no emoji code at all); independent reset per slider; Deploy app and site have no funny levels; no test that facts are identical at levels 1 and 5
 `personal-vocabulary` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: i18n.ts `parseVocabulary`, main.ts `#vocab-up` `#vocab-template` `#vocab-reset` | MISSING: versioned schema; 256 KiB/depth 8/key 160/value 1000 bounds (code uses 512 KiB and 400 chars); whole-file rejection (unknown ids are skipped, so it applies partially); palette row for it; Deploy app and site have none; narration/error surfaces not proven
-`vocabulary-drop-apply` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: main.ts drop handler lines ~139-157, src/ui/uh.ts `levelUp` `vocabHeadline`, sounds.ts tada/invalid, tests/uh.test.ts | MISSING: Deploy app has no drop handler; drop is ignored (not refused with a message) for non-.json files; no built-app proof
+`vocabulary-drop-apply` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: main.ts drop handler lines ~139-157, src/ui/moments.ts `levelUp` `vocabHeadline`, sounds.ts tada/invalid, tests/moments.test.ts | MISSING: Deploy app has no drop handler; drop is ignored (not refused with a message) for non-.json files; no built-app proof
 `school-mode` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: main.ts `schoolMode` pref, `#school`, i18n `schoolModeNote` | MISSING: shared cross-app record (it is a per-browser localStorage flag); rename; forcing English and removing Cantonese, bilingual, funny levels, personal vocabulary and dim sum (dim sum check only looks at focusMode); PIN/password/passkey to turn off; "not a security boundary" line; Deploy app and site
 `narration` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: main.ts `narrate()`, `#nar`, `#nar-rate`, `#nar-try` | MISSING: per-language voice pickers with "Choose automatically" and the voice in effect; pitch control; "Both" serialized mode; debounce and per-category rate limit (it cancels the previous utterance); screen-reader yield; Deploy app and site
 `action-sound-effects` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/ui/sounds.ts, main.ts `#snd` `#vol` `#snd-try`, quiet hours | MISSING: Deploy app plays no sounds and has no switch; documented action-to-cue mapping and provenance article
@@ -62,12 +62,12 @@ Counts (126 features): built 11 / partial 74 / unbuilt 27 / not applicable 14
 
 ## Safety, locks, and authentication
 
-`super-confirmation` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/ui/uh.ts `superConfirm`, main.ts `askConfirm(..., danger=true)` | MISSING: used only for passkey removal and extension removal; rollback, structure placement, vocabulary/logo reset, Deploy app remove/Delete data and drive writes still use plain or typed confirms; not anchored beside the control
+`super-confirmation` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/ui/moments.ts `superConfirm`, main.ts `askConfirm(..., danger=true)` | MISSING: used only for passkey removal and extension removal; rollback, structure placement, vocabulary/logo reset, Deploy app remove/Delete data and drive writes still use plain or typed confirms; not anchored beside the control
 `element-locks` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: main.ts `lockedSettings`, `settingsLocked`, `layoutLocked`, `tabsLocked`, `editLock` | MISSING: "Lock this element…" on every element/tab/group; the six credential mixes (PIN, password, TOTP) in an OS credential vault; anchored lock/unlock wizard; "just for fun" and recovery line; lock inventory test
 `support-tickets` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: none | MISSING: Support Tickets desk, its three entry routes, open-data-folder resolution, disclosure line, ticket list
 `unlock-ladder` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: main.ts `askUnlock` (confirm, type the name, 15 s wait) | MISSING: the required rungs (dim-sum question, ten sums, whack-a-mole, clock); per-hour cap; server-side grading with single-use nonce; School-mode start; site
 `authenticator` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/server/totp.ts (RFC 6238 SHA-1, 6 digits), tests/totp.test.ts, main.ts `totpPanel` | MISSING: a built-in authenticator destination for arbitrary secrets (current code is only second-step sign-in); SHA-256/SHA-512, 8 digits, custom periods; QR/image/clipboard import; countdown and next-code peek; OS vault storage; secrets export behind super confirmation
-`qr-pairing` | APPLIES: yes | STATUS: BUILT | EVIDENCE: src/ui/uh.ts `qrSvg`/`otpauthParts`, main.ts `totpPanel` (QR, hidden secret with Show, algorithm/digits/period, confirm code), tests/uh.test.ts | MISSING: - (not yet committed)
+`qr-pairing` | APPLIES: yes | STATUS: BUILT | EVIDENCE: src/ui/moments.ts `qrSvg`/`otpauthParts`, main.ts `totpPanel` (QR, hidden secret with Show, algorithm/digits/period, confirm code), tests/moments.test.ts | MISSING: - (not yet committed)
 `honest-monetization` | APPLIES: yes | STATUS: BUILT | EVIDENCE: no paywall, purchase, donation or review prompt anywhere in src/ or site/ | MISSING: -
 `first-account-owner` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/server/auth.ts `registerOwner` (exclusive create), server.ts `/api/auth/register`, tests/server.test.ts, README, appliance/configure.sh banner, scripts/setup.mjs | MISSING: removal of old setup-code files at startup; the statement in the Deploy app UI
 
@@ -107,20 +107,20 @@ Counts (126 features): built 11 / partial 74 / unbuilt 27 / not applicable 14
 `design-reference-parity` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: design/canvas/*.dc.html exists but nothing renders or compares it | MISSING: design-reference app, matching routes in the built app, per-screen inventory, side-by-side captures, diff evidence, parity test
 `design-folder` | APPLIES: yes | STATUS: BUILT | EVIDENCE: design/canvas/ (16 boards + canvas.json) tracked in Git; no private terms found by grep | MISSING: -
 `cheap-jor-matrix` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: HANDOFF.md and ROADMAP.md describe a 40-combination sweep (1440/390 px, light/dark, languages) | MISSING: receipts and screenshots in the repository; 125/150/200% scales; minimum viewport; binding to commit and build hash; re-run after the Tools tab; site matrix
-`public-huishot-gallery` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: no gallery link in README | MISSING: public screenshot gallery repository and site, reviewed images, link from README
+`public-screenshot-gallery` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: no gallery link in README | MISSING: public screenshot gallery repository and site, reviewed images, link from README
 
 ## Documentation site and shared links
 
 `landing-site` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: site/build.mjs, site/content.mjs, site/site.css, .github/workflows/pages.yml; fonts bundled; "not the editor" footer line | MISSING: site equivalents of the catalogue features (language modes, settings, palette, tabs, search, appearance, etc.); hand-written feature enumeration that fails the build; per-visitor storage reset line
-`deen-wah-site` | APPLIES: yes | STATUS: BUILT | EVIDENCE: site/build.mjs viewport meta, site/site.css media queries; ROADMAP records a 320 px check with no sideways scroll | MISSING: -
+`phone-friendly-site` | APPLIES: yes | STATUS: BUILT | EVIDENCE: site/build.mjs viewport meta, site/site.css media queries; ROADMAP records a 320 px check with no sideways scroll | MISSING: -
 `installer-download-button` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: site/build.mjs Downloads page uses release asset URLs from releases.json and hides buttons when absent | MISSING: the direct download button on the Home page with version and platform (Home has only "Get Map Editor" linking to /downloads/)
 `feature-articles` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: site/content.mjs (13 articles, each with suggested articles) | MISSING: one article per feature (several features share an article); Cantonese and bilingual versions; sections on failure modes, security and verification in each
 `vendored-fonts` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: scripts/build.mjs `FONT_FILES`, site/build.mjs (Roboto Flex/Mono from @fontsource packages, licences copied) | MISSING: committed fetch script against the canonical source; SHA-256 manifest; full unicode-range set (only Latin and Latin Extended); `document.fonts.check` verification
 `shared-link-embed` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: site/build.mjs emits og:title, og:description, og:type | MISSING: social-preview.png at the repository root and served copy; og:image with width/height/alt, og:url, og:site_name, twitter:card, theme-color
 `homepage-link` | APPLIES: yes | STATUS: BUILT | EVIDENCE: GitHub API homepage = https://ding-ding-projects.github.io/map-editor/; README line 3; `SITE_BASE` in site/build.mjs and pages.yml | MISSING: -
 `vocabulary-unlock-boundary` | APPLIES: yes | STATUS: BUILT | EVIDENCE: grep of tracked files finds no private vocabulary; personal-vocabulary upload is the only route | MISSING: -
-`private-day-teet-hui-app` | APPLIES: no | STATUS: N-A | EVIDENCE: repository is public and hosts its site | MISSING: -
-`day-teet-hui-pdf-edition` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: site/build.mjs `/phone/` page (90 x 160 mm), pages.yml prints map-editor-guide-phone.pdf, linked from Downloads | MISSING: PDF attached to every GitHub release (release.yml does not build or attach it); wiki content in the PDF
+`private-site-app` | APPLIES: no | STATUS: N-A | EVIDENCE: repository is public and hosts its site | MISSING: -
+`site-pdf-edition` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: site/build.mjs `/phone/` page (90 x 160 mm), pages.yml prints map-editor-guide-phone.pdf, linked from Downloads | MISSING: PDF attached to every GitHub release (release.yml does not build or attach it); wiki content in the PDF
 
 ## Status Hub
 
@@ -162,7 +162,7 @@ Counts (126 features): built 11 / partial 74 / unbuilt 27 / not applicable 14
 `roadmap-checklist` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: ROADMAP.md with `- [ ]`/`- [x]` by phase | MISSING: several ticked items say "not run", "not yet run on Windows" or "not verified yet", which breaks the tick-only-when-verified rule; no deliberately-not-doing section
 `feature-docs` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: docs/ holds only screenshots | MISSING: categorized documentation folder with README index and one Markdown file per feature
 `postman-collections` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: server.ts exposes about 50 `/api/*` routes; no collection file | MISSING: category collections and a master Postman collection JSON
-`wiki-day-teet-hui-sync` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: site source updated with features; wiki is enabled on GitHub | MISSING: wiki content could not be confirmed (anonymous read refused); wiki content inside the site
+`wiki-site-sync` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: site source updated with features; wiki is enabled on GitHub | MISSING: wiki content could not be confirmed (anonymous read refused); wiki content inside the site
 `handoff-record` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: HANDOFF.md (built, checks run, checks left, leftovers) | MISSING: the matching handoff section on a GitHub issue (not found in repository records); HANDOFF.md does not yet cover the uncommitted changes
 `closeout-prompt` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: no CLOSEOUT_PROMPT.md | MISSING: CLOSEOUT_PROMPT.md at the root, committed and pushed
 `discussion-records` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: GitHub API `has_discussions: false` | MISSING: Discussions enabled; rolling progress discussion; one changelog announcement per release
@@ -172,7 +172,7 @@ Counts (126 features): built 11 / partial 74 / unbuilt 27 / not applicable 14
 ## Deliverables of the instruction repository itself
 
 `readme-prompt-banner` | APPLIES: no | STATUS: N-A | EVIDENCE: applies to the instruction repository only | MISSING: -
-`uh-single-file-editions` | APPLIES: no | STATUS: N-A | EVIDENCE: applies to the instruction repository only | MISSING: -
+`single-file-editions` | APPLIES: no | STATUS: N-A | EVIDENCE: applies to the instruction repository only | MISSING: -
 `project-profile` | APPLIES: no | STATUS: N-A | EVIDENCE: applies to the instruction repository only | MISSING: -
 
 ## Games
