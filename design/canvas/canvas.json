@@ -333,7 +333,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Editor workspace. Shows the panel layout: tab strip docked left with Close and Open every tab, map, Fill tool, floating Block palette group, floating toolbar, snackbar.\nTry: Tweaks dark, showFloat, showDrop, seed, motion; click tabs, tools, toolbar modes.\nIn the app: panels, map, the five tools, history, notes, language chips. Also: a Biome tool, world presets, a Tools tab (its own board), the Side view panel, structure files (.nbt save and place, undoable), the Blocks panel and the floating map toolbar with Pan, Select, Pick block, Measure and Go to. Not in the app yet: per-element appearance.",
+   "text": "Editor workspace. Shows the panel layout: tab strip docked left with Close and Open every tab, map, Fill tool, floating Block palette group, floating toolbar, snackbar.\nTry: Tweaks dark, showFloat, showDrop, seed, motion; click tabs, tools, toolbar modes.\nIn the app: panels, map, the five tools, history, notes, language chips. Also: a Biome tool, world presets, a Tools tab (its own board), the Side view panel, structure files (.nbt save and place, undoable), the Blocks panel and the floating map toolbar with Pan, Select, Pick block, Measure and Go to. Not in the app yet: per-element appearance. Also: right-click map menu (also Menu key, Shift+F10, long-press) with its own regex-builder search; every dropdown opens the same searchable menu; 3D view, side view, biome tool, structures, exports; the map keeps its view when you leave and return; Bedrock Edition worlds open and edit with the same tools (blocks picked from the map, or air).",
    "fill": "yellow",
    "page": "editor"
   },
@@ -341,7 +341,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Worlds screen with every stage. Try: Tweak stage (list, loading, empty, upload, error, offline), dark, seed, motion.\nStands for: upload a world .zip to the web app or appliance, new flat world, download .zip, browse a folder in the desktop app.\nBeing built; nothing here is verified in the app until the handoff says so.",
+   "text": "Worlds screen with every stage. Try: Tweak stage (list, loading, empty, upload, error, offline), dark, seed, motion.\nStands for: upload a world .zip to the web app or appliance, new flat world, download .zip, browse a folder in the desktop app.\nBeing built; nothing here is verified in the app until the handoff says so. Also: upload, download, new world from six presets in four sizes; Bedrock Edition worlds are listed and open for editing (LevelDB reader, new log file per save, never rewrites a file). Not checked: a Bedrock world opened in the game after an edit.",
    "fill": "yellow",
    "page": "worlds"
   },
@@ -365,7 +365,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Settings. Try: an Account and passkeys section, palette teleport to every setting, section tabs, language buttons, switches, seed swatches; Tweaks dark, seed, motion.\nIn the app: an Account and passkeys section, palette teleport to every setting, section tabs, settings search across sections, language, both funny sliders, dark, theme colour picker, reduce motion, large text, sound effects with volume and a test sound, export, import, settings history with Restore, Clear buttons on every text field, read messages aloud with speed and a test, dark theme on a schedule, Lock editing, Extensions section. Also: a lock on every switch (locked switches are disabled here and refused in the palette), Quiet hours for sounds and reading aloud. Also: Lock panel layout, Keep every tab open, Lock the Settings screen with an Unlock banner. Emoji in dialogs switch: not needed, the app uses drawn icons instead of emoji in its dialogs.",
+   "text": "Settings. Try: an Account and passkeys section, palette teleport to every setting, section tabs, language buttons, switches, seed swatches; Tweaks dark, seed, motion.\nIn the app: an Account and passkeys section, palette teleport to every setting, section tabs, settings search across sections, language, both funny sliders, dark, theme colour picker, reduce motion, large text, sound effects with volume and a test sound, export, import, settings history with Restore, Clear buttons on every text field, read messages aloud with speed and a test, dark theme on a schedule, Lock editing, Extensions section. Also: a lock on every switch (locked switches are disabled here and refused in the palette), Quiet hours for sounds and reading aloud. Also: Lock panel layout, Keep every tab open, Lock the Settings screen with an Unlock banner. Emoji in dialogs switch: not needed, the app uses drawn icons instead of emoji in its dialogs. Also: authenticator app codes, unlock ladder, a tone per part and your own logo, vocabulary upload, Focus and School modes, part-colour dropdowns as searchable menus.",
    "fill": "yellow",
    "page": "settings"
   },
@@ -405,7 +405,7 @@
    "x": 470,
    "y": 0,
    "w": 420,
-   "text": "Phone width: panels collapse to one group with chips; bottom destinations. Try: panel chips, destinations; Tweaks dark, seed, motion.\nIn the app: one tabbed panel group under 720 px with its own saved layout, compact header, bottom destinations with icon pills. Also: the panel chips row (a tab list with arrow keys) replaces the group's own tab strip on phones.",
+   "text": "Phone width: panels collapse to one group with chips; bottom destinations. Try: panel chips, destinations; Tweaks dark, seed, motion.\nIn the app: one tabbed panel group under 720 px with its own saved layout, compact header, bottom destinations with icon pills. Also: the panel chips row (a tab list with arrow keys) replaces the group's own tab strip on phones. Also: the floating map toolbar sits above the bottom destinations (it was underneath; fixed), long-press opens the map menu.",
    "fill": "yellow",
    "page": "mobile"
   },
@@ -413,7 +413,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Deploy app. Try: target cards, Deploy and Instances views; Tweaks dark, seed, motion.\nIn the app: Docker, Docker on another computer over SSH (DOCKER_HOST=ssh, own key, no passwords), VirtualBox and USB flash targets, Raspberry Pi pointing to the SSH route, instance list with Manage, success and failure takeovers. Real-world checks after every release: Docker local and over SSH (deploy, health, stop, start, restart, update, live log, remove) and USB flash with read-back passed on real Docker and a loop device; the Windows app updated itself from the previous release. Also: VMware Workstation or Player (ovftool import on a bridged network, vmrun start without a window, address from the guest tools, manage). Pi image built in CI (Pi 4 and 5), container checked for arm64, booted on QEMU raspi4b to the health check (not yet on a physical Pi) and offered through USB drive. Also: Duplicate on a Docker instance (same computer, version and worlds, suggested free name and port, fresh accounts; virtual machines explain why not).",
+   "text": "Deploy app. Try: target cards, Deploy and Instances views; Tweaks dark, seed, motion.\nIn the app: Docker, Docker on another computer over SSH (DOCKER_HOST=ssh, own key, no passwords), VirtualBox and USB flash targets, Raspberry Pi pointing to the SSH route, instance list with Manage, success and failure takeovers. Real-world checks after every release: Docker local and over SSH (deploy, health, stop, start, restart, update, live log, remove) and USB flash with read-back passed on real Docker and a loop device; the Windows app updated itself from the previous release. Also: VMware Workstation or Player (ovftool import on a bridged network, vmrun start without a window, address from the guest tools, manage). Pi image built in CI (Pi 4 and 5), container checked for arm64, booted on QEMU raspi4b to the health check (not yet on a physical Pi) and offered through USB drive. Also: Duplicate on a Docker instance (same computer, version and worlds, suggested free name and port, fresh accounts; virtual machines explain why not). Also: Virtual disks view for Windows (list, new .vhdx or .vhd, attach, attach read-only, detach through diskpart with the Windows permission prompt, result checked afterwards, nothing deleted), Duplicate, activity record, exports. Not checked: the Virtual disks view on a real Windows PC.",
    "fill": "yellow",
    "page": "deploy"
   },
@@ -429,7 +429,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "About and changelog. Tweaks dark, seed, motion.\nStands for version provenance from the running build and a changelog generated from the real commit history at build time, each entry with its SHA, searchable.\nBeing built; the regex builder beside the search is not built.",
+   "text": "About and changelog. Tweaks dark, seed, motion.\nStands for version provenance from the running build and a changelog generated from the real commit history at build time, each entry with its SHA, searchable.\nBeing built. Also: the changelog search has its regex builder; Update coming soon card.",
    "fill": "yellow",
    "page": "about"
   },
@@ -445,7 +445,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Tools tab. Try: Encode and Decode; Tweaks dark, seed, motion.\nIn the app: Base64 for text and files up to 20 MiB, JSON to TypeScript (lists merged, missing keys optional), coordinates (chunk, place in chunk, region file, Nether and Overworld), all in the page with a tour. Not yet: general file converter, Ollama suite, server manager.",
+   "text": "Tools tab. Try: Encode and Decode; Tweaks dark, seed, motion.\nIn the app: Base64 for text and files up to 20 MiB, JSON to TypeScript (lists merged, missing keys optional), coordinates (chunk, place in chunk, region file, Nether and Overworld), all in the page with a tour. Not yet: general file converter, Ollama suite, server manager. Also: file converter (PNG, JPEG, WebP; NBT to JSON), server.properties editor, local AI helper through Ollama (not tried against a running Ollama).",
    "fill": "yellow",
    "page": "tools"
   },
@@ -453,7 +453,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Docs site home on GitHub Pages. Tweaks dark, seed, motion.\nBuilt and deployed to match this board. Also: bundled fonts, favicon, article screenshots for the newest features. Also: the animated hero demo (select, fill, roll back; still under reduced motion). Not yet: phone PDF edition.",
+   "text": "Docs site home on GitHub Pages. Tweaks dark, seed, motion.\nBuilt and deployed to match this board. Also: bundled fonts, favicon, article screenshots for the newest features. Also: the animated hero demo (select, fill, roll back; still under reduced motion). Also: phone PDF edition, Downloads page from the release list, interactive diagram.",
    "fill": "yellow",
    "page": "site"
   }
