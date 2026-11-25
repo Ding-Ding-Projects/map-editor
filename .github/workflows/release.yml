@@ -167,7 +167,9 @@ jobs:
 
   release:
     needs: [meta, docker, appliance, appliance-pi, desktop]
-    if: always() && needs.meta.result == 'success'
+    # The appliance images may be missing from a release, but the Docker image and the Windows apps may not:
+    # without them a release would be empty or useless to update to.
+    if: always() && needs.meta.result == 'success' && needs.docker.result == 'success' && needs.desktop.result == 'success'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -196,7 +198,7 @@ jobs:
             echo "Map Editor ${{ needs.meta.outputs.version }} built from ${{ github.sha }}."
             echo
             echo "Jobs: docker=${{ needs.docker.result }}, appliance=${{ needs.appliance.result }}, raspberry-pi=${{ needs.appliance-pi.result }}, desktop=${{ needs.desktop.result }}. Assets are attached only for jobs that succeeded."
-            echo "The Raspberry Pi image (Pi 4 and 5) is checked for its firmware, kernel and device trees but is not boot-tested in CI."
+            echo "The Raspberry Pi image (Pi 4 and 5) is checked for its firmware, kernel, device trees and an arm64 container here, and after publishing it is booted on QEMU's Raspberry Pi 4 machine until the web app answers (the Real-world checks workflow). It has not been tested on a physical Pi."
             echo
             echo "Docker image: ${{ env.IMAGE }}:${{ needs.meta.outputs.version }} (digest in image-digest.txt)."
             echo "The Windows installers are not code-signed, so Windows SmartScreen may warn before running them."
@@ -209,6 +211,8 @@ jobs:
           # Squirrel names every package RELEASES; give each app's feed its own name so both upload.
           for d in assets/desktop/*/; do [ -f "$d/RELEASES" ] && mv "$d/RELEASES" "$d/RELEASES-$(basename "$d")"; done
           mapfile -d '' FILES < <(find assets -type f \( -name '*.exe' -o -name 'RELEASES-*' -o -name '*.nupkg' -o -name '*.ova' -o -name '*.img.xz' -o -name 'SHA256SUMS' -o -name 'SHA256SUMS-rpi' -o -name 'image-digest.txt' \) -print0)
+          # Never publish a release without its Windows installers.
+          printf '%s\n' "${FILES[@]}" | grep -q 'Map.EditorSetup.exe$' || { echo 'Map.EditorSetup.exe is missing; not publishing a release.'; exit 1; }
           # GitHub now and then answers 403 to release creation for a moment; try three times, and
           # never leave a half-made release behind.
           for attempt in 1 2 3; do
