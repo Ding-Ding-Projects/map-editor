@@ -66,3 +66,22 @@ describe('search surface catalogue', () => {
     expect(used).toEqual([...SEARCH_SURFACES].sort());
   });
 });
+
+describe('ready-made patterns', () => {
+  it('each compiles and finds what its label says', async () => {
+    const { PRESETS } = await import('../src/ui/regex.js');
+    const samples: Record<string, [string, string]> = {
+      rxPresetFillReplace: ['Fill 16×1×16 with minecraft:stone', 'Clone 4×4×4'],
+      rxPresetSizes: ['Fill 8×1×8 with glass', 'no size here'],
+      rxPresetCommits: ['Restored to 1b89e32', 'nothing'],
+      rxPresetBlocks: ['minecraft:gold_block', 'gold block'],
+      rxPresetDates: ['2026-11-25', 'yesterday'],
+    };
+    for (const [pattern, key] of PRESETS) {
+      const re = new RegExp(pattern, 'iu');
+      const [hit, miss] = samples[key];
+      expect(re.test(hit), `${key} should match "${hit}"`).toBe(true);
+      expect(re.test(miss), `${key} should not match "${miss}"`).toBe(false);
+    }
+  });
+});

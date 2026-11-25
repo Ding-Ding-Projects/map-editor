@@ -546,3 +546,9 @@ md-list-item.picked { background: var(--md-sys-color-secondary-container); borde
 .ts-row:hover { background: var(--md-sys-color-surface-container-high); }
 .ts-row:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; }
 .ts-preview { min-height: 1.4em; color: var(--md-sys-color-on-surface-variant); }
+
+/* Regex builder ready-made patterns: pill chips above the raw pattern. */
+.sb-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.sb-presets button { height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid var(--md-sys-color-outline-variant); background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.sb-presets button:hover { filter: brightness(.97); }
+.sb-presets button:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; }

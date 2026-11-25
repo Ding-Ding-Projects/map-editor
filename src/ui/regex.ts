@@ -8,7 +8,8 @@ export type RegexText = (k: RegexKey, v?: Record<string, string | number>) => st
 export type RegexKey =
   | 'rxToggle' | 'rxBuilder' | 'rxPattern' | 'rxFlags' | 'rxSample' | 'rxEngine' | 'rxInvalid' | 'rxTimeout' | 'rxLimit'
   | 'rxMatches' | 'rxNoMatch' | 'rxTruncated' | 'rxCopy' | 'rxExport' | 'rxCopied' | 'rxGroups' | 'rxInsert' | 'rxLiteral'
-  | 'rxFlagI' | 'rxFlagM' | 'rxFlagS' | 'rxFlagU' | 'rxClose' | 'clearField';
+  | 'rxFlagI' | 'rxFlagM' | 'rxFlagS' | 'rxFlagU' | 'rxClose' | 'clearField'
+  | 'rxPresets' | 'rxPresetFillReplace' | 'rxPresetSizes' | 'rxPresetCommits' | 'rxPresetBlocks' | 'rxPresetDates';
 
 // ---- worker-backed evaluation ----
 let worker: Worker | undefined;
@@ -49,6 +50,10 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 const TOKENS: Array<[string, string]> = [['\\d', 'digit'], ['\\w', 'word'], ['\\s', 'space'], ['.', 'any'], ['[a-z]', 'set'], ['[^ ]', 'not'], ['^', 'start'], ['$', 'end'], ['\\b', 'edge'],
   ['(…)', 'group'], ['(?<name>…)', 'named'], ['(?:…)', 'plain'], ['|', 'or'], ['*', '0+'], ['+', '1+'], ['?', '0–1'], ['{2,4}', '2–4'], ['*?', 'lazy']];
 
+/** Ready-made patterns for the things people search for in this app. */
+export const PRESETS: Array<[string, RegexKey]> = [['^(Fill|Replace) (\\d+)×', 'rxPresetFillReplace'], ['\\d+×\\d+×\\d+', 'rxPresetSizes'], ['(?<sha>\\b[0-9a-f]{7,40}\\b)', 'rxPresetCommits'],
+  ['minecraft:(?<block>[a-z_]+)', 'rxPresetBlocks'], ['\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{4}', 'rxPresetDates']];
+
 let boxes = 0;
 /**
  * @param id    stable id for this field (used for element ids and the search-surface catalogue)
@@ -67,6 +72,7 @@ export function searchBox(id: string, label: string, t: RegexText, opts: { compa
     <p class="sb-state" id="sb-state-${n}" aria-live="polite"></p>
     <section class="sb-panel" id="sb-panel-${n}" hidden aria-label="${esc(t('rxBuilder'))}">
       <p class="sb-engine">${esc(t('rxEngine', { pattern: LIMITS.pattern, sample: LIMITS.sample, ms: LIMITS.timeoutMs, matches: LIMITS.matches }))}</p>
+      <div class="sb-presets" role="group" aria-label="${esc(t('rxPresets'))}">${PRESETS.map(([pat, key]) => `<button type="button" data-preset="${esc(pat)}" title="${esc(pat)}">${esc(t(key))}</button>`).join('')}</div>
       <label class="sb-sub">${esc(t('rxPattern'))}<textarea class="sb-raw" rows="2" spellcheck="false" maxlength="${LIMITS.pattern}"></textarea></label>
       <div class="sb-insert" role="group" aria-label="${esc(t('rxInsert'))}">
         <span class="sb-lit"><input class="sb-lit-in" aria-label="${esc(t('rxLiteral'))}" placeholder="${esc(t('rxLiteral'))}"><button type="button" class="sb-lit-add">+</button></span>
@@ -103,6 +109,10 @@ export function searchBox(id: string, label: string, t: RegexText, opts: { compa
     raw.focus(); raw.setSelectionRange(s + text.length, s + text.length);
     raw.dispatchEvent(new Event('input'));
   };
+  el.querySelectorAll<HTMLElement>('[data-preset]').forEach((b) => b.addEventListener('click', () => {
+    raw.value = b.dataset.preset!; raw.focus();
+    raw.dispatchEvent(new Event('input'));
+  }));
   el.querySelectorAll<HTMLElement>('[data-tok]').forEach((b) => b.addEventListener('click', () => insert(b.dataset.tok!.replace('…', ''))));
   q<HTMLButtonElement>('.sb-lit-add').addEventListener('click', () => { const v = q<HTMLInputElement>('.sb-lit-in').value; if (v) insert(v.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')); });
   const toggle = (open: boolean) => { panel.hidden = !open; openBtn.setAttribute('aria-expanded', String(open)); if (open) { raw.value = input.value; mirrored(); preview(); raw.focus(); } else openBtn.focus(); };
