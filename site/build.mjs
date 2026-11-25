@@ -1,6 +1,7 @@
 // Builds the documentation site into site/dist: a landing page plus one article per feature.
 import { mkdirSync, writeFileSync, readFileSync, copyFileSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { features } from './content.mjs';
@@ -16,10 +17,18 @@ const repo = 'https://github.com/Ding-Ding-Projects/map-editor';
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const stamp = when ? `${when.replace('T', ' ').replace(/([+-]\d\d:\d\d|Z)$/, ' UTC$1').replace('UTC Z', 'UTC')}` : 'unavailable';
 
+// The picture shown when a link to the site is shared: the same file as social-preview.png at the repository root.
+const SITE = 'https://ding-ding-projects.github.io';
+const preview = readFileSync(path.join(root, 'social-preview.png'));
+const previewName = `social-preview.${createHash('sha256').update(preview).digest('hex').slice(0, 10)}.png`; // a new address whenever the picture changes
+let pagePath = '';
 function page(title, desc, main, active = 'guide') {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title><meta name="description" content="${esc(desc)}">
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website">
+<meta property="og:url" content="${SITE}${base}${pagePath}"><meta property="og:site_name" content="Map Editor">
+<meta property="og:image" content="${SITE}${base}${previewName}"><meta property="og:image:width" content="1280"><meta property="og:image:height" content="640"><meta property="og:image:alt" content="Map Editor with a world open: the top-down map, the Fill tool and the block palette.">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${SITE}${base}${previewName}"><meta name="theme-color" content="#2f6b2e">
 <link rel="icon" type="image/svg+xml" href="${base}favicon.svg"><link rel="stylesheet" href="${base}site.css"></head><body>
 <header class="top"><a class="brand" href="${base}"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="title">Map Editor</span></a>
 <nav aria-label="Site"><a href="${base}"${active === 'guide' ? ' aria-current="page"' : ''}>Guide</a><a href="${base}downloads/"${active === 'downloads' ? ' aria-current="page"' : ''}>Downloads</a><a href="${repo}/commits/main">Changelog</a><a href="${repo}">Source</a><a href="#tour" data-tour="page">Take a tour</a></nav></header>
@@ -60,6 +69,7 @@ mkdirSync(out, { recursive: true });
 copyFileSync(path.join(here, 'site.css'), path.join(out, 'site.css'));
 copyFileSync(path.join(here, 'tour.js'), path.join(out, 'tour.js'));
 copyFileSync(path.join(here, 'favicon.svg'), path.join(out, 'favicon.svg'));
+copyFileSync(path.join(root, 'social-preview.png'), path.join(out, previewName)); // byte-identical to the file at the repository root
 mkdirSync(path.join(out, 'screenshots'), { recursive: true });
 // Every screenshot an article names is copied, so an article cannot point at a missing picture.
 const shots = new Set(['tour.png', 'extensions-consent.png', 'about.png', ...features.flatMap((f) => f.body.map((b) => b[2]?.src).filter(Boolean))]);
@@ -71,6 +81,7 @@ for (const [from, to] of [['roboto-flex/files/roboto-flex-latin-standard-normal.
   copyFileSync(path.join(root, 'node_modules/@fontsource-variable', from), path.join(out, 'fonts', to));
 }
 const groups = [...new Set(features.map((f) => f.group))];
+pagePath = '';
 writeFileSync(path.join(out, 'index.html'), page('Map Editor', 'A Minecraft world editor for your desk, your whole network, or a spare PC. Every edit can be undone.', `
 <section class="hero"><div class="hero-copy">
 <span class="pill">Java Edition 1.18 and newer · v${esc(pkg.version)}</span>
@@ -92,6 +103,7 @@ ${[['desktop-app', 40, 30, 'Desktop app', 'Windows, opens your saves'], ['web-ap
 for (const f of features) {
   mkdirSync(path.join(out, f.slug), { recursive: true });
   const rel = f.related.map((s) => features.find((x) => x.slug === s)).filter(Boolean);
+  pagePath = `${f.slug}/`;
   writeFileSync(path.join(out, f.slug, 'index.html'), page(`${f.title} · Map Editor`, f.summary, `
 <section class="article-hero"><p class="crumb"><a href="${base}">Guide</a> › ${esc(f.group)}</p><h1>${esc(f.title)}</h1><p class="lead">${esc(f.summary)}</p></section>
 <div class="article-body"><nav class="toc" aria-label="On this page"><strong>On this page</strong>${f.body.map(([h], i) => `<a href="#s${i}">${esc(h)}</a>`).join('')}</nav>
@@ -132,6 +144,7 @@ const DOWNLOADS = [
   ['map-editor-appliance-rpi-arm64.img.xz', 'Appliance for Raspberry Pi 4 and 5', 'Unpack, then write the .img to an SD card.', 'appliance'],
 ];
 mkdirSync(path.join(out, 'downloads'), { recursive: true });
+pagePath = 'downloads/';
 writeFileSync(path.join(out, 'downloads', 'index.html'), page('Downloads · Map Editor', 'Download Map Editor for Windows, Docker, a virtual machine, a USB drive or a Raspberry Pi.', `
 <section class="article-hero"><p class="crumb"><a href="${base}">Guide</a> › Downloads</p><h1>Downloads</h1><p class="lead">${rel ? `Map Editor ${esc(rel.tag_name)}, published ${esc(String(rel.published_at).slice(0, 10))}. Every file below comes from that release.` : 'The newest files are on the releases page.'}</p></section>
 <section class="band-wrap"><div class="dl-grid">${rel ? DOWNLOADS.filter(([n]) => asset(n)).map(([n, t, b, slug]) => `<div class="dl-card"><strong>${esc(t)}</strong><span>${esc(b)}</span><a class="btn filled" href="${esc(asset(n).browser_download_url)}" download>Download <small>${esc(mib(asset(n).size))}</small></a><a href="${base}${slug}/">How it works →</a></div>`).join('') : ''}

@@ -210,3 +210,16 @@ describe('server', () => {
     expect(r.status).toBe(415);
   });
 });
+
+describe('Postman collection', () => {
+  it('lists every route the server answers', async () => {
+    // @ts-expect-error the script is plain JavaScript with no type file
+    const { routes, collection } = await import('../scripts/postman.mjs');
+    const { readFileSync } = await import('node:fs');
+    const saved = JSON.parse(readFileSync(new URL('../docs/postman/map-editor.postman_collection.json', import.meta.url), 'utf8'));
+    expect(saved).toEqual(JSON.parse(JSON.stringify(collection())));
+    const names = saved.item.flatMap((g: { item: Array<{ name: string }> }) => g.item.map((i) => i.name));
+    expect(names.length).toBe(routes().length);
+    for (const must of ['POST /api/auth/login', 'GET /api/worlds', 'POST /api/worlds/open', 'GET /api/render', 'GET /api/blocks']) expect(names).toContain(must);
+  });
+});

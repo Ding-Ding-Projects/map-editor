@@ -731,6 +731,8 @@ let dim = 'overworld';
 const MAP_MODES = ['pan', 'select', 'pick', 'measure', 'goto'] as const;
 const BIOMES = ['plains', 'forest', 'cherry_grove', 'desert', 'snowy_plains', 'jungle', 'swamp', 'mushroom_fields', 'ocean', 'badlands', 'meadow', 'dark_forest'];
 type MapMode = typeof MAP_MODES[number];
+/** Keys shown in menus come from these, the same values the key handlers use. */
+const UNDO_KEY = 'Ctrl+Z', PALETTE_KEY = 'Ctrl+Shift+F';
 const MAP_MODE_KEYS: Record<MapMode, string> = { pan: 'H', select: 'S', pick: 'I', measure: 'M', goto: 'G' };
 let mapMode: MapMode = 'pan';
 /** Blocks in the Block palette panel; picked blocks are added to the front. */
@@ -974,9 +976,10 @@ async function editorView(view: HTMLElement): Promise<void> {
     [tx('menuCorner1'), () => { sel.x1 = b.x; sel.z1 = b.z; drawSel(); syncSel?.(); }],
     [tx('menuCorner2'), () => { sel.x2 = b.x; sel.z2 = b.z; drawSel(); syncSel?.(); }],
     [tx('menuCentre'), () => { const r = canvas.getBoundingClientRect(); originX = b.x - r.width / scale / 2; originZ = b.z - r.height / scale / 2; keepView(true); void drawMap(); }],
-    [tx('menuGoto'), () => { setMode('goto'); openGoto(b.x, b.z); }],
-    ...MAP_MODES.filter((k) => k !== 'goto' && k !== mapMode).map((k) => [`${tx('menuMode')}: ${tx(`mode_${k}` as Key)}`, () => setMode(k)] as [string, () => void]),
-    [tx('undo'), () => document.querySelector<HTMLElement>('#undo')?.click()],
+    [tx('menuGoto'), () => { setMode('goto'); openGoto(b.x, b.z); }, MAP_MODE_KEYS.goto],
+    ...MAP_MODES.filter((k) => k !== 'goto' && k !== mapMode).map((k) => [`${tx('menuMode')}: ${tx(`mode_${k}` as Key)}`, () => setMode(k), MAP_MODE_KEYS[k]] as [string, () => void, string]),
+    [tx('undo'), () => document.querySelector<HTMLElement>('#undo')?.click(), UNDO_KEY],
+    [tx('paletteHint'), () => showPalette(), PALETTE_KEY],
   ], canvas);
   canvas.addEventListener('contextmenu', (e) => { e.preventDefault(); mapMenu(e.clientX, e.clientY, toBlock(e as unknown as PointerEvent)); });
   canvas.addEventListener('keydown', (e) => {
@@ -1699,10 +1702,15 @@ const typing = (e: KeyboardEvent) => e.composedPath().some((n) => n instanceof H
 // Crossing the phone width rebuilds the editor workspace as one tabbed group (or back to side by side).
 matchMedia(PHONE).addEventListener('change', () => { if (user && prefs.tab === 'editor') render(); });
 
+/** Does this key press match a shortcut written like the menus show it ("Ctrl+Shift+F")? One source for both. */
+function hitKey(e: KeyboardEvent, combo: string) {
+  const parts = combo.split('+'); const key = parts[parts.length - 1].toLowerCase();
+  return e.key.toLowerCase() === key && (e.ctrlKey || e.metaKey) === parts.includes('Ctrl') && e.shiftKey === parts.includes('Shift') && e.altKey === parts.includes('Alt');
+}
 document.addEventListener('keydown', (e) => {
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); showPalette(); return; }
+  if (hitKey(e, PALETTE_KEY)) { e.preventDefault(); showPalette(); return; }
   if (typing(e) || document.querySelector('.palette-scrim, .onboarding')) return;
-  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && world) { e.preventDefault(); undoLast(); return; }
+  if (hitKey(e, UNDO_KEY) && world) { e.preventDefault(); undoLast(); return; }
   if (!e.ctrlKey && !e.metaKey && !e.altKey && prefs.tab === 'editor' && selectTool) {
     const map: Record<string, string> = { f: 'fill', r: 'replace', d: 'delete', c: 'clone', w: 'waterlog', b: 'biome' };
     const op = map[e.key.toLowerCase()];

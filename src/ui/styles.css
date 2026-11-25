@@ -815,3 +815,5 @@ md-slider { min-inline-size: min(200px, 100%); }
 @media (prefers-reduced-motion: reduce) { .level-up, .level-up h2, .sc-card { animation: none; } .lu-burst { display: none; } .level-up { transition: opacity .3s; } .level-up.out { transform: none; } .sc-key, .sc-key .btn-ico { transition: none; } }
 .reduce-motion .level-up, .reduce-motion .level-up h2, .reduce-motion .sc-card { animation: none; } .reduce-motion .lu-burst { display: none; } .reduce-motion .level-up.out { transform: none; }
 .row-actions { align-items: center; }
+.ctx-list button { display: flex; align-items: center; gap: 8px; } .ctx-list button .lbl { flex: 1; text-align: left; }
+.ctx-list kbd { flex: none; padding: 2px 8px; border-radius: 8px; background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface-variant); font: 12px/18px 'Roboto Mono', monospace; }
