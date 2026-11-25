@@ -18,7 +18,7 @@ const TARGETS = [
   { id: 'virtualbox', name: 'VirtualBox', desc: 'Imports the appliance image with a bridged adapter so your network can reach it.' },
   { id: 'vmware', name: 'VMware', desc: 'Imports the appliance image into VMware Workstation or Player on a bridged network and starts it without a window.' },
   { id: 'usb', name: 'USB drive', desc: 'Writes the appliance image to a USB drive so a spare PC boots straight into Map Editor.' },
-  { id: 'pi', name: 'Raspberry Pi', desc: 'A Pi 4 or 5 running Docker can use Docker on another computer: the image runs on arm64. A ready-to-flash Pi image is not built yet.' },
+  { id: 'pi', name: 'Raspberry Pi', desc: 'Write the Raspberry Pi image (unpack map-editor-appliance-rpi-arm64.img.xz first) to an SD card with USB drive, or use Docker on another computer if the Pi already runs Docker.' },
 ] as const;
 let target: typeof TARGETS[number]['id'] = 'docker';
 let view: 'deploy' | 'instances' = 'deploy';
@@ -260,8 +260,9 @@ async function render() {
     });
   } else {
     form.innerHTML = `<h2 class="md-typescale-headline-large">${esc(TARGETS.find((t) => t.id === target)!.name)}</h2><p>${esc(TARGETS.find((t) => t.id === target)!.desc)}</p>
-      ${target === 'pi' ? '<md-filled-tonal-button id="to-ssh">Use Docker on another computer</md-filled-tonal-button>' : ''}`;
+      ${target === 'pi' ? '<div class="row-actions"><md-filled-button id="to-usb">Write the Pi image to an SD card</md-filled-button><md-filled-tonal-button id="to-ssh">Use Docker on another computer</md-filled-tonal-button></div><p class="muted">The Pi image is built for Pi 4 and Pi 5 and checked for its firmware, kernel and device trees, but it has not been boot-tested on a Pi yet.</p>' : ''}`;
     form.querySelector('#to-ssh')?.addEventListener('click', () => { target = 'ssh'; render(); });
+    form.querySelector('#to-usb')?.addEventListener('click', () => { target = 'usb'; render(); });
   }
 }
 

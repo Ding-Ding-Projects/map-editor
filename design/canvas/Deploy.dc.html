@@ -156,7 +156,7 @@ class Component extends DCLogic {
       ['VirtualBox', 'Imports the appliance image as a VM with bridged networking so your LAN can reach it.', 'VirtualBox 7.1 found', true, 'Import map-editor-appliance.ova', 'Start the VM on a bridged adapter', '28px'],
       ['VMware', 'The same appliance image in VMware Workstation or Player, bridged, started without a window.', 'Workstation 17 found', true, 'Import with ovftool on a bridged network', 'Start it with vmrun, read its address', '8px 28px 28px 28px'],
       ['USB drive', 'Writes the appliance image to a USB stick. A spare PC boots straight into Map Editor.', '2 removable drives', true, '', '', '28px 8px 28px 28px'],
-      ['Raspberry Pi', 'A Pi 4 or 5 with Docker works through Docker on another computer. A flashable Pi image comes later.', 'Use Docker over SSH', false, '', '', '28px 28px 8px 28px']
+      ['Raspberry Pi', 'Write the Pi 4 and 5 image to an SD card, or use Docker over SSH on a Pi that runs Docker.', 'Image built · not boot-tested', true, 'Write map-editor-appliance-rpi-arm64.img', 'Read back and compare SHA-256', '28px 28px 8px 28px']
     ];
     const tones = [[t.secondaryContainer, t.onSecondaryContainer], [t.primaryContainer ?? t.secondaryContainer, t.onPrimaryContainer ?? t.onSecondaryContainer], [t.tertiaryContainer, t.onTertiaryContainer], [t.surfaceContainerHigh, t.onSurface], [t.secondaryContainer, t.onSecondaryContainer], [t.surfaceContainerHigh, t.onSurface]];
     const targets = defs.map(([name, desc, status, ok, , , radius], i) => ({

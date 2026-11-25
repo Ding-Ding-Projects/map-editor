@@ -21,7 +21,8 @@ export const features = [
       ['Use it', 'Import map-editor-appliance-x86_64.ova into VirtualBox or VMware with a bridged network adapter, or write map-editor-appliance-x86_64.img to a USB drive and boot a spare PC from it. Map Editor Deploy does both for you.'],
       ['Tour of the appliance', 'The console has no login and needs no typing. It shows the version and the link to open, and a four-step guide: the link, opening it from another computer, creating the owner account on the first visit, and the ? button › Take a tour inside the editor, which walks through every screen. The console text refreshes when the network address changes.'],
       ['How it is checked', 'Every build boots the image under QEMU and waits for the web app to answer its health check before the image is published.'],
-      ['Not yet available', 'A Raspberry Pi image, a separate data partition and in-place updates are on the roadmap.'],
+      ['Raspberry Pi', 'map-editor-appliance-rpi-arm64.img.xz is the same appliance for a Raspberry Pi 4 or 5. Unpack it and write the .img to an SD card (Map Editor Deploy › USB drive does this with a read-back check), then boot the Pi with a network cable. It is checked for its firmware, kernel and device trees in every build but has not yet been boot-tested on a Pi.'],
+      ['Not yet available', 'A separate data partition and in-place updates are on the roadmap.'],
     ], related: ['deploy-app', 'web-app', 'roadmap'] },
   { slug: 'deploy-app', title: 'Map Editor Deploy', group: 'Ways to run it', summary: 'One click to put Map Editor on Docker, VirtualBox or a USB drive, then the working link.',
     body: [
@@ -31,7 +32,7 @@ export const features = [
       ['Instances', 'The Instances view lists only what this app created, with its current state and the verified link for each.'],
       ['Managing an instance', 'Manage opens one instance: a state dot, its version and link, and buttons for Open, Start or Stop, Restart and Update (pulls the newest image and restarts). The live log follows the container output; Pause holds it still and Copy puts it on the clipboard. Remove asks first, stops the instance and deletes its Compose file; worlds and data stay unless you also tick Delete data.'],
       ['VMware', 'VMware Workstation or Player with OVF Tool imports the appliance .ova on a bridged network and starts it without a window. The appliance reports its address through the VMware guest tools, and the app waits for the health check.'],
-      ['Not yet available', 'A ready-to-flash Raspberry Pi image is on the roadmap.'],
+      ['Raspberry Pi', 'Write the Raspberry Pi image to an SD card with the USB drive target, or use Docker on another computer if the Pi already runs Docker.'],
     ], related: ['appliance', 'web-app', 'desktop-app'] },
   { slug: 'worlds', title: 'Getting worlds in and out', group: 'Using the editor', summary: 'Upload a world as a .zip, download it again, or start a new flat world.',
     body: [

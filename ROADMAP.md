@@ -48,7 +48,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] The appliance now carries open-vm-tools and the VirtualBox guest additions, so VMware and VirtualBox can read its network address (the VirtualBox target needed this and could not have found the address before).
 - [x] Docker on another computer over SSH: Docker's own `DOCKER_HOST=ssh://user@host` transport with the user's SSH agent (the app stores no passwords or keys); validated login and absolute remote worlds path; deploy, state, actions and live log all go to that computer; unit tested with a stand-in docker that records DOCKER_HOST, and the form plus takeovers checked in headless Chrome. Not run against a real remote host.
 - [x] Raspberry Pi card explains that a Pi 4 or 5 with Docker uses the SSH route (the image is multi-arch) and links to it.
-- [ ] Raspberry Pi flashable image.
+- [x] Raspberry Pi 4 and 5 image (`map-editor-appliance-rpi-arm64.img.xz`): Alpine arm64 with the Pi firmware, kernel, device trees and the arm64 Map Editor image, built in CI through qemu with Alpine's aarch64 signing keys, checked for its boot files and published with each release. Not boot-tested on a real Pi.
 - [x] Instance actions: start, stop, restart, update, remove (with an optional Delete data step and a confirm dialog), state dot and live log with Pause and Copy; unit tested with a stand-in `docker` and driven in headless Chrome.
 - [x] The Docker target defaults to the `latest` image (published from main) so Update pulls the newest release; the version field only accepts Docker tag characters, so it cannot change the generated Compose file (unit tested).
 - [ ] Instance duplicate.
