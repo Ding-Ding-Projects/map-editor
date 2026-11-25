@@ -34,7 +34,7 @@ import { blockColor } from '../core/colors.js';
 import { argbFromHex, themeFromSourceColor, applyTheme as applyM3Theme } from '@material/material-color-utilities';
 import { notesPanel as notesPanelImpl } from './notes.js';
 import { contextMenu, initMenus } from './menu.js';
-import { initButtonIcons } from './icons.js';
+import { iconSvg, initButtonIcons } from './icons.js';
 
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
 
@@ -631,7 +631,13 @@ async function render(): Promise<void> {
 // ---------- views ----------
 function authView(view: HTMLElement) {
   const owner = !hasOwner;
-  view.innerHTML = `<section class="card narrow">
+  const point = (icon: string, key: Key) => `<li><span class="auth-ico" aria-hidden="true">${iconSvg(icon, 22)}</span><span>${esc(tx(key))}</span></li>`;
+  view.innerHTML = `<div class="auth-split"><aside class="auth-hero">
+      <div class="auth-blocks" aria-hidden="true">${Array.from({ length: 24 }, (_, i) => `<i style="--i:${i}"></i>`).join('')}</div>
+      <p class="auth-kicker">${esc(tx('appName'))}</p>
+      <h2>${esc(tx('authHero'))}</h2>
+      <ul>${point('undo', 'authPoint1')}${point('cube', 'authPoint2')}${point('lock', 'authPoint3')}</ul></aside>
+    <section class="card narrow auth-card">
     <h1 class="md-typescale-display-small">${esc(owner ? tx('createOwner') : tx('signIn'))}</h1>
     ${owner ? `<p class="md-typescale-body-large muted">${esc(tx('ownerNote'))}</p>` : ''}
     <form id="auth" class="stack">
@@ -640,7 +646,7 @@ function authView(view: HTMLElement) {
       <md-outlined-text-field name="code" label="${esc(tx('totpCode'))}" inputmode="numeric" autocomplete="one-time-code" maxlength="6" hidden></md-outlined-text-field>
       <md-filled-button type="submit">${esc(owner ? tx('createOwner') : tx('signIn'))}</md-filled-button>
     </form>
-    ${!owner && hasPasskeys ? (passkeysUsable() ? `<div class="or-line" aria-hidden="true"><span>${esc(tx('or'))}</span></div><md-outlined-button id="pk-signin" class="pk-signin"><svg slot="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="9" r="4"/><path d="M2 21a6 6 0 0112 0M15 11h7M19 11v4M22 11v2"/></svg>${esc(tx('pkSignIn'))}</md-outlined-button>` : `<p class="muted">${esc(tx('pkInsecure'))}</p>`) : ''}</section>`;
+    ${!owner && hasPasskeys ? (passkeysUsable() ? `<div class="or-line" aria-hidden="true"><span>${esc(tx('or'))}</span></div><md-outlined-button id="pk-signin" class="pk-signin"><svg slot="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="9" r="4"/><path d="M2 21a6 6 0 0112 0M15 11h7M19 11v4M22 11v2"/></svg>${esc(tx('pkSignIn'))}</md-outlined-button>` : `<p class="muted">${esc(tx('pkInsecure'))}</p>`) : ''}</section></div>`;
   view.querySelector('#pk-signin')?.addEventListener('click', async () => {
     try {
       const { options, ticket } = await api<{ options: Parameters<typeof startAuthentication>[0]['optionsJSON']; ticket: string }>('/api/auth/passkey/options', { method: 'POST', body: {} });
