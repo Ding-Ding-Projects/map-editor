@@ -33,6 +33,20 @@ await build({ ...common, entryPoints: [path.join(root, 'src/ui/regex-worker.ts')
 await build({ ...common, entryPoints: [path.join(root, 'src/ui/main.ts')], outfile: path.join(dist, 'ui/app.js'), format: 'esm', platform: 'browser', target: 'es2022', minify: true });
 copyFileSync(path.join(root, 'src/ui/index.html'), path.join(dist, 'ui/index.html'));
 copyFileSync(path.join(root, 'src/ui/styles.css'), path.join(dist, 'ui/app.css'));
+// Bundled fonts (SIL Open Font License): the app never fetches fonts from the network.
+export const FONT_FILES = [
+  ['@fontsource-variable/roboto-flex/files/roboto-flex-latin-standard-normal.woff2', 'roboto-flex-latin.woff2'],
+  ['@fontsource-variable/roboto-flex/files/roboto-flex-latin-ext-standard-normal.woff2', 'roboto-flex-latin-ext.woff2'],
+  ['@fontsource-variable/roboto-mono/files/roboto-mono-latin-wght-normal.woff2', 'roboto-mono-latin.woff2'],
+  ['@fontsource-variable/roboto-mono/files/roboto-mono-latin-ext-wght-normal.woff2', 'roboto-mono-latin-ext.woff2'],
+];
+for (const app of ['ui', 'deploy']) {
+  copyFileSync(path.join(root, 'src/ui/favicon.svg'), path.join(dist, app, 'favicon.svg'));
+  mkdirSync(path.join(dist, app, 'fonts'), { recursive: true });
+  for (const [from, to] of FONT_FILES) copyFileSync(path.join(root, 'node_modules', from), path.join(dist, app, 'fonts', to));
+  copyFileSync(path.join(root, 'node_modules/@fontsource-variable/roboto-flex/LICENSE'), path.join(dist, app, 'fonts', 'OFL-roboto-flex.txt'));
+  copyFileSync(path.join(root, 'node_modules/@fontsource-variable/roboto-mono/LICENSE'), path.join(dist, app, 'fonts', 'OFL-roboto-mono.txt'));
+}
 // TinyMCE is self-hosted next to the UI (GPL licence key); only the files the editor loads.
 for (const part of ['tinymce.min.js', 'license.md', 'themes', 'models', 'icons', 'skins', 'plugins/lists', 'plugins/link', 'plugins/table', 'plugins/autolink']) {
   cpSync(path.join(root, 'node_modules/tinymce', part), path.join(dist, 'ui/tinymce', part), { recursive: true });

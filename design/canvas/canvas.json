@@ -422,7 +422,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Docs site home on GitHub Pages. Tweaks dark, seed, motion.\nBuilt and deployed to match this board. Not yet: the animated hero demo, bundled fonts, phone PDF edition.",
+   "text": "Docs site home on GitHub Pages. Tweaks dark, seed, motion.\nBuilt and deployed to match this board. Also: bundled fonts, favicon, article screenshots for the newest features. Not yet: the animated hero demo, phone PDF edition.",
    "fill": "yellow",
    "page": "site"
   }

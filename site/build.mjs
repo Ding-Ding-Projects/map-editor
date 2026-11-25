@@ -20,7 +20,7 @@ function page(title, desc, main, active = 'guide') {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title><meta name="description" content="${esc(desc)}">
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website">
-<link rel="stylesheet" href="${base}site.css"></head><body>
+<link rel="icon" type="image/svg+xml" href="${base}favicon.svg"><link rel="stylesheet" href="${base}site.css"></head><body>
 <header class="top"><a class="brand" href="${base}"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="title">Map Editor</span></a>
 <nav aria-label="Site"><a href="${base}"${active === 'guide' ? ' aria-current="page"' : ''}>Guide</a><a href="${repo}/releases">Downloads</a><a href="${repo}/commits/main">Changelog</a><a href="${repo}">Source</a><a href="#tour" data-tour="page">Take a tour</a></nav></header>
 <main>${main}</main>
@@ -59,8 +59,17 @@ rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 copyFileSync(path.join(here, 'site.css'), path.join(out, 'site.css'));
 copyFileSync(path.join(here, 'tour.js'), path.join(out, 'tour.js'));
+copyFileSync(path.join(here, 'favicon.svg'), path.join(out, 'favicon.svg'));
 mkdirSync(path.join(out, 'screenshots'), { recursive: true });
-for (const f of ['tour.png', 'extensions-consent.png', 'about.png']) copyFileSync(path.join(root, 'docs', 'screenshots', f), path.join(out, 'screenshots', f));
+// Every screenshot an article names is copied, so an article cannot point at a missing picture.
+const shots = new Set(['tour.png', 'extensions-consent.png', 'about.png', ...features.flatMap((f) => f.body.map((b) => b[2]?.src).filter(Boolean))]);
+for (const f of shots) copyFileSync(path.join(root, 'docs', 'screenshots', f), path.join(out, 'screenshots', f));
+// Bundled fonts (SIL Open Font License): the site never fetches fonts from another host.
+mkdirSync(path.join(out, 'fonts'), { recursive: true });
+for (const [from, to] of [['roboto-flex/files/roboto-flex-latin-standard-normal.woff2', 'roboto-flex-latin.woff2'], ['roboto-flex/files/roboto-flex-latin-ext-standard-normal.woff2', 'roboto-flex-latin-ext.woff2'],
+  ['roboto-mono/files/roboto-mono-latin-wght-normal.woff2', 'roboto-mono-latin.woff2'], ['roboto-mono/files/roboto-mono-latin-ext-wght-normal.woff2', 'roboto-mono-latin-ext.woff2']]) {
+  copyFileSync(path.join(root, 'node_modules/@fontsource-variable', from), path.join(out, 'fonts', to));
+}
 const groups = [...new Set(features.map((f) => f.group))];
 writeFileSync(path.join(out, 'index.html'), page('Map Editor', 'A Minecraft world editor for your desk, your whole network, or a spare PC. Every edit can be undone.', `
 <section class="hero"><div class="hero-copy">
