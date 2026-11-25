@@ -357,7 +357,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Edit history. Try: action filter chips, select a point; Tweaks dark, seed, motion.\nStands for the private Git history kept beside app data, append-only restore.\nIn the app: Edits and Details panels with their own saved layout, list, search, From and To dates, action filters with counts, shown count, details with full commit id, roll back, copy commit id. Also: Open as a copy, per-point stats and an Activity panel (accounts, settings, extensions, worlds; also with no world open).",
+   "text": "Edit history. Try: action filter chips, select a point; Tweaks dark, seed, motion.\nStands for the private Git history kept beside app data, append-only restore.\nIn the app: Edits and Details panels with their own saved layout, list, search, From and To dates, action filters with counts, shown count, details with full commit id, roll back, copy commit id. Also: Open as a copy, per-point stats and an Activity panel (accounts, settings, extensions, worlds; also with no world open). Filters fold away behind Hide filters, remembered, with a count of filters still on.",
    "fill": "yellow",
    "page": "history"
   },
@@ -365,7 +365,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Settings. Try: an Account and passkeys section, palette teleport to every setting, section tabs, language buttons, switches, seed swatches; Tweaks dark, seed, motion.\nIn the app: an Account and passkeys section, palette teleport to every setting, section tabs, settings search across sections, language, both funny sliders, dark, theme colour picker, reduce motion, large text, sound effects with volume and a test sound, export, import, settings history with Restore, Clear buttons on every text field, read messages aloud with speed and a test, dark theme on a schedule, Lock editing, Extensions section. Also: a lock on every switch (locked switches are disabled here and refused in the palette), Quiet hours for sounds and reading aloud. Also: Lock panel layout, Keep every tab open, Lock the Settings screen with an Unlock banner. Emoji in dialogs switch: not needed, the app uses drawn icons instead of emoji in its dialogs. Also: authenticator app codes, unlock ladder, a tone per part and your own logo, vocabulary upload, Focus and School modes, part-colour dropdowns as searchable menus. Authenticator set-up now shows a QR code drawn in the page with the key hidden until asked; a vocabulary file dropped anywhere applies with a level-up.",
+   "text": "Settings. Try: an Account and passkeys section, palette teleport to every setting, section tabs, language buttons, switches, seed swatches; Tweaks dark, seed, motion.\nIn the app: an Account and passkeys section, palette teleport to every setting, section tabs, settings search across sections, language, both funny sliders, dark, theme colour picker, reduce motion, large text, sound effects with volume and a test sound, export, import, settings history with Restore, Clear buttons on every text field, read messages aloud with speed and a test, dark theme on a schedule, Lock editing, Extensions section. Also: a lock on every switch (locked switches are disabled here and refused in the palette), Quiet hours for sounds and reading aloud. Also: Lock panel layout, Keep every tab open, Lock the Settings screen with an Unlock banner. Emoji in dialogs switch: not needed, the app uses drawn icons instead of emoji in its dialogs. Also: authenticator app codes, unlock ladder, a tone per part and your own logo, vocabulary upload, Focus and School modes, part-colour dropdowns as searchable menus. Authenticator set-up now shows a QR code drawn in the page with the key hidden until asked; a vocabulary file dropped anywhere applies with a level-up. Each setting is a soft tile; Name of this app (rename with reset) and an emoji-in-dialogs switch were added.",
    "fill": "yellow",
    "page": "settings"
   },
@@ -421,7 +421,7 @@
    "x": 3540,
    "y": 0,
    "w": 420,
-   "text": "Deploy app instance management. Try: Tweak state (running, stopped, restarting), dark, seed, motion.\nStands for Open, Start or Stop, Restart, Update and Remove on a Docker instance the app created, plus a live log that follows docker compose logs.\nBeing built for the Docker target; not run against a real Docker host.",
+   "text": "Deploy app instance management. Try: Tweak state (running, stopped, restarting), dark, seed, motion.\nStands for Open, Start or Stop, Restart, Update and Remove on a Docker instance the app created, plus a live log that follows docker compose logs.\nBeing built for the Docker target; not run against a real Docker host. Reworked: a status hero (name, state, version, link) with grouped actions beside a dark console for the live log; Remove goes through the two-key confirmation.",
    "fill": "yellow",
    "page": "deploy"
   },
@@ -453,7 +453,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Docs site home on GitHub Pages. Tweaks dark, seed, motion.\nBuilt and deployed to match this board. Also: bundled fonts, favicon, article screenshots for the newest features. Also: the animated hero demo (select, fill, roll back; still under reduced motion). Also: phone PDF edition, Downloads page from the release list, interactive diagram.",
+   "text": "Docs site home on GitHub Pages. Tweaks dark, seed, motion.\nBuilt and deployed to match this board. Also: bundled fonts, favicon, article screenshots for the newest features. Also: the animated hero demo (select, fill, roll back; still under reduced motion). Also: phone PDF edition, Downloads page from the release list, interactive diagram. The site now has English, Cantonese and both in the header (all 13 articles written in both), a dockview article workspace on wide screens with Reset layout and Plain page, link-preview tags with a real screenshot, and the Windows installer linked from the hero.",
    "fill": "yellow",
    "page": "site"
   }
