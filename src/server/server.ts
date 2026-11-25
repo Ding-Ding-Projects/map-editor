@@ -319,6 +319,15 @@ export async function createServer(opts: ServerOptions) {
       const top = await session.topBlock(dim, int(q.get('x'), 'x', -30_000_000, 30_000_000), int(q.get('z'), 'z', -30_000_000, 30_000_000));
       return send(200, { top: top ?? null });
     }
+    if (p === '/api/slice' && req.method === 'GET') {
+      const q = url.searchParams;
+      const dim = (q.get('dim') ?? 'overworld') as Dimension;
+      if (!DIMS.includes(dim)) throw new HttpError(400, 'Unknown dimension');
+      const axis = q.get('axis') === 'x' ? 'x' : 'z';
+      const r = await session.renderSlice(dim, axis, int(q.get('at'), 'at', -30_000_000, 30_000_000), int(q.get('from'), 'from', -30_000_000, 30_000_000), int(q.get('to'), 'to', -30_000_000, 30_000_000), int(q.get('y0'), 'y0', -64, 319), int(q.get('y1'), 'y1', -64, 319)).catch((e) => { throw new HttpError(400, (e as Error).message); });
+      res.writeHead(200, { 'content-type': 'application/octet-stream', 'x-width': String(r.width), 'x-height': String(r.height), 'cache-control': 'no-store' });
+      return res.end(Buffer.from(r.px.buffer, r.px.byteOffset, r.px.byteLength));
+    }
     if (p === '/api/render' && req.method === 'GET') {
       const dim = (url.searchParams.get('dim') ?? 'overworld') as Dimension;
       if (!DIMS.includes(dim)) throw new HttpError(400, 'Unknown dimension');

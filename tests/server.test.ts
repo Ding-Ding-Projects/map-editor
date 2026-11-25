@@ -85,6 +85,13 @@ describe('server', () => {
     expect((await (await call('/api/top?dim=overworld&x=3&z=4')).json()).top).toEqual({ y: 63, block: 'minecraft:water' });
     expect((await (await call('/api/top?dim=overworld&x=-500&z=-500')).json()).top).toBeNull();
     expect((await call('/api/top?dim=overworld&x=a&z=0')).status).toBe(400);
+    // Side view along x at z 3, from y 60 to 64: water at 63 over grass at 62, air above.
+    const sl = await call('/api/slice?dim=overworld&axis=z&at=3&from=0&to=3&y0=60&y1=64');
+    expect([sl.headers.get('x-width'), sl.headers.get('x-height')]).toEqual(['4', '5']);
+    const spx = new Uint8Array(await sl.arrayBuffer());
+    const alpha = (row: number) => spx[(row * 4 + 0) * 4 + 3];
+    expect([alpha(0), alpha(1), alpha(2)]).toEqual([0, 255, 255]); // y 64 air, y 63 water, y 62 grass
+    expect((await call('/api/slice?dim=overworld&axis=z&at=3&from=0&to=5000&y0=60&y1=64')).status).toBe(400);
     expect([...after.slice(0, 3)]).toEqual([63, 104, 201]); // water, top-down
 
     const { entries } = await (await call('/api/history')).json();

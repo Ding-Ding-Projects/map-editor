@@ -856,6 +856,55 @@ async function editorView(view: HTMLElement): Promise<void> {
   const histEl = document.createElement('div'); histEl.className = 'panel-scroll';
   const notesEl = document.createElement('div'); notesEl.className = 'panel-scroll';
   const blocksEl = document.createElement('section'); blocksEl.className = 'panel-scroll block-palette';
+  // Side view: a vertical cut through the world at the selection, along x or z, with the selection's height marked.
+  const sliceEl = document.createElement('section'); sliceEl.className = 'panel-scroll slice-panel';
+  let sliceAxis: 'x' | 'z' = 'z';
+  sliceEl.innerHTML = `<div class="slice-bar"><md-chip-set aria-label="${esc(tx('sliceAxis'))}"><md-filter-chip data-axis="z" label="${esc(tx('sliceAlongX'))}" selected></md-filter-chip><md-filter-chip data-axis="x" label="${esc(tx('sliceAlongZ'))}"></md-filter-chip></md-chip-set>
+    <md-outlined-text-field id="slice-at" type="number" label="z"></md-outlined-text-field><md-text-button id="slice-sel">${esc(tx('sliceAtSel'))}</md-text-button></div>
+    <canvas id="slice" role="img" aria-label="${esc(tx('sliceView'))}"></canvas><p class="muted" id="slice-info" aria-live="polite"></p>`;
+  const sliceCanvas = sliceEl.querySelector<HTMLCanvasElement>('#slice')!;
+  const sliceAt = sliceEl.querySelector<HTMLInputElement>('#slice-at')!;
+  const centre = () => Math.round(((sliceAxis === 'z' ? sel.z1 + sel.z2 : sel.x1 + sel.x2)) / 2);
+  sliceAt.value = String(centre());
+  let sliceRun = 0;
+  async function drawSlice() {
+    if (!sliceEl.isConnected || !sliceEl.clientWidth) return;
+    const my = ++sliceRun;
+    const at = Math.trunc(Number(sliceAt.value) || 0);
+    const a = sliceAxis === 'z' ? Math.min(sel.x1, sel.x2) : Math.min(sel.z1, sel.z2), b = sliceAxis === 'z' ? Math.max(sel.x1, sel.x2) : Math.max(sel.z1, sel.z2);
+    const pad = Math.max(16, Math.round((b - a) / 2));
+    const from = a - pad, to = Math.min(b + pad, from + 1023);
+    const ylo = Math.max(-64, Math.min(sel.y1, sel.y2) - 16), yhi = Math.min(319, Math.max(sel.y1, sel.y2) + 16);
+    try {
+      const r = await fetch(`/api/slice?dim=${dim}&axis=${sliceAxis}&at=${at}&from=${from}&to=${to}&y0=${ylo}&y1=${yhi}`);
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? `${r.status}`);
+      const w = Number(r.headers.get('x-width')), h = Number(r.headers.get('x-height'));
+      const img = await createImageBitmap(new ImageData(new Uint8ClampedArray(await r.arrayBuffer()), w, h));
+      if (my !== sliceRun) return;
+      const room = Math.max(160, sliceEl.clientHeight - 130); // fit the cut in the panel's own height
+      const scale = Math.max(1, Math.floor(Math.min((sliceEl.clientWidth - 32) / w, room / h)));
+      sliceCanvas.width = w * scale; sliceCanvas.height = h * scale;
+      const c = sliceCanvas.getContext('2d')!;
+      c.imageSmoothingEnabled = false;
+      c.fillStyle = getComputedStyle(sliceCanvas).getPropertyValue('--md-sys-color-surface-container-lowest') || '#000';
+      c.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+      c.drawImage(img, 0, 0, w * scale, h * scale);
+      // Selection outline in the cut.
+      const sx = (a - from) * scale, sw = (b - a + 1) * scale, sy = (yhi - Math.max(sel.y1, sel.y2)) * scale, sh = (Math.abs(sel.y2 - sel.y1) + 1) * scale;
+      c.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--md-sys-color-primary') || '#8fd88a'; c.lineWidth = 2; c.strokeRect(sx, sy, sw, sh);
+      sliceEl.querySelector('#slice-info')!.textContent = tx('sliceInfo', { axis: sliceAxis === 'z' ? 'x' : 'z', from, to, other: sliceAxis, at, ylo, yhi });
+    } catch (err) { sliceEl.querySelector('#slice-info')!.textContent = (err as Error).message; }
+  }
+  sliceEl.querySelectorAll<HTMLElement & { selected: boolean }>('[data-axis]').forEach((chip, _i, all) => chip.addEventListener('click', () => {
+    sliceAxis = chip.dataset.axis as 'x' | 'z'; all.forEach((x) => { x.selected = x === chip; });
+    sliceAt.setAttribute('label', sliceAxis); sliceAt.value = String(centre()); void drawSlice();
+  }));
+  sliceAt.addEventListener('change', () => { void drawSlice(); });
+  sliceEl.querySelector('#slice-sel')!.addEventListener('click', () => { sliceAt.value = String(centre()); void drawSlice(); });
+  let lastSize = '';
+  new ResizeObserver(() => { const z = `${sliceEl.clientWidth}x${sliceEl.clientHeight}`; if (z !== lastSize) { lastSize = z; void drawSlice(); } }).observe(sliceEl);
+  document.addEventListener('world-changed', () => { void drawSlice(); });
+  document.addEventListener('history-changed', () => { void drawSlice(); });
   function drawPalette() {
     const list = [...pickedBlocks, ...PALETTE_BLOCKS.filter((b) => !pickedBlocks.includes(b))];
     blocksEl.innerHTML = `<p class="muted">${esc(tx('paletteNote'))}</p><div class="bp-grid" role="list">${list.map((b) => {
@@ -866,8 +915,8 @@ async function editorView(view: HTMLElement): Promise<void> {
   }
   drawPalette();
   view.innerHTML = '<div id="dock" class="dock"></div>';
-  mountWorkspace(view.querySelector<HTMLElement>('#dock')!, { map: mapEl, tool: toolEl, blocks: blocksEl, history: histEl, notes: notesEl }, {
-    map: tx('editor'), tool: tx('fill'), blocks: tx('blockPalette'), history: tx('history'), notes: tx('notes'),
+  mountWorkspace(view.querySelector<HTMLElement>('#dock')!, { map: mapEl, tool: toolEl, blocks: blocksEl, slice: sliceEl, history: histEl, notes: notesEl }, {
+    map: tx('editor'), tool: tx('fill'), blocks: tx('blockPalette'), slice: tx('sliceView'), history: tx('history'), notes: tx('notes'),
   }, prefs.dark, undefined, prefs.layoutLocked);
   historyView(histEl, true);
   document.addEventListener('history-changed', () => { if (histEl.isConnected) historyView(histEl, true); });

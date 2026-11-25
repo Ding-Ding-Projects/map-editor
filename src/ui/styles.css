@@ -620,3 +620,8 @@ canvas#map[data-mode="pick"] { cursor: copy; } canvas#map[data-mode="goto"] { cu
 .structures { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--md-sys-color-outline-variant); }
 .structures h3 { margin: 0 0 4px; font-size: 16px; }
 .structures p { margin: 0 0 10px; font-size: 13px; }
+/* Side view */
+.slice-panel { padding: 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; }
+.slice-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.slice-bar md-outlined-text-field { width: 120px; }
+#slice { max-width: 100%; align-self: flex-start; image-rendering: pixelated; border-radius: 16px; background: var(--md-sys-color-surface-container-lowest); }

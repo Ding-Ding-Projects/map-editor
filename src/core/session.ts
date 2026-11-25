@@ -85,6 +85,30 @@ export class EditSession {
     });
   }
 
+  /**
+   * RGBA pixels of a vertical cut through the world: along x at a fixed z (axis 'z'), or along z at a
+   * fixed x (axis 'x'). Row 0 is the top (y1). Air and missing chunks are transparent.
+   */
+  async renderSlice(dim: Dimension, axis: 'x' | 'z', at: number, from: number, to: number, y0: number, y1: number): Promise<{ width: number; height: number; px: Uint8Array }> {
+    const a = Math.min(from, to), b = Math.max(from, to), lo = Math.max(-64, Math.min(y0, y1)), hi = Math.min(319, Math.max(y0, y1));
+    const width = b - a + 1, height = hi - lo + 1;
+    if (width < 1 || width > 1024 || height < 1) throw new Error('Slice must be 1 to 1024 blocks wide.');
+    const px = new Uint8Array(width * height * 4);
+    for (let i = 0; i < width; i++) {
+      const x = axis === 'z' ? a + i : at, z = axis === 'z' ? at : a + i;
+      const c = await this.world.chunk(dim, Math.floor(x / 16), Math.floor(z / 16));
+      if (!c) continue;
+      for (let y = hi; y >= lo; y--) {
+        const bl = c.getBlock(((x % 16) + 16) % 16, y, ((z % 16) + 16) % 16);
+        if (!bl || /(^|:)(air|cave_air|void_air)$/.test(bl.name)) continue;
+        const [r, g, bb] = shade(blockColor(bl.name), y, y + 1);
+        const o = ((hi - y) * width + i) * 4;
+        px[o] = r; px[o + 1] = g; px[o + 2] = bb; px[o + 3] = 255;
+      }
+    }
+    return { width, height, px };
+  }
+
   /** The highest non-air block in one column, as the top-down map shows it. */
   async topBlock(dim: Dimension, x: number, z: number): Promise<{ y: number; block: string } | undefined> {
     const c = await this.world.chunk(dim, Math.floor(x / 16), Math.floor(z / 16));
