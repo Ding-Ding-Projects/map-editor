@@ -998,3 +998,5 @@ md-outlined-text-field { --md-outlined-text-field-container-shape: 16px; --md-ou
 .h-filters > .sb { flex: 1 1 320px; min-width: 0; }
 .h-filters md-outlined-text-field { flex: 0 1 160px; }
 @media (min-width: 721px) and (max-width: 980px) { .dock { height: calc(100dvh - 150px); } }
+.card.manage-card { background: var(--md-sys-color-primary-container); border-radius: 36px 12px 36px 12px; }
+.card.log-card { background: var(--md-sys-color-inverse-surface, #2e312c); padding: 0; }
