@@ -1,4 +1,7 @@
 // One open world plus its history: the unit every front end (desktop, web, appliance) drives.
+import { BedrockWorld } from './bedrock.js';
+import { blockKey } from './chunk.js';
+import { isBedrockWorld } from './world.js';
 import { World, type Dimension } from './world.js';
 import { WorldHistory, type HistoryAction } from './history.js';
 import { blockColor, shade } from './colors.js';
@@ -25,7 +28,9 @@ export class EditSession {
 
   static async open(dataDir: string, worldPath: string) {
     const history = await WorldHistory.open(dataDir, worldPath);
-    return new EditSession(await World.open(worldPath), history);
+    // Bedrock worlds expose the same reading and block-setting calls, so the same tools drive them.
+    const world = isBedrockWorld(worldPath) ? (await BedrockWorld.open(worldPath)) as unknown as World : await World.open(worldPath);
+    return new EditSession(world, history);
   }
 
   /** Run edits one at a time so two clients can never interleave writes to one world. */
@@ -38,6 +43,7 @@ export class EditSession {
   run(req: OperationRequest) {
     return this.serial(async () => {
       const { world } = this;
+      if (world.info.edition === 'bedrock' && (req.op === 'waterlog' || req.op === 'biome')) throw new Error(req.op === 'biome' ? 'Biomes of a Bedrock Edition world cannot be changed here yet.' : 'Waterlogging works differently in Bedrock Edition and is not available for these worlds yet.');
       let res: ops.OpResult;
       switch (req.op) {
         case 'fill': res = await ops.fill(world, req.dimension, req.box, parseBlock(req.block ?? '')); break;
@@ -64,11 +70,13 @@ export class EditSession {
 
   /** The selection as a structure file (.nbt). */
   exportStructure(dim: Dimension, box: ops.Box) {
+    if (this.world.info.edition === 'bedrock') throw new Error('Structure files (.nbt) are a Java Edition format. They cannot be saved from a Bedrock Edition world.');
     return this.serial(async () => encodeStructure(await captureStructure(this.world, dim, box, this.world.info.dataVersion ?? 4189)));
   }
 
   /** Place a structure with its origin at a corner; saved and recorded like any edit, so it can be undone. */
   placeStructure(dim: Dimension, s: Structure, at: { x: number; y: number; z: number }, name: string) {
+    if (this.world.info.edition === 'bedrock') throw new Error('Structure files (.nbt) are a Java Edition format. They cannot be placed in a Bedrock Edition world.');
     return this.serial(async () => {
       const res = await placeStructure(this.world, dim, s, at);
       await this.world.save();
@@ -134,7 +142,8 @@ export class EditSession {
   async topBlock(dim: Dimension, x: number, z: number): Promise<{ y: number; block: string } | undefined> {
     const c = await this.world.chunk(dim, Math.floor(x / 16), Math.floor(z / 16));
     const top = c?.top(((x % 16) + 16) % 16, ((z % 16) + 16) % 16);
-    return top ? { y: top.y, block: top.block.name } : undefined;
+    // Bedrock blocks are told apart by their states (stone_type, wood_type), so the whole state is handed back.
+    return top ? { y: top.y, block: this.world.info.edition === 'bedrock' ? blockKey(top.block) : top.block.name } : undefined;
   }
 
   /** RGBA pixels (16x16 per chunk) for a rectangle of chunks, top-down. */

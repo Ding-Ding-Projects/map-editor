@@ -2,7 +2,7 @@
 
 **Documentation: https://ding-ding-projects.github.io/map-editor/**
 
-A Minecraft Java Edition world editor based on [Amulet Map Editor](https://github.com/Amulet-Team/Amulet-Map-Editor), rebuilt in TypeScript so the same editor runs three ways:
+A Minecraft world editor for Java Edition and Bedrock Edition worlds, based on [Amulet Map Editor](https://github.com/Amulet-Team/Amulet-Map-Editor), rebuilt in TypeScript so the same editor runs three ways:
 
 | Form | What you get |
 | --- | --- |
@@ -51,6 +51,7 @@ Choose a part; each opens like a tab.
 <details open><summary><b>Editing</b></summary>
 
 - Open Java Edition 1.18+ worlds (Anvil regions, palette sections) in all three dimensions; upload a world as a .zip, download it again, or start a new flat world from six presets in four sizes.
+- Open Bedrock Edition worlds too (1.2.13 and newer): the same map, side view, 3D view, Pick block, Fill, Replace, Delete blocks and Clone, using blocks already in the world. Saving adds one new file to the world database and never rewrites the others.
 - Top-down map with a floating toolbar (Pan, Select, Pick block, Measure, Go to), zoom and Shift+drag selection, and a Side view panel that cuts vertically through the selection.
 - Fill, replace, delete, clone and waterlog, ported from Amulet's stock operations, plus a Biome tool, with a 16.7 million block safety limit; a Blocks panel of colour swatches.
 - Structure files (.nbt) in and out, with chest contents, sign text, mobs and item frames.

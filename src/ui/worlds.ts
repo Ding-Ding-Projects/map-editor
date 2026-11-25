@@ -67,7 +67,7 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
       list.innerHTML = worlds.map((w, i) => `<article class="world-card ${SHAPES[i % SHAPES.length]}" style="--i:${i}">
         <div class="mini-map" aria-hidden="true">${mosaic(w.name)}</div>
         <h2>${esc(w.name)}</h2>${w.edition === 'bedrock' ? `<p class="muted"><b>Bedrock</b> · ${esc(tx('bedrockNote'))}</p>` : `<p class="muted">Java ${esc(w.versionName ?? '')} · ${esc(w.dimensions.map((d) => tx(d as Key)).join(', '))}</p>`}
-        <div class="row-actions">${w.edition === 'bedrock' ? '' : `<md-filled-button data-open="${i}">${esc(tx('open'))}</md-filled-button>`}
+        <div class="row-actions"><md-filled-button data-open="${i}">${esc(tx('open'))}</md-filled-button>
         <md-outlined-button data-dl="${i}">${esc(tx('download'))}</md-outlined-button></div></article>`).join('');
       list.querySelectorAll<HTMLElement>('[data-open]').forEach((b) => b.addEventListener('click', () => c.open(worlds[Number(b.dataset.open)]).catch((e) => c.notify((e as Error).message, true))));
       list.querySelectorAll<HTMLElement>('[data-dl]').forEach((b) => b.addEventListener('click', () => {

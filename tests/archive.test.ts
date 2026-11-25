@@ -100,6 +100,6 @@ describe('Bedrock worlds', () => {
     await writeFile(path.join(dir, 'level.dat'), Buffer.from([10, 0, 0, 0, 4, 0, 0, 0]));
     await writeFile(path.join(dir, 'levelname.txt'), 'My Bedrock Base\n');
     expect(isBedrockWorld(dir)).toBe(true);
-    expect(await discoverWorlds([root])).toEqual([{ path: dir, name: 'My Bedrock Base', dimensions: [], edition: 'bedrock' }]);
+    expect(await discoverWorlds([root])).toEqual([{ path: dir, name: 'My Bedrock Base', versionName: 'Bedrock Edition', dimensions: ['overworld', 'nether', 'end'], edition: 'bedrock' }]);
   });
 });

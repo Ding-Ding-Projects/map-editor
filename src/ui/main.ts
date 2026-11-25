@@ -114,7 +114,7 @@ let hasOwner = true;
 let hasPasskeys = false;
 /** Passkeys need a secure page (https or localhost) and a browser that supports them. */
 const passkeysUsable = () => window.isSecureContext && browserSupportsWebAuthn();
-let world: { name: string; versionName?: string; path: string; dimensions?: string[]; spawn?: { x: number; y: number; z: number } } | undefined;
+let world: { name: string; versionName?: string; edition?: 'java' | 'bedrock'; path: string; dimensions?: string[]; spawn?: { x: number; y: number; z: number } } | undefined;
 let fitPending = false; // centre the map on the world's chunks the next time the editor draws
 // Where the map was looking, kept while a world is open so leaving the Editor tab and coming back does not lose the view.
 let mapView: { x: number; z: number; s: number; moved: boolean } | undefined;
@@ -673,7 +673,7 @@ function worldsScreen(view: HTMLElement) {
     browse: desktopBridge?.pickFolder,
     open: async (w) => {
       const r = await api('/api/worlds/open', { method: 'POST', body: { path: w.path } });
-      world = { ...r.info }; dim = 'overworld'; fitPending = true; mapView = undefined;
+      world = { ...r.info }; dim = 'overworld'; fitPending = true; mapView = undefined; pickedBlocks = [];
       const sp = world!.spawn ?? { x: 0, y: 64, z: 0 };
       Object.assign(sel, { x1: sp.x - 8, y1: sp.y - 1, z1: sp.z - 8, x2: sp.x + 7, y2: sp.y - 1, z2: sp.z + 7 }); prefs.tab = 'editor'; savePrefs(); render(); },
   });
@@ -721,12 +721,12 @@ async function editorView(view: HTMLElement): Promise<void> {
       <div class="mt-status" id="mt-status" aria-live="polite"></div>
       <form class="goto-form" id="goto" hidden><md-outlined-text-field name="gx" type="number" label="x"></md-outlined-text-field><md-outlined-text-field name="gz" type="number" label="z"></md-outlined-text-field><md-filled-button type="submit">${esc(tx('mode_goto'))}</md-filled-button><md-text-button type="button" id="goto-x">${esc(tx('close'))}</md-text-button></form></section>
     <aside class="card tool">
-      <md-chip-set id="ops" role="radiogroup" aria-label="Tools">${(['fill', 'replace', 'delete', 'clone', 'waterlog', 'biome'] as const).map((o, i) => `<md-filter-chip data-op="${o}" label="${esc(tx(o))}" ${i === 0 ? 'selected' : ''}></md-filter-chip>`).join('')}</md-chip-set>
+      <md-chip-set id="ops" role="radiogroup" aria-label="Tools">${(['fill', 'replace', 'delete', 'clone', 'waterlog', 'biome'] as const).filter((o) => world?.edition !== 'bedrock' || (o !== 'waterlog' && o !== 'biome')).map((o, i) => `<md-filter-chip data-op="${o}" label="${esc(tx(o))}" ${i === 0 ? 'selected' : ''}></md-filter-chip>`).join('')}</md-chip-set>
       <div class="coords-grid">${(['x1', 'y1', 'z1', 'x2', 'y2', 'z2'] as const).map((k) => `<md-outlined-text-field type="number" label="${k}" name="${k}" value="${sel[k]}"></md-outlined-text-field>`).join('')}</div>
       <div id="op-fields" class="stack"></div>
       <div class="muted" id="sel-size"></div>
       <md-filled-button id="run"></md-filled-button>
-      <section class="structures" aria-label="${esc(tx('structures'))}"><h3>${esc(tx('structures'))}</h3><p class="muted">${esc(tx('structuresNote'))}</p>
+      <section class="structures" aria-label="${esc(tx('structures'))}" ${world?.edition === 'bedrock' ? 'hidden' : ''}><h3>${esc(tx('structures'))}</h3><p class="muted">${esc(tx('structuresNote'))}</p>
         <div class="row-actions"><md-outlined-button id="st-export">${esc(tx('structExport'))}</md-outlined-button><md-outlined-button id="st-place">${esc(tx('structPlace'))}</md-outlined-button><input type="file" id="st-file" accept=".nbt" hidden></div></section>
     </aside></div>`;
   // dockview moves these panels out of root, so every later lookup goes through the panel itself
@@ -737,12 +737,14 @@ async function editorView(view: HTMLElement): Promise<void> {
   const runBtn = root.querySelector('#run')!;
   const size = () => { const n = (a: number, b: number) => Math.abs(b - a) + 1; toolEl.querySelector('#sel-size')!.textContent = tx('selection', { n: (n(sel.x1, sel.x2) * n(sel.y1, sel.y2) * n(sel.z1, sel.z2)).toLocaleString('en') }); };
   const BLOCKS = ['minecraft:stone_bricks', 'minecraft:oak_planks', 'minecraft:glass', 'minecraft:water', 'minecraft:air', 'minecraft:grass_block', 'minecraft:sand', 'minecraft:deepslate', 'minecraft:cherry_leaves', 'minecraft:gold_block'];
-  const chips = (target: string) => `<md-chip-set class="block-chips" aria-label="${esc(tx('block'))}">${BLOCKS.map((b) => `<md-assist-chip data-for="${target}" data-block="${b}" label="${b.slice(10)}"></md-assist-chip>`).join('')}</md-chip-set>`;
+  // A Bedrock world takes only its own blocks, so the ready-made Java names are not offered there.
+  const bedrockWorld = world?.edition === 'bedrock';
+  const chips = (target: string) => bedrockWorld ? `<p class="muted">${esc(tx('bedrockEditorNote'))}</p>` : `<md-chip-set class="block-chips" aria-label="${esc(tx('block'))}">${BLOCKS.map((b) => `<md-assist-chip data-for="${target}" data-block="${b}" label="${b.slice(10)}"></md-assist-chip>`).join('')}</md-chip-set>`;
   const setOp = (o: typeof op) => {
     op = o;
     toolEl.querySelectorAll<HTMLElement & { selected: boolean }>('[data-op]').forEach((c) => { c.selected = c.dataset.op === o; });
     runBtn.textContent = tx('run', { op: tx(o) });
-    fields.innerHTML = o === 'fill' ? `<md-outlined-text-field name="block" label="${esc(tx('block'))}" value="minecraft:stone_bricks"></md-outlined-text-field>`
+    fields.innerHTML = o === 'fill' ? `<md-outlined-text-field name="block" label="${esc(tx('block'))}" value="${bedrockWorld ? 'minecraft:air' : 'minecraft:stone_bricks'}"></md-outlined-text-field>`
       : o === 'replace' ? `<md-outlined-text-field name="from" label="${esc(tx('from'))}" value="minecraft:water"></md-outlined-text-field><md-outlined-text-field name="to" label="${esc(tx('to'))}" value="minecraft:air"></md-outlined-text-field>`
       : o === 'clone' ? `<md-outlined-text-field name="dest" label="${esc(tx('dest'))}" value="0, 64, 0"></md-outlined-text-field>`
       : o === 'biome' ? `<md-outlined-text-field name="biome" label="${esc(tx('biome'))}" value="minecraft:cherry_grove" supporting-text="${esc(tx('biomeNote'))}"></md-outlined-text-field><md-chip-set class="block-chips" aria-label="${esc(tx('biome'))}">${BIOMES.map((b) => `<md-assist-chip data-biome="minecraft:${b}" label="${b}"></md-assist-chip>`).join('')}</md-chip-set>` : '';
@@ -818,9 +820,15 @@ async function editorView(view: HTMLElement): Promise<void> {
       const [minX, maxX, minZ, maxZ] = [Math.min(...xs), Math.max(...xs) + 1, Math.min(...zs), Math.max(...zs) + 1];
       const rect = canvas.getBoundingClientRect();
       const spanX = (maxX - minX) * 16, spanZ = (maxZ - minZ) * 16;
-      scale = Math.max(0.5, Math.min(8, Math.floor(Math.min(rect.width / spanX, rect.height / spanZ) * 0.85 * 4) / 4 || 2));
-      originX = (minX * 16 + spanX / 2) - rect.width / scale / 2;
-      originZ = (minZ * 16 + spanZ / 2) - rect.height / scale / 2;
+      const fit = Math.min(rect.width / spanX, rect.height / spanZ) * 0.85;
+      scale = Math.max(0.5, Math.min(8, Math.floor(fit * 4) / 4));
+      // Centre on the middle chunk, not the middle of the outline: worlds explored in two far-apart places
+      // have nothing halfway between them.
+      const mid = (v: number[]) => [...v].sort((a, b) => a - b)[Math.floor(v.length / 2)];
+      const fits = fit >= 0.5;
+      const centreX = fits ? minX * 16 + spanX / 2 : mid(xs) * 16 + 8, centreZ = fits ? minZ * 16 + spanZ / 2 : mid(zs) * 16 + 8;
+      originX = centreX - rect.width / scale / 2;
+      originZ = centreZ - rect.height / scale / 2;
     } catch { /* keep the current view */ }
   }
   let image: ImageBitmap | undefined; let imgCx = 0, imgCz = 0;
@@ -1002,8 +1010,10 @@ async function editorView(view: HTMLElement): Promise<void> {
   document.addEventListener('world-changed', () => { void drawSlice(); });
   document.addEventListener('history-changed', () => { void drawSlice(); });
   function drawPalette() {
-    const list = [...pickedBlocks, ...PALETTE_BLOCKS.filter((b) => !pickedBlocks.includes(b))];
-    blocksEl.innerHTML = `<p class="muted">${esc(tx('paletteNote'))}</p><div class="bp-grid" role="list">${list.map((b) => {
+    // A Bedrock world only takes blocks it already holds, so its palette is what has been picked, plus air.
+    const bedrock = world?.edition === 'bedrock';
+    const list = bedrock ? [...pickedBlocks, ...(pickedBlocks.includes('minecraft:air') ? [] : ['minecraft:air'])] : [...pickedBlocks, ...PALETTE_BLOCKS.filter((b) => !pickedBlocks.includes(b))];
+    blocksEl.innerHTML = `<p class="muted">${esc(tx(bedrock ? 'bedrockEditorNote' : 'paletteNote'))}</p><div class="bp-grid" role="list">${list.map((b) => {
       const [r, g, bl] = blockColor(b);
       return `<button type="button" role="listitem" class="bp-swatch${pickedBlocks.includes(b) ? ' picked' : ''}" data-pb="${esc(b)}" title="${esc(b)}" aria-label="${esc(b.slice(10))}"><span style="background: rgb(${r} ${g} ${bl})"></span><small>${esc(b.slice(10).replace(/_/g, ' '))}</small></button>`;
     }).join('')}</div>`;
@@ -1139,7 +1149,7 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
           const r = await api<{ path: string; name: string }>('/api/history/copy', { method: 'POST', body: { sha: e.sha } });
           notify(tx('hCopyMade', { name: r.name }), false, { label: tx('hCopyOpen'), run: async () => {
             const o = await api('/api/worlds/open', { method: 'POST', body: { path: r.path } });
-            world = { ...o.info }; dim = 'overworld'; fitPending = true; mapView = undefined; prefs.tab = 'editor'; savePrefs(); render();
+            world = { ...o.info }; dim = 'overworld'; fitPending = true; mapView = undefined; pickedBlocks = []; prefs.tab = 'editor'; savePrefs(); render();
           } });
           play('success');
         } catch (err) { notify((err as Error).message, true); } finally { b.disabled = false; }

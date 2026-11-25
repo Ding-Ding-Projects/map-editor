@@ -281,7 +281,7 @@ export async function createServer(opts: ServerOptions) {
       const { path: wp } = await body(req);
       if (typeof wp !== 'string' || !worldAllowed(wp)) throw new HttpError(403, 'That folder is outside the worlds folder this server was set up with.');
       if (!isWorldFolder(wp)) throw new HttpError(404, 'No level.dat in that folder.');
-      if (isBedrockWorld(wp)) throw new HttpError(415, 'This is a Bedrock Edition world. Map Editor edits Java Edition worlds; convert it to Java Edition first (for example with Amulet or Chunker), then upload the result.');
+      if (isBedrockWorld(wp) && !existsSync(path.join(wp, 'db', 'CURRENT'))) throw new HttpError(415, 'This Bedrock Edition world has no database to read. Copy the whole world folder, including its db folder.');
       session = await EditSession.open(opts.dataDir, wp);
       return send(200, { info: session.world.info });
     }
@@ -464,7 +464,7 @@ export async function createServer(opts: ServerOptions) {
       if (!worldAllowed(dest)) throw new HttpError(403, 'A copy cannot be written outside the worlds folder.');
       await session.history.copyAt(sha, dest);
       const name = `${info.name} (at ${sha.slice(0, 7)})`;
-      await setLevelName(dest, name);
+      if (isBedrockWorld(dest)) await fs.writeFile(path.join(dest, 'levelname.txt'), name); else await setLevelName(dest, name);
       note('world', user.name, `Made ${path.basename(dest)} from ${path.basename(src)} at ${sha.slice(0, 7)}`);
       return send(201, { path: dest, name });
     }

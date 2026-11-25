@@ -22,7 +22,7 @@ export interface WorldInfo {
   versionName?: string;
   dimensions: Dimension[];
   spawn?: { x: number; y: number; z: number };
-  /** Bedrock Edition worlds are recognised and listed, but cannot be opened for editing. */
+  /** Bedrock Edition worlds keep their chunks in a LevelDB folder; see bedrock.ts. */
   edition?: 'java' | 'bedrock';
 }
 
@@ -70,7 +70,7 @@ export function isBedrockWorld(dir: string) {
 export async function bedrockInfo(dir: string): Promise<WorldInfo> {
   let name = path.basename(dir);
   try { name = (await fs.readFile(path.join(dir, 'levelname.txt'), 'utf8')).trim().slice(0, 80) || name; } catch { /* no name file */ }
-  return { path: dir, name, dimensions: [], edition: 'bedrock' };
+  return { path: dir, name, versionName: 'Bedrock Edition', dimensions: ['overworld', 'nether', 'end'], edition: 'bedrock' };
 }
 
 /** Find world folders one level below each given folder (for example `.minecraft/saves`). */
