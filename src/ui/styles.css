@@ -920,3 +920,11 @@ body { background: var(--md-sys-color-surface-container); }
 .ext-card { border-radius: 28px; transition: border-radius .25s cubic-bezier(.2,0,0,1), background-color .2s; }
 .ext-card:hover, .ext-card:focus-within { border-radius: 36px 14px 36px 14px; }
 @media (prefers-reduced-motion: reduce) { .ext-card { transition: none; } }
+
+/* About: quick links as shaped tiles. */
+.about-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 8px; margin-top: 14px; }
+.about-link { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 14px; border-radius: 18px; background: color-mix(in srgb, currentColor 10%, transparent); color: inherit; font-weight: 700; text-decoration: none; transition: border-radius .25s cubic-bezier(.2,0,0,1), background-color .2s; }
+.about-link:hover, .about-link:focus-visible { border-radius: 26px 10px 26px 10px; background: color-mix(in srgb, currentColor 18%, transparent); outline: none; }
+.about-link:focus-visible { box-shadow: 0 0 0 3px currentColor; }
+.about-link-ico { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 12px; background: color-mix(in srgb, currentColor 14%, transparent); }
+@media (prefers-reduced-motion: reduce) { .about-link { transition: none; } }

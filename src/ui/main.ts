@@ -1681,6 +1681,7 @@ async function aboutView(view: HTMLElement): Promise<void> {
       <p>${esc(provenance())}</p>
       <p class="fine">${esc(tx('aboutLegal'))}</p>
       <div class="row-actions"><md-filled-button id="copy-ver">${esc(tx('copyDetails'))}</md-filled-button></div>
+      <nav class="about-links" aria-label="${esc(tx('aboutLinks'))}">${([['aboutDocs', 'https://ding-ding-projects.github.io/map-editor/', 'compass'], ['aboutSource', 'https://github.com/Ding-Ding-Projects/map-editor', 'code'], ['aboutReleases', 'https://github.com/Ding-Ding-Projects/map-editor/releases', 'download'], ['aboutReport', 'https://github.com/Ding-Ding-Projects/map-editor/issues/new', 'pencil']] as Array<[Key, string, string]>).map(([k, href, ic]) => `<a class="about-link" href="${href}" target="_blank" rel="noopener noreferrer"><span class="about-link-ico" aria-hidden="true">${iconSvg(ic, 20)}</span><span>${esc(tx(k))}</span></a>`).join('')}</nav>
       <div class="about-update"><b>${esc(tx('updTitle'))}</b><p id="upd-text" aria-live="polite">${esc(updateText(upd))}</p>${desktopBridge?.updates ? `<md-outlined-button id="upd-check">${esc(tx('updCheck'))}</md-outlined-button>` : ''}</div></section>
     <section class="changelog"><div class="cl-head"><h2>${esc(tx('changelog'))}</h2>
       <div id="cl-q-host"></div></div>
