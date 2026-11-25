@@ -71,6 +71,13 @@ jobs:
           docker save ${{ env.IMAGE }}:${{ needs.meta.outputs.version }} -o map-editor-image.tar
       - uses: actions/upload-artifact@v4
         with: { name: image-tar, path: map-editor-image.tar, retention-days: 3 }
+      - name: Save the arm64 image for the Raspberry Pi appliance
+        run: |
+          docker pull --platform linux/arm64 ${{ env.IMAGE }}:${{ needs.meta.outputs.tag }}
+          docker tag ${{ env.IMAGE }}:${{ needs.meta.outputs.tag }} ${{ env.IMAGE }}:${{ needs.meta.outputs.version }}
+          docker save ${{ env.IMAGE }}:${{ needs.meta.outputs.version }} -o map-editor-image-arm64.tar
+      - uses: actions/upload-artifact@v4
+        with: { name: image-tar-arm64, path: map-editor-image-arm64.tar, retention-days: 3 }
       - run: echo "${{ steps.build.outputs.digest }}" > image-digest.txt
       - uses: actions/upload-artifact@v4
         with: { name: image-digest, path: image-digest.txt }
@@ -96,6 +103,26 @@ jobs:
             appliance/out/map-editor-appliance-x86_64.ova
             appliance/out/SHA256SUMS
 
+  appliance-pi:
+    # Built and checked for the Pi firmware, kernel and device trees; it cannot be boot-tested here,
+    # so a failure does not block the other downloads.
+    needs: [meta, docker]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: image-tar-arm64 }
+      - run: sudo apt-get update && sudo apt-get install -y qemu-user-static binfmt-support dosfstools fdisk e2fsprogs parted xz-utils
+      - name: Build Raspberry Pi appliance image
+        run: sudo appliance/build-pi.sh map-editor-image-arm64.tar ${{ needs.meta.outputs.version }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appliance-pi
+          path: |
+            appliance/out/map-editor-appliance-rpi-arm64.img.xz
+            appliance/out/SHA256SUMS-rpi
+
   desktop:
     needs: meta
     runs-on: windows-latest
@@ -120,7 +147,7 @@ jobs:
         with: { name: desktop, path: out/installers/** }
 
   release:
-    needs: [meta, docker, appliance, desktop]
+    needs: [meta, docker, appliance, appliance-pi, desktop]
     if: always() && needs.meta.result == 'success'
     runs-on: ubuntu-latest
     defaults:
@@ -137,6 +164,9 @@ jobs:
       - uses: actions/download-artifact@v4
         continue-on-error: true
         with: { name: image-digest, path: assets/image }
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with: { name: appliance-pi, path: assets/appliance-pi }
       - name: Publish one normal release for this commit
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
@@ -146,7 +176,8 @@ jobs:
           {
             echo "Map Editor ${{ needs.meta.outputs.version }} built from ${{ github.sha }}."
             echo
-            echo "Jobs: docker=${{ needs.docker.result }}, appliance=${{ needs.appliance.result }}, desktop=${{ needs.desktop.result }}. Assets are attached only for jobs that succeeded."
+            echo "Jobs: docker=${{ needs.docker.result }}, appliance=${{ needs.appliance.result }}, raspberry-pi=${{ needs.appliance-pi.result }}, desktop=${{ needs.desktop.result }}. Assets are attached only for jobs that succeeded."
+            echo "The Raspberry Pi image (Pi 4 and 5) is checked for its firmware, kernel and device trees but is not boot-tested in CI."
             echo
             echo "Docker image: ${{ env.IMAGE }}:${{ needs.meta.outputs.version }} (digest in image-digest.txt)."
             echo "The Windows installers are not code-signed, so Windows SmartScreen may warn before running them."
@@ -158,7 +189,7 @@ jobs:
           mkdir -p assets
           # Squirrel names every package RELEASES; give each app's feed its own name so both upload.
           for d in assets/desktop/*/; do [ -f "$d/RELEASES" ] && mv "$d/RELEASES" "$d/RELEASES-$(basename "$d")"; done
-          mapfile -d '' FILES < <(find assets -type f \( -name '*.exe' -o -name 'RELEASES-*' -o -name '*.nupkg' -o -name '*.ova' -o -name '*.img.xz' -o -name 'SHA256SUMS' -o -name 'image-digest.txt' \) -print0)
+          mapfile -d '' FILES < <(find assets -type f \( -name '*.exe' -o -name 'RELEASES-*' -o -name '*.nupkg' -o -name '*.ova' -o -name '*.img.xz' -o -name 'SHA256SUMS' -o -name 'SHA256SUMS-rpi' -o -name 'image-digest.txt' \) -print0)
           gh release create "${{ needs.meta.outputs.tag }}" --target "${{ github.sha }}" --title "Map Editor ${{ needs.meta.outputs.tag }}" --notes-file notes.md "${FILES[@]}"
           # Refresh the update feeds on the documentation site for the release just published.
           gh workflow run pages.yml --ref main || echo "Could not start the site rebuild; the update feed will refresh on the next push."
