@@ -205,7 +205,14 @@ jobs:
           # Squirrel names every package RELEASES; give each app's feed its own name so both upload.
           for d in assets/desktop/*/; do [ -f "$d/RELEASES" ] && mv "$d/RELEASES" "$d/RELEASES-$(basename "$d")"; done
           mapfile -d '' FILES < <(find assets -type f \( -name '*.exe' -o -name 'RELEASES-*' -o -name '*.nupkg' -o -name '*.ova' -o -name '*.img.xz' -o -name 'SHA256SUMS' -o -name 'SHA256SUMS-rpi' -o -name 'image-digest.txt' \) -print0)
-          gh release create "${{ needs.meta.outputs.tag }}" --target "${{ github.sha }}" --title "Map Editor ${{ needs.meta.outputs.tag }}" --notes-file notes.md "${FILES[@]}"
+          # GitHub now and then answers 403 to release creation for a moment; try three times, and
+          # never leave a half-made release behind.
+          for attempt in 1 2 3; do
+            if gh release create "${{ needs.meta.outputs.tag }}" --target "${{ github.sha }}" --title "Map Editor ${{ needs.meta.outputs.tag }}" --notes-file notes.md "${FILES[@]}"; then break; fi
+            gh release delete "${{ needs.meta.outputs.tag }}" --yes --cleanup-tag 2>/dev/null || true
+            [ "$attempt" = 3 ] && exit 1
+            echo "Release creation failed (attempt $attempt); retrying in $((attempt * 30)) s"; sleep $((attempt * 30))
+          done
           # Refresh the update feeds on the documentation site for the release just published.
           gh workflow run pages.yml --ref main || echo "Could not start the site rebuild; the update feed will refresh on the next push."
           gh release view "${{ needs.meta.outputs.tag }}" --json tagName,isDraft,isPrerelease,targetCommitish,assets --jq '{tag: .tagName, draft: .isDraft, prerelease: .isPrerelease, target: .targetCommitish, assets: [.assets[].name]}'
