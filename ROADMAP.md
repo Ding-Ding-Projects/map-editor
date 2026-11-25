@@ -56,7 +56,8 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Editor: Nether and End chips for the dimensions a world has, Undo button and Ctrl+Z (adds a restore entry), block suggestions, tool hotkeys F R D C W, map fitted to the world on open, selection starting at spawn.
 
 - [x] dockview workspace for the editor (map, tools, history, notes; docking, tabbing, saved layout), checked in headless Chrome.
-- [ ] dockview for every other workspace, floating groups by default on wide screens, and the phone single-group layout.
+- [x] Phone width (720 px and under): the editor workspace becomes one tabbed group with its own saved layout, the header compacts, and destinations move to a bottom bar; every screen checked at 390 px with no sideways scrolling.
+- [ ] dockview for every other workspace and floating groups by default on wide screens.
 - [x] Rich text notes per world with self-hosted TinyMCE, autosaved; typing and saving checked in headless Chrome.
 - [ ] TinyMCE for every other rich text field.
 - [x] Command palette on Ctrl+Shift+F: every tab, tool, undo, language and appearance setting, with settings as live switches in the result row; checked in headless Chrome.

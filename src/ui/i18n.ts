@@ -50,6 +50,7 @@ const S = {
   fromDate: { en: 'From', yue: '由' },
   toDate: { en: 'To', yue: '到' },
   historyCount: { en: 'Showing {shown} of {total} edits', yue: '顯示 {total} 個編輯入面嘅 {shown} 個' },
+  destinations: { en: 'Destinations', yue: '目的地' },
   secLanguage: { en: 'Language and voice', yue: '語言同語氣' },
   secAppearance: { en: 'Appearance', yue: '外觀' },
   secComfort: { en: 'Comfort and focus', yue: '舒適同專注' },

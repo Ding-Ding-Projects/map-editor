@@ -321,7 +321,7 @@
    "x": 470,
    "y": 0,
    "w": 420,
-   "text": "Phone width: panels collapse to one group with chips; bottom destinations. Try: panel chips, destinations; Tweaks dark, seed, motion.\nNot in the app yet: it stacks panels instead of collapsing to one group.",
+   "text": "Phone width: panels collapse to one group with chips; bottom destinations. Try: panel chips, destinations; Tweaks dark, seed, motion.\nIn the app: one tabbed panel group under 720 px with its own saved layout, compact header, bottom destinations with icon pills. Not yet: the panel chips row (the panel tabs stand in for it).",
    "fill": "yellow",
    "page": "mobile"
   },

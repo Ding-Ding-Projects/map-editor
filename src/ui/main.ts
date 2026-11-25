@@ -2,7 +2,7 @@
 import '@material/web/all.js';
 import { styles as typescaleStyles } from '@material/web/typography/md-typescale-styles.js';
 import { t as tr, type I18nState, type Key, type Lang } from './i18n.js';
-import { mountWorkspace } from './workspace.js';
+import { mountWorkspace, PHONE } from './workspace.js';
 import { worldsView } from './worlds.js';
 import { openPalette, type Command } from './palette.js';
 import { onboarding } from './onboarding.js';
@@ -169,6 +169,15 @@ function provenance() {
 }
 
 // ---------- shell ----------
+const ico = (d: string) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const TAB_ICON: Record<Tab, string> = {
+  worlds: ico('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>'),
+  editor: ico('<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 3v18"/>'),
+  history: ico('<path d="M3 12a9 9 0 103-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>'),
+  settings: ico('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>'),
+  about: ico('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>'),
+};
+
 function shell() {
   const app = document.getElementById('app')!;
   const open = TABS.filter((x) => !prefs.closedTabs.includes(x));
@@ -194,6 +203,7 @@ function shell() {
       </nav>` : ''}
       <main id="view" class="view" role="tabpanel"></main>
     </div>
+    ${user && prefs.onboarded ? `<nav class="bottom-nav" aria-label="${esc(tx('destinations'))}">${open.map((x) => `<button data-tab="${x}" ${x === prefs.tab ? 'aria-current="page"' : ''}><span class="pill">${TAB_ICON[x]}</span><span>${esc(tx(x as Key))}</span></button>`).join('')}</nav>` : ''}
     <div id="toasts" class="toasts" aria-live="polite"></div>`;
   app.querySelectorAll<HTMLElement>('[data-lang]').forEach((c) => c.addEventListener('click', () => { prefs.lang = c.dataset.lang as Lang; savePrefs(); render(); }));
   app.querySelectorAll<HTMLElement>('[data-tab]').forEach((c) => c.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('[data-close]')) return; prefs.tab = c.dataset.tab!; savePrefs(); render(); }));
@@ -556,6 +566,9 @@ function notesPanel(el: HTMLElement) {
 
 // ---------- keyboard ----------
 const typing = (e: KeyboardEvent) => e.composedPath().some((n) => n instanceof HTMLElement && (n.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(n.tagName)));
+// Crossing the phone width rebuilds the editor workspace as one tabbed group (or back to side by side).
+matchMedia(PHONE).addEventListener('change', () => { if (user && prefs.tab === 'editor') render(); });
+
 document.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); showPalette(); return; }
   if (typing(e) || document.querySelector('.palette-scrim, .onboarding')) return;

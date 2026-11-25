@@ -305,3 +305,29 @@ html.large-text body { zoom: 1.25; }
 .h-filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; }
 .h-filters #hq { flex: 1 1 260px; } .h-filters [type=date] { flex: 0 1 190px; }
 md-list-item[hidden] { display: none; }
+
+/* ---------- phone width: compact header, bottom destinations ---------- */
+@media (max-width: 720px) {
+  .top { gap: 8px; padding: 8px 12px; }
+  .top .brand { flex: 1 1 auto; min-width: 0; }
+  .top .title { font-size: 22px; line-height: 28px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #prov { display: none; }
+  .top md-chip-set { display: none; }
+  .search-pill { order: 9; flex: 1 1 100%; max-width: none; height: 48px; }
+  .search-pill kbd { display: none; }
+  .search-pill span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .body { padding: 0 8px 96px; }
+  .tabs { display: none; }
+  .toasts { bottom: 96px; left: 12px; }
+  .view { width: 100%; }
+}
+
+.bottom-nav { display: none; }
+@media (max-width: 720px) {
+  .bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; justify-content: space-around; padding: 12px 4px calc(16px + env(safe-area-inset-bottom)); background: var(--md-sys-color-surface-container); }
+  .bottom-nav button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: transparent; color: var(--md-sys-color-on-surface-variant); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .bottom-nav .pill { display: grid; place-items: center; width: 56px; height: 32px; border-radius: 16px; transition: background-color .2s, width .25s cubic-bezier(.2,0,0,1); }
+  .bottom-nav [aria-current] { color: var(--md-sys-color-on-surface); }
+  .bottom-nav [aria-current] .pill { width: 64px; background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+  .bottom-nav button:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; border-radius: 16px; }
+}
