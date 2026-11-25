@@ -405,15 +405,31 @@ async function historyView(view: HTMLElement): Promise<void> {
   try {
     const { entries } = await api<{ entries: Array<{ sha: string; message: string; action: string; time: number }> }>('/api/history');
     const counts = new Map<string, number>(); for (const e of entries) counts.set(e.action, (counts.get(e.action) ?? 0) + 1);
-    view.querySelector('#h')!.innerHTML = `<md-chip-set>${[...counts].map(([a, n]) => `<md-filter-chip data-a="${esc(a)}" label="${esc(a)} · ${n}"></md-filter-chip>`).join('')}</md-chip-set>
-      <md-list>${entries.map((e, i) => `<md-list-item data-row="${esc(e.action)}"><div slot="headline">${esc(e.message)}</div>
+    view.querySelector('#h')!.innerHTML = `<div class="h-filters"><md-outlined-text-field id="hq" type="search" label="${esc(tx('searchHistory'))}"></md-outlined-text-field>
+        <md-outlined-text-field id="hfrom" type="date" label="${esc(tx('fromDate'))}"></md-outlined-text-field><md-outlined-text-field id="hto" type="date" label="${esc(tx('toDate'))}"></md-outlined-text-field></div>
+      <p class="muted" id="hcount" aria-live="polite"></p><md-chip-set>${[...counts].map(([a, n]) => `<md-filter-chip data-a="${esc(a)}" label="${esc(a)} · ${n}"></md-filter-chip>`).join('')}</md-chip-set>
+      <md-list>${entries.map((e, i) => `<md-list-item data-row="${esc(e.action)}" data-t="${e.time}" data-text="${esc((e.message + ' ' + e.sha).toLowerCase())}"><div slot="headline">${esc(e.message)}</div>
         <div slot="supporting-text">${esc(new Date(e.time * 1000).toLocaleString('en-GB'))} · <code>${esc(e.sha.slice(0, 7))}</code></div>
         ${i > 0 ? `<md-text-button slot="end" data-sha="${esc(e.sha)}">${esc(tx('rollBack'))}</md-text-button>` : ''}</md-list-item>`).join('')}</md-list>`;
     const active = new Set<string>();
+    const val = (id: string) => (view.querySelector(id) as HTMLInputElement).value;
+    const filter = () => {
+      const q = val('#hq').trim().toLowerCase();
+      const from = val('#hfrom') ? new Date(val('#hfrom') + 'T00:00:00').getTime() / 1000 : -Infinity;
+      const to = val('#hto') ? new Date(val('#hto') + 'T23:59:59').getTime() / 1000 : Infinity;
+      let shown = 0;
+      view.querySelectorAll<HTMLElement>('[data-row]').forEach((r) => {
+        const t = Number(r.dataset.t);
+        r.hidden = (active.size > 0 && !active.has(r.dataset.row!)) || (q !== '' && !r.dataset.text!.includes(q)) || t < from || t > to;
+        if (!r.hidden) shown++;
+      });
+      view.querySelector('#hcount')!.textContent = tx('historyCount', { shown, total: entries.length });
+    };
     view.querySelectorAll<HTMLElement>('[data-a]').forEach((c) => c.addEventListener('click', () => {
-      const a = c.dataset.a!; active.has(a) ? active.delete(a) : active.add(a);
-      view.querySelectorAll<HTMLElement>('[data-row]').forEach((r) => { r.hidden = active.size > 0 && !active.has(r.dataset.row!); });
+      const a = c.dataset.a!; active.has(a) ? active.delete(a) : active.add(a); filter();
     }));
+    for (const id of ['#hq', '#hfrom', '#hto']) view.querySelector(id)!.addEventListener('input', filter);
+    filter();
     view.querySelectorAll<HTMLElement>('[data-sha]').forEach((b) => b.addEventListener('click', async () => {
       try { await api('/api/history/restore', { method: 'POST', body: { sha: b.dataset.sha } }); notify(tx('restored')); historyView(view); }
       catch (err) { notify((err as Error).message, true); }

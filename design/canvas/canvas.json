@@ -289,7 +289,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Edit history. Try: action filter chips, select a point; Tweaks dark, seed, motion.\nStands for the private Git history kept beside app data, append-only restore.\nIn the app: list, action filters with counts, roll back. Not yet: date range picker, Open as a copy, per-point chunk stats.",
+   "text": "Edit history. Try: action filter chips, select a point; Tweaks dark, seed, motion.\nStands for the private Git history kept beside app data, append-only restore.\nIn the app: list, search, From and To dates, action filters with counts, shown count, roll back. Not yet: Open as a copy, per-point chunk stats.",
    "fill": "yellow",
    "page": "history"
   },

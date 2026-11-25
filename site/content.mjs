@@ -53,6 +53,7 @@ export const features = [
     ], related: ['edit-history', 'notes', 'appearance'] },
   { slug: 'edit-history', title: 'Edit history', group: 'Using the editor', summary: 'Every edit is saved to a private Git history so it can always be undone.',
     body: [
+      ['Finding an edit', 'The History tab has a search box for the edit description or commit, From and To dates, and a chip per kind of edit with its count. They combine, and the line above the list says how many edits are shown.'],
       ['How it works', 'After each operation the changed region files are saved and committed to a Git repository kept in the app data folder. The repository is never created inside your world folder, and a world that already has its own .git is left alone.'],
       ['Rolling back', 'Choose Roll back here on any entry. The world files are restored from that point and the restore is recorded as a new entry, so you can undo a rollback too. Nothing in the history is ever rewritten.'],
       ['Filtering', 'Action chips show how many entries of each kind exist and filter the list.'],

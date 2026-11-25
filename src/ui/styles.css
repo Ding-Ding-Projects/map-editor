@@ -302,3 +302,6 @@ html.large-text body { zoom: 1.25; }
 .set-history small { color: var(--md-sys-color-on-surface-variant); }
 @media (max-width: 720px) { .set-nav { width: 100%; } }
 .settings [hidden] { display: none !important; }
+.h-filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; }
+.h-filters #hq { flex: 1 1 260px; } .h-filters [type=date] { flex: 0 1 190px; }
+md-list-item[hidden] { display: none; }

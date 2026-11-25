@@ -8,6 +8,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Fill, replace, delete, clone and waterlog with a selection size limit; missing chunks are skipped, never invented.
 - [x] Local edit history in the app data folder, append-only restore, refuses worlds that already contain their own `.git` (tests).
 - [x] Server API: health with build provenance, first account becomes owner (atomic, race tested), sign-in, world roots guard, edits, top-down render, history and restore (end-to-end tests).
+- [x] History search, From and To date filters combined with the action chips and a shown count; checked in headless Chrome.
 - [ ] Settings, account and instance records in the same history (today: world edits only).
 - [ ] Passkey sign-in (today: password, scrypt hashed).
 - [ ] Bedrock Edition worlds (Amulet supports them; not ported).
