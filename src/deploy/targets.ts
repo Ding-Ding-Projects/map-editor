@@ -104,7 +104,10 @@ export function composeFile(i: { name: string; port: number; version: string; wo
     `      - "${i.port}:8420"`,
     '    volumes:',
     `      - ${i.name}-data:/data`,
-    `      - ${JSON.stringify(i.worlds)}:/worlds`,
+    // Long syntax, so any folder path (spaces, colons, a Windows drive letter) is one quoted YAML value.
+    '      - type: bind',
+    `        source: ${JSON.stringify(i.worlds)}`,
+    '        target: /worlds',
     'volumes:',
     `  ${i.name}-data:`,
     '',

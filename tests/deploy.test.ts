@@ -66,6 +66,16 @@ describe('deploy targets', () => {
     expect(y).toContain('"9001:8420"');
     expect(y).toContain('ghcr.io/ding-ding-projects/map-editor:0.1.0');
   });
+
+  it('writes a Compose file that is valid YAML for any worlds folder', async () => {
+    const { execFileSync } = await import('node:child_process');
+    for (const worlds of ['/srv/worlds', '/srv/my worlds: "best"', 'C:\\Users\\Alex\\AppData\\Roaming\\.minecraft\\saves']) {
+      const y = composeFile({ name: 'x', port: 9001, version: 'latest', worlds });
+      // Parsed by a real YAML parser (Python's, present on every CI runner and here).
+      const parsed = JSON.parse(execFileSync('python3', ['-c', 'import sys,json,yaml;print(json.dumps(yaml.safe_load(sys.stdin.read())))'], { input: y }).toString());
+      expect(parsed.services['map-editor'].volumes[1]).toEqual({ type: 'bind', source: worlds, target: '/worlds' });
+    }
+  });
   it('accepts only Docker image tags as the version', async () => {
     const { validateVersion } = await import('../src/deploy/targets.js');
     expect(validateVersion('latest')).toBeUndefined();

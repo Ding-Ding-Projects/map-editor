@@ -40,6 +40,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 
 ## Phase 5: deploy app
 
+- [x] Real-world checks workflow after every release: the deploy code against a real Docker daemon and over SSH (the runner's own sshd with key login), USB flashing onto a loop device, a Squirrel update of the installed Windows app from the previous release (passed: v0.1.41 to v0.1.42), and the Pi image booted on QEMU's raspi4b. Its first run found that every Docker deploy wrote an invalid Compose file (the worlds volume line); fixed with the long volume syntax and a YAML-parsing unit test. Unit tests and the type check now gate every build.
 - [x] Docker target: validates name and port, writes a Compose file per instance, pulls, starts, waits for health, shows the link (code; not run against a real Docker host yet).
 - [x] VirtualBox target: import, bridged adapter, start headless, read the guest address, health check (code; not run).
 - [x] USB flashing: only removable non-system disks, typed confirmation naming the disk, read-back SHA-256 check (code; not run on real hardware).

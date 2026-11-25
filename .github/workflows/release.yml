@@ -34,8 +34,20 @@ jobs:
           echo "date=$(git log -1 --format=%cI)" >> "$GITHUB_OUTPUT"
 
 
-  docker:
+  test:
+    # The unit tests and the type check gate every build.
     needs: meta
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+
+  docker:
+    needs: [meta, test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -127,7 +139,7 @@ jobs:
             appliance/out/SHA256SUMS-rpi
 
   desktop:
-    needs: meta
+    needs: [meta, test]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
