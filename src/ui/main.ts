@@ -1139,10 +1139,10 @@ async function editorView(view: HTMLElement): Promise<void> {
 
 /** Activity panel: accounts, settings, extensions and worlds from the server's activity record. */
 /** Tick boxes on list rows, with a bar (count, Select all shown, Invert) placed before the list. Returns the ticked row numbers. */
-function pickBar(rows: HTMLElement[], before: Element, name: (i: number) => string): Set<number> {
+function pickBar(rows: HTMLElement[], before: Element, name: (i: number) => string, note: Key = 'selectExportNote'): Set<number> {
   const picked = new Set<number>(); let anchor: number | undefined;
   const bar = document.createElement('div'); bar.className = 'h-selbar'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', tx('selectMode'));
-  bar.innerHTML = `<b role="status"></b><md-text-button data-pick="all">${esc(tx('selectAll'))}</md-text-button><md-text-button data-pick="inv">${esc(tx('selectInvert'))}</md-text-button><span class="muted" id="hsel-note">${esc(tx('selectExportNote'))}</span>`;
+  bar.innerHTML = `<b role="status"></b><md-text-button data-pick="all">${esc(tx('selectAll'))}</md-text-button><md-text-button data-pick="inv">${esc(tx('selectInvert'))}</md-text-button><span class="muted" id="hsel-note">${esc(tx(note))}</span>`;
   before.before(bar);
   const shown = () => rows.map((r, i) => r.hidden ? -1 : i).filter((i) => i >= 0);
   const paint = () => { rows.forEach((r, i) => { r.querySelector<HTMLInputElement>('.h-pick')!.checked = picked.has(i); r.classList.toggle('ticked', picked.has(i)); }); bar.querySelector('b')!.textContent = tx('selectedN', { n: picked.size, total: rows.length }); };
@@ -1481,10 +1481,14 @@ async function extensionsPanel(view: HTMLElement) {
     </article>`;
   host.innerHTML = data.list.length ? data.list.map(card).join('') : `<p class="muted">${esc(tx('extNone'))}</p>`;
   const cards = Array.from(host.querySelectorAll<HTMLElement>('[data-ext]'));
+  view.querySelectorAll('.ext-selbar').forEach((x) => x.remove());
+  const xPicked = cards.length > 1 ? pickBar(cards, host, (i) => data.list[i].name, 'selectExtNote') : new Set<number>();
+  host.previousElementSibling?.classList.contains('h-selbar') && host.previousElementSibling.classList.add('ext-selbar');
+  const xTake = (i: number) => !cards[i]?.hidden && (!xPicked.size || xPicked.has(i));
   const none = document.createElement('p'); none.className = 'muted'; none.hidden = true; host.after(none);
   view.querySelector('.ext-export')?.remove();
   const ex = exportButton(tx('export'), exportNames(), (f) => downloadRows(
-    data.list.filter((_e, i) => !cards[i]?.hidden).map((e) => ({ id: e.id, name: e.name, version: e.version, builtIn: e.builtIn, enabled: e.enabled, permissions: e.permissions.join(' '), commands: e.commands.map((c) => c.title).join('; ') })),
+    data.list.filter((_e, i) => xTake(i)).map((e) => ({ id: e.id, name: e.name, version: e.version, builtIn: e.builtIn, enabled: e.enabled, permissions: e.permissions.join(' '), commands: e.commands.map((c) => c.title).join('; ') })),
     ['id', 'name', 'version', 'builtIn', 'enabled', 'permissions', 'commands'], f, tx('secExtensions'), 'map-editor-extensions'));
   ex.classList.add('ext-export');
   q.el.after(ex);
@@ -1492,7 +1496,7 @@ async function extensionsPanel(view: HTMLElement) {
   view.querySelector('.ext-bulk')?.remove();
   const bulk = document.createElement('md-outlined-button'); bulk.className = 'ext-bulk'; bulk.textContent = tx('extOffShown');
   bulk.addEventListener('click', async () => {
-    const shown = data.list.filter((e, i) => !cards[i]?.hidden && e.enabled);
+    const shown = data.list.filter((e, i) => xTake(i) && e.enabled);
     if (!shown.length) { notify(tx('extOffNone')); return; }
     if (!await askConfirm(tx('extOffAsk', { n: shown.length, list: shown.map((e) => e.name).join(', ') }), tx('extOffOk'))) return;
     for (const e of shown) { try { await api('/api/extensions/enable', { method: 'POST', body: { id: e.id, enabled: false } }); } catch (err) { notify((err as Error).message, true); } }

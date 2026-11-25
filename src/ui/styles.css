@@ -1072,3 +1072,9 @@ md-list-item .h-pick { inline-size: 18px; block-size: 18px; margin: 0; accent-co
 
 .act-list li .h-pick { inline-size: 18px; block-size: 18px; margin: 2px 0 0; flex: none; accent-color: var(--md-sys-color-primary); cursor: pointer; }
 .act-list li.ticked { background: var(--md-sys-color-secondary-container); }
+
+.ext-card { position: relative; } .ext-card > .h-pick { position: absolute; inset-block-start: 10px; inset-inline-start: 10px; inline-size: 18px; block-size: 18px; margin: 0; accent-color: var(--md-sys-color-primary); cursor: pointer; }
+.ext-card:has(> .h-pick) > header { padding-inline-start: 22px; } .ext-card.ticked { outline: 2px solid var(--md-sys-color-primary); outline-offset: -2px; }
+.ext-selbar { grid-column: 1 / -1; }
+
+.ext-export, .ext-bulk { inline-size: fit-content; align-self: flex-start; justify-self: start; }
