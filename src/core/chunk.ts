@@ -176,6 +176,24 @@ export class Chunk {
     b.indices[((((y % 16) + 16) % 16 >> 2) * 4 + ((z & 15) >> 2)) * 4 + ((x & 15) >> 2)] = i;
   }
 
+  /** The block entity (chest contents, sign text and so on) at a position in this chunk, without its x, y, z. */
+  getBlockEntity(x: number, y: number, z: number): CompoundTag | undefined {
+    const wx = this.cx * 16 + (x & 15), wz = this.cz * 16 + (z & 15);
+    const be = (getList(this.root.tag, 'block_entities') ?? []).find((t) => getNumber(t, 'x') === wx && getNumber(t, 'y') === y && getNumber(t, 'z') === wz);
+    if (!be || be.type !== TagType.Compound) return undefined;
+    const m = new Map(be.value); m.delete('x'); m.delete('y'); m.delete('z');
+    return nbt.compound(m);
+  }
+
+  /** Replace (or with undefined, remove) the block entity at a position in this chunk. */
+  setBlockEntity(x: number, y: number, z: number, tag: CompoundTag | undefined) {
+    const wx = this.cx * 16 + (x & 15), wz = this.cz * 16 + (z & 15);
+    const root = this.root.tag as CompoundTag;
+    const list = (getList(root, 'block_entities') ?? []).filter((t) => !(getNumber(t, 'x') === wx && getNumber(t, 'y') === y && getNumber(t, 'z') === wz));
+    if (tag) { const m = new Map(tag.value); m.set('x', nbt.int(wx)); m.set('y', nbt.int(y)); m.set('z', nbt.int(wz)); list.push(nbt.compound(m)); }
+    root.value.set('block_entities', nbt.list(TagType.Compound, list));
+  }
+
   /** Highest non-air block in a column, or undefined. */
   top(x: number, z: number): { y: number; block: BlockState } | undefined {
     const ys = [...this.sections.keys()].sort((a, b) => b - a);

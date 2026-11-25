@@ -38,6 +38,22 @@ describe('structure files', () => {
     expect(await w.getBlock('overworld', 20, 70, 3)).toEqual({ name: 'minecraft:oak_stairs', properties: { facing: 'east', half: 'bottom' } });
     expect((await w.getBlock('overworld', 21, 71, 4))?.name).toBe('minecraft:glass');
   });
+  it('carries block entities such as chest contents with their blocks', async () => {
+    const w = await world();
+    const { nbt } = await import('../src/core/nbt.js');
+    await w.setBlock('overworld', 3, 64, 3, { name: 'minecraft:chest', properties: { facing: 'north' } });
+    await w.setBlockEntity('overworld', 3, 64, 3, nbt.compound({ id: nbt.string('minecraft:chest'), CustomName: nbt.string('"Loot"') }));
+    const s = await captureStructure(w, 'overworld', { x1: 3, y1: 64, z1: 3, x2: 3, y2: 64, z2: 3 }, 4189);
+    const back = decodeStructure(encodeStructure(s));
+    expect(back.blocks[0].nbt?.value.get('id')).toEqual({ type: TagType.String, value: 'minecraft:chest' });
+    await placeStructure(w, 'overworld', back, { x: 10, y: 66, z: 10 });
+    await w.save();
+    const again = await World.open(w.dir);
+    const be = await again.getBlockEntity('overworld', 10, 66, 10);
+    expect(be?.value.get('CustomName')).toEqual({ type: TagType.String, value: '"Loot"' });
+    expect(await again.getBlockEntity('overworld', 3, 64, 3)).toBeDefined(); // the original stays
+  });
+
   it('skips chunks that do not exist and refuses broken files', async () => {
     const w = await world();
     const s = await captureStructure(w, 'overworld', { x1: 1, y1: 64, z1: 1, x2: 1, y2: 64, z2: 1 }, 4189);

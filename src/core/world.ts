@@ -4,7 +4,7 @@ import path from 'node:path';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { Chunk, type BlockState } from './chunk.js';
 import { RegionFile } from './region.js';
-import { getCompound, getNumber, getString, readNbt, writeNbt, type NamedTag } from './nbt.js';
+import { getCompound, getNumber, getString, readNbt, writeNbt, type CompoundTag, type NamedTag } from './nbt.js';
 
 export type Dimension = 'overworld' | 'nether' | 'end';
 
@@ -143,6 +143,19 @@ export class World {
     const c = await this.chunk(dim, Math.floor(x / 16), Math.floor(z / 16), create);
     if (!c) return false;
     c.setBlock(((x % 16) + 16) % 16, y, ((z % 16) + 16) % 16, b);
+    this.dirtyChunks.add(`${dim}:${c.cx}:${c.cz}`);
+    return true;
+  }
+
+  async getBlockEntity(dim: Dimension, x: number, y: number, z: number) {
+    const c = await this.chunk(dim, Math.floor(x / 16), Math.floor(z / 16));
+    return c?.getBlockEntity(((x % 16) + 16) % 16, y, ((z % 16) + 16) % 16);
+  }
+
+  async setBlockEntity(dim: Dimension, x: number, y: number, z: number, tag: CompoundTag | undefined): Promise<boolean> {
+    const c = await this.chunk(dim, Math.floor(x / 16), Math.floor(z / 16));
+    if (!c) return false;
+    c.setBlockEntity(((x % 16) + 16) % 16, y, ((z % 16) + 16) % 16, tag);
     this.dirtyChunks.add(`${dim}:${c.cx}:${c.cz}`);
     return true;
   }

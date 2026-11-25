@@ -32,7 +32,7 @@ const S = {
   sliceAlongZ: { en: 'Along z', yue: '沿 z' },
   sliceAtSel: { en: 'Through the selection', yue: '穿過範圍' },
   sliceInfo: { en: '{axis} {from} to {to} at {other} {at}, height {ylo} to {yhi}. The outline is the selection.', yue: '{axis} 由 {from} 到 {to}，{other} = {at}，高度 {ylo} 到 {yhi}。框住嘅係範圍。' },
-  structuresNote: { en: 'Structure files (.nbt) work with Minecraft structure blocks and /place template. Block contents such as chest items are not included yet.', yue: '結構檔（.nbt）同 Minecraft 結構方塊同 /place template 通用。箱入面嘅物品之類暫時未包。' },
+  structuresNote: { en: 'Structure files (.nbt) work with Minecraft structure blocks and /place template. Chest contents and sign text come along; mobs and item frames are not included yet.', yue: '結構檔（.nbt）同 Minecraft 結構方塊同 /place template 通用。箱入面嘅物品同牌上面啲字會跟埋；生物同物品展示框暫時未包。' },
   structExport: { en: 'Save selection as .nbt', yue: '將範圍存做 .nbt' },
   structPlace: { en: 'Place a .nbt file…', yue: '放一個 .nbt 檔…' },
   structExported: { en: 'Saving the {size} selection as a structure file.', yue: '將 {size} 嘅範圍存做結構檔。' },
