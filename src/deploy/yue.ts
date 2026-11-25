@@ -201,5 +201,8 @@ export const YUE: Record<string, string> = {
   "Windows did not get permission, so nothing was changed.": "Windows 攞唔到權限，所以冇更改任何嘢。",
   "The file was created but is not attached.": "檔案已經建立，但係未掛載。",
   "Nothing was changed.": "冇更改任何嘢。",
-  "Sound effects": "音效"
+  "Sound effects": "音效",
+  "Find commands (Ctrl+Shift+F)": "搵指令（Ctrl+Shift+F）",
+  "Views": "畫面",
+  "Targets": "目標"
 };

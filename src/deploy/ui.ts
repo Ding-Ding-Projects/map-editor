@@ -8,6 +8,9 @@ import { iconSvg, initButtonIcons } from '../ui/icons.js';
 import { superConfirm } from '../ui/moments.js';
 import { englishOf, initLang, langSwitch, setLang, type Lang } from './lang.js';
 import { configureSounds, play } from '../ui/sounds.js';
+import { openPalette, type Command } from '../ui/palette.js';
+import { t as tr, type Key } from '../ui/i18n.js';
+import { currentLang } from './lang.js';
 
 interface Step { label: string; state: 'waiting' | 'running' | 'done' | 'failed'; detail?: string }
 interface Disk { id: string; name: string; sizeBytes: number }
@@ -241,7 +244,7 @@ async function render() {
   app.innerHTML = `<header class="top"><div class="brand"><div class="logo" aria-hidden="true"></div><div>
       <div class="md-typescale-headline-medium title">Put Map Editor on your network</div>
       <div class="muted" id="prov"></div></div></div>
-    <md-chip-set class="views"><md-filter-chip id="v-deploy" label="Deploy" ${view === 'deploy' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-inst" label="Instances" ${view === 'instances' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-disks" label="Virtual disks" ${view === 'disks' ? 'selected' : ''}></md-filter-chip></md-chip-set><md-text-button id="tour">Take a tour</md-text-button>${langSwitch()}<button type="button" id="snd" class="icon-btn" aria-pressed="${soundsOn}" aria-label="Sound effects" title="Sound effects">${iconSvg('sound', 20)}</button></header>
+    <md-chip-set class="views"><md-filter-chip id="v-deploy" label="Deploy" ${view === 'deploy' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-inst" label="Instances" ${view === 'instances' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-disks" label="Virtual disks" ${view === 'disks' ? 'selected' : ''}></md-filter-chip></md-chip-set><md-text-button id="tour">Take a tour</md-text-button><button type="button" id="cmd" class="icon-btn" aria-label="Find commands (Ctrl+Shift+F)" title="Find commands (Ctrl+Shift+F)" aria-keyshortcuts="Control+Shift+F">${iconSvg('search', 20)}</button>${langSwitch()}<button type="button" id="snd" class="icon-btn" aria-pressed="${soundsOn}" aria-label="Sound effects" title="Sound effects">${iconSvg('sound', 20)}</button></header>
     <div id="update-banner" class="update-banner" role="region" aria-label="Update" hidden></div>
     <div class="body"><main class="view" id="main"></main></div><div id="toasts" class="toasts"></div>`;
   showUpdate();
@@ -433,4 +436,21 @@ document.addEventListener('click', (e) => {
   if (t?.dataset.setLang) setLang(t.dataset.setLang as Lang);
   else if (t?.id === 'snd') { soundsOn = !soundsOn; configureSounds(soundsOn, 0.4); try { localStorage.setItem('map-editor-deploy.sounds', soundsOn ? 'on' : 'off'); } catch { /* not kept */ } t.setAttribute('aria-pressed', String(soundsOn)); if (soundsOn) play('success'); }
 });
+// Command palette (Ctrl+Shift+F): every view, target and switch of this app, with live toggles.
+function deployCommands(): Command[] {
+  const go = (v: typeof view) => () => { view = v; void render(); };
+  return [
+    { id: 'v-deploy', label: 'Deploy', where: 'Views', run: go('deploy'), goto: go('deploy') },
+    { id: 'v-inst', label: 'Instances', where: 'Views', run: go('instances'), goto: go('instances') },
+    { id: 'v-disks', label: 'Virtual disks', where: 'Views', run: go('disks'), goto: go('disks') },
+    ...TARGETS.map((x) => ({ id: `t-${x.id}`, label: `Deploy to: ${x.name}`, where: 'Targets', run: () => { view = 'deploy'; target = x.id; void render(); } })),
+    { id: 'tour', label: 'Take a tour', where: 'Help', run: () => deployTour() },
+    { id: 'snd', label: 'Sound effects', where: 'Settings, live', toggle: { get: () => soundsOn, set: (v) => { if (v !== soundsOn) document.querySelector<HTMLElement>('#snd')?.click(); } } },
+    ...(['en', 'yue', 'both'] as const).map((l) => ({ id: `lang-${l}`, label: `Language: ${l === 'en' ? 'English' : l === 'yue' ? '粵語' : 'English + 粵語'}`, where: 'Settings', run: () => setLang(l) })),
+  ];
+}
+const paletteText = (k: string, v?: Record<string, string | number>) => tr({ lang: currentLang(), funnyEn: 1, funnyYue: 1 }, k as Key, v);
+const showPalette = () => openPalette(deployCommands, { title: paletteText('palette'), hint: paletteText('paletteHint'), none: paletteText('noMatches') }, paletteText);
+document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); showPalette(); } });
+document.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('#cmd')) showPalette(); });
 render().then(() => { let t: string | null = null; try { t = localStorage.getItem('map-editor-deploy.tour'); } catch { /* ignore */ } if (t === null) setTimeout(() => deployTour(), 800); });

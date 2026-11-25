@@ -33,6 +33,12 @@ jobs:
           google-chrome --headless=new --no-sandbox --disable-gpu --no-pdf-header-footer \
             --print-to-pdf=site/dist/map-editor-guide-phone.pdf http://127.0.0.1:8765/map-editor/phone/
           test -s site/dist/map-editor-guide-phone.pdf && ls -l site/dist/map-editor-guide-phone.pdf
+          # The Cantonese edition needs a Chinese font on the runner, or the PDF would be empty boxes.
+          sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk >/dev/null
+          fc-list :lang=zh-hk | head -1 | grep -q . || { echo 'No Chinese font installed'; exit 1; }
+          google-chrome --headless=new --no-sandbox --disable-gpu --no-pdf-header-footer \
+            --print-to-pdf=site/dist/map-editor-guide-phone-yue.pdf http://127.0.0.1:8765/map-editor/phone-yue/
+          test -s site/dist/map-editor-guide-phone-yue.pdf && ls -l site/dist/map-editor-guide-phone-yue.pdf
       - name: Squirrel update feeds from the latest release
         env: { GH_TOKEN: '${{ github.token }}' }
         run: node scripts/update-feed.mjs site/dist/updates

@@ -130,9 +130,11 @@ for (const f of features) {
 }
 // Phone edition: every article on one page, laid out for a phone-sized PDF page. The site workflow
 // prints it to map-editor-guide-phone.pdf with headless Chrome.
-mkdirSync(path.join(out, 'phone'), { recursive: true });
-writeFileSync(path.join(out, 'phone', 'index.html'), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Map Editor guide, phone edition</title><link rel="stylesheet" href="${base}site.css"><style>
+for (const [dir, yue] of [['phone', false], ['phone-yue', true]]) {
+  mkdirSync(path.join(out, dir), { recursive: true });
+  const T = (f) => (yue && yueOf(f)) || f;
+  writeFileSync(path.join(out, dir, 'index.html'), `<!doctype html><html lang="${yue ? 'yue-Hant-HK' : 'en'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${yue ? 'Map Editor 指南（手機版）' : 'Map Editor guide, phone edition'}</title><link rel="stylesheet" href="${base}site.css"><style>
 @page { size: 90mm 160mm; margin: 8mm 6mm; }
 body { font-size: 11pt; line-height: 1.45; background: #fff; color: #181d17; }
 main { max-width: 560px; margin: 0 auto; padding: 12px; }
@@ -142,10 +144,11 @@ h3 { font-size: 12pt; margin: 12px 0 2px; }
 p { margin: 0 0 8px; } img { max-width: 100%; height: auto; border-radius: 8px; } figure { margin: 6px 0 10px; } figcaption { font-size: 8pt; color: #42493f; }
 .toc { position: static; background: none; padding: 0; border-radius: 0; margin: 8px 0; } .toc a { display: block; color: inherit; text-decoration: none; padding: 1px 0; font-size: 10pt; } .muted { color: #42493f; font-size: 9pt; }
 </style></head><body><main>
-<h1>Map Editor guide</h1><p class="muted">Phone edition · v${esc(pkg.version)} · built from ${esc(commit.slice(0, 7) || 'an unknown commit')} on ${esc(stamp)}</p>
-<nav class="toc">${features.map((f, i) => `<a href="#a${i}">${esc(f.title)}</a>`).join('')}</nav>
-${features.map((f, i) => `<h2 class="art" id="a${i}">${esc(f.title)}</h2><p><em>${esc(f.summary)}</em></p>${f.body.map(([h, t, img]) => `<h3>${esc(h)}</h3><p>${esc(t)}</p>${img ? `<figure><img src="${base}screenshots/${esc(img.src)}" alt="${esc(img.alt)}"><figcaption>${esc(img.alt)}</figcaption></figure>` : ''}`).join('')}`).join('')}
+<h1>${yue ? 'Map Editor 指南' : 'Map Editor guide'}</h1><p class="muted">${yue ? '手機版' : 'Phone edition'} · v${esc(pkg.version)} · ${yue ? '建置自' : 'built from'} ${esc(commit.slice(0, 7) || 'an unknown commit')} · ${esc(stamp)}</p>
+<nav class="toc">${features.map((f, i) => `<a href="#a${i}">${esc(T(f).title)}</a>`).join('')}</nav>
+${features.map((f, i) => `<h2 class="art" id="a${i}">${esc(T(f).title)}</h2><p><em>${esc(T(f).summary)}</em></p>${f.body.map(([h, t, img], k) => `<h3>${esc(T(f).body?.[k]?.[0] ?? h)}</h3><p>${esc(T(f).body?.[k]?.[1] ?? t)}</p>${img ? `<figure><img src="${base}screenshots/${esc(img.src)}" alt="${esc(img.alt)}"><figcaption>${esc(img.alt)}</figcaption></figure>` : ''}`).join('')}`).join('')}
 </main></body></html>`);
+}
 
 // Downloads: buttons for the newest release that carries the Windows installer, from the release
 const mib = (b) => `${(b / 1048576).toFixed(b > 104857600 ? 0 : 1)} MiB`;
@@ -162,6 +165,6 @@ writeFileSync(path.join(out, 'downloads', 'index.html'), page('Downloads · Map 
 <section class="article-hero"><p class="crumb"><a href="${base}">${L('Guide', '指南')}</a> › ${L('Downloads', '下載')}</p><h1>${L('Downloads', '下載')}</h1><p class="lead">${rel ? L(`Map Editor ${rel.tag_name}, published ${String(rel.published_at).slice(0, 10)}. Every file below comes from that release.`, `Map Editor ${rel.tag_name}，${String(rel.published_at).slice(0, 10)} 發佈。下面每個檔案都係嚟自呢個版本。`) : L('The newest files are on the releases page.', '最新嘅檔案喺發佈頁。')}</p></section>
 <section class="band-wrap"><div class="dl-grid">${rel ? DOWNLOADS.filter(([n]) => asset(n)).map(([n, t, b, slug, yt, yb]) => `<div class="dl-card"><strong>${L(t, yt)}</strong><span>${L(b, yb)}</span><a class="btn filled" href="${esc(asset(n).browser_download_url)}" download>${L('Download', '下載')} <small>${esc(mib(asset(n).size))}</small></a><a href="${base}${slug}/">${L('How it works →', '點樣運作 →')}</a></div>`).join('') : ''}
 <div class="dl-card"><strong>Docker</strong><span>${L('Run the web app on any machine with Docker.', '有 Docker 嘅機都行到網頁版。')}</span><code>docker run -d -p 8420:8420 -v map-editor-data:/data -v "$PWD/worlds:/worlds" ghcr.io/ding-ding-projects/map-editor:${rel ? esc(rel.tag_name.replace(/^v/, '')) : 'latest'}</code><a href="${base}web-app/">${L('How it works →', '點樣運作 →')}</a></div></div>
-<p class="muted">${L('Reading on a phone?', '用手機睇？')} <a href="${base}map-editor-guide-phone.pdf">${L('The whole guide as a phone-sized PDF', '成份指南嘅手機尺寸 PDF（英文）')}</a>. ${rel ? `Checksums: <a href="${esc(rel.html_url)}">${esc(rel.tag_name)} on GitHub</a> lists SHA256SUMS for the appliance images. ` : ''}${L('The Windows installers are not code-signed, so Windows SmartScreen may ask before running them.', 'Windows 安裝檔冇程式碼簽署，所以 Windows SmartScreen 開之前可能會問你一次。')} All releases: <a href="${repo}/releases">${repo.replace('https://', '')}/releases</a>.</p></section>`, 'downloads'));
+<p class="muted">${L('Reading on a phone?', '用手機睇？')} <a href="${base}map-editor-guide-phone.pdf">${L('The whole guide as a phone-sized PDF', '成份指南嘅手機尺寸 PDF（英文版）')}</a> · <a href="${base}map-editor-guide-phone-yue.pdf" lang="yue-Hant-HK">粵語版 PDF</a>. ${rel ? `Checksums: <a href="${esc(rel.html_url)}">${esc(rel.tag_name)} on GitHub</a> lists SHA256SUMS for the appliance images. ` : ''}${L('The Windows installers are not code-signed, so Windows SmartScreen may ask before running them.', 'Windows 安裝檔冇程式碼簽署，所以 Windows SmartScreen 開之前可能會問你一次。')} All releases: <a href="${repo}/releases">${repo.replace('https://', '')}/releases</a>.</p></section>`, 'downloads'));
 writeFileSync(path.join(out, '.nojekyll'), '');
 console.log(`Site built: ${features.length + 1} pages in ${out}`);
