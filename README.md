@@ -14,6 +14,8 @@ A separate **Map Editor Deploy** app does each of those in one click and gives y
 
 **Every edit can be undone.** Each operation is saved and recorded in a private Git history kept in the app's own data folder (never inside your world). Rolling back adds a new history entry, so a rollback can be undone too.
 
+**Contents:** [A look around](#a-look-around) · [Quick start](#quick-start) · [What it can do today](#what-it-can-do-today) · [Building everything](#building-everything) · [How long a person would have taken](#how-long-a-person-would-have-taken) · [Design](#design) · [Licence](#licence) · [Feature inventory](docs/features/INVENTORY.md) · [API in Postman](docs/postman/README.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+
 ## A look around
 
 A one-minute walk through: sign in, make a water world, fill, measure, check History and Tools, then switch to the dark theme from the command palette.
@@ -98,6 +100,10 @@ See [ROADMAP.md](ROADMAP.md) for what is verified, what is built but unverified,
 | `npm test` | Core, history and server tests |
 
 The GitHub Actions workflow builds all of these on every push and publishes one release per build.
+
+## How long a person would have taken
+
+The tracked source, tests, scripts, site generator, appliance scripts and workflows come to about 13,300 lines (counted with `git ls-files ... | xargs cat | wc -l` on 2026-11-25; every release note carries the count made by the build). At an assumed 50 finished, tested lines a working day for one experienced developer, that is 13,300 / 50 = about 266 working days, a little over a year. It is an estimate from one assumed rate, not a measurement.
 
 ## Design
 

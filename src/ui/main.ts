@@ -461,7 +461,7 @@ async function runExtension(id: string, command: string) {
 
 let surprised = false;
 async function dimSumSurprise(force = false) {
-  if (!force && (surprised || !prefs.dimSum || prefs.focusMode || !user || !prefs.onboarded || Math.random() >= 0.1)) return;
+  if (!force && (surprised || !prefs.dimSum || prefs.focusMode || prefs.schoolMode || !user || !prefs.onboarded || Math.random() >= 0.1)) return;
   surprised = true;
   type R = { dish: { id: string; name: { en: string; zhHant: string }; jyutping?: string; description: { en: string; yue: string }; alt?: { en: string; yue: string } }; total: number; revision: string };
   let r: R;

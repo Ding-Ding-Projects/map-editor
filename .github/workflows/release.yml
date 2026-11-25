@@ -15,7 +15,7 @@ env:
   IMAGE: ghcr.io/ding-ding-projects/map-editor
 jobs:
   meta:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.v.outputs.version }}
       tag: ${{ steps.v.outputs.tag }}
@@ -37,7 +37,7 @@ jobs:
   test:
     # The unit tests and the type check gate every build.
     needs: meta
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -48,7 +48,7 @@ jobs:
 
   docker:
     needs: [meta, test]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
@@ -100,7 +100,7 @@ jobs:
 
   appliance:
     needs: [meta, docker]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -123,7 +123,7 @@ jobs:
     # Built and checked for the Pi firmware, kernel and device trees; it cannot be boot-tested here,
     # so a failure does not block the other downloads.
     needs: [meta, docker]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
@@ -144,7 +144,7 @@ jobs:
 
   desktop:
     needs: [meta, test]
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -170,7 +170,7 @@ jobs:
     # The appliance images may be missing from a release, but the Docker image and the Windows apps may not:
     # without them a release would be empty or useless to update to.
     if: always() && needs.meta.result == 'success' && needs.docker.result == 'success' && needs.desktop.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         shell: bash

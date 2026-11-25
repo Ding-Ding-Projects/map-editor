@@ -884,3 +884,4 @@ body { background: var(--md-sys-color-surface-container); }
 @media (min-width: 721px) and (max-width: 980px) { .tabs { width: 208px; } .tabs md-list-item.active md-outlined-button { display: none; } }
 .rail-close { margin-top: 4px; }
 @media (min-width: 721px) and (max-width: 980px) { .tabs md-list-item.active md-outlined-button { display: inline-flex; } }
+.ext-list { grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); } .ext-card { min-width: 0; }

@@ -16,7 +16,7 @@ concurrency:
 jobs:
   meta:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       tag: ${{ steps.r.outputs.tag }}
       version: ${{ steps.r.outputs.version }}
@@ -33,7 +33,7 @@ jobs:
 
   deploy-linux:
     needs: meta
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -64,7 +64,7 @@ jobs:
   windows-update:
     needs: meta
     if: needs.meta.outputs.prev != ''
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - name: Install the previous release, then update it to this release with Squirrel
         shell: pwsh
@@ -93,7 +93,7 @@ jobs:
 
   pi-boot:
     needs: meta
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Boot the Raspberry Pi image on QEMU's raspi4b machine
         env: { GH_TOKEN: '${{ github.token }}' }
