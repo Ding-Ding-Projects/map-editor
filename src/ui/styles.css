@@ -642,3 +642,8 @@ canvas#map[data-mode="pick"] { cursor: copy; } canvas#map[data-mode="goto"] { cu
 .tool-field textarea { font: 13px/1.45 'Roboto Mono', monospace; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--md-sys-color-outline); background: var(--md-sys-color-surface-container-lowest); color: var(--md-sys-color-on-surface); resize: vertical; }
 .tool-pre { margin: 0; padding: 12px; border-radius: 12px; background: var(--md-sys-color-surface-container-lowest); font: 13px/1.45 'Roboto Mono', monospace; overflow: auto; max-height: 320px; white-space: pre; }
 .tool-dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0; } .tool-dl dt { font-weight: 600; } .tool-dl dd { margin: 0; }
+/* Export menu */
+.export-wrap { position: relative; display: inline-block; }
+.export-menu { position: absolute; z-index: 20; top: calc(100% + 4px); right: 0; min-width: 180px; padding: 6px; border-radius: 16px; background: var(--md-sys-color-surface-container-high); box-shadow: 0 6px 16px rgb(0 0 0 / .2); display: flex; flex-direction: column; }
+.export-menu[hidden] { display: none; }
+.export-menu button { all: unset; padding: 10px 14px; border-radius: 10px; cursor: pointer; } .export-menu button:hover, .export-menu button:focus-visible { background: var(--md-sys-color-secondary-container); }

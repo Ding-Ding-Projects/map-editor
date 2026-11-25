@@ -19,6 +19,8 @@ const S = {
   settings: { en: 'Settings', yue: '設定' },
   about: { en: 'About', yue: '關於' },
   tools: { en: 'Tools', yue: '工具箱' },
+  export: { en: 'Export…', yue: '匯出…' },
+  expCsv: { en: 'CSV (spreadsheets)', yue: 'CSV（試算表）' }, expJson: { en: 'JSON', yue: 'JSON' }, expMd: { en: 'Markdown', yue: 'Markdown' }, expHtml: { en: 'HTML table', yue: 'HTML 表格' },
   toolBase64: { en: 'Base64', yue: 'Base64' },
   toolBase64Note: { en: 'Encode or decode text, or turn a file of up to 20 MiB into Base64. Everything runs in this page; nothing is sent anywhere.', yue: '將文字編碼或者解碼，或者將 20 MiB 以內嘅檔案轉做 Base64。全部喺呢頁做，乜都唔會傳出去。' },
   toolInput: { en: 'Input', yue: '輸入' }, toolOutput: { en: 'Output', yue: '輸出' },

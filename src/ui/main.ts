@@ -11,6 +11,7 @@ import { worldsView } from './worlds.js';
 import { openPalette, type Command } from './palette.js';
 import { showTabSearch } from './tabsearch.js';
 import { toolsView } from './tools.js';
+import { downloadRows, exportButton, type ExportFormat } from './exporter.js';
 import { browserSupportsWebAuthn, startAuthentication, startRegistration } from '@simplewebauthn/browser';
 import { onboarding } from './onboarding.js';
 
@@ -232,6 +233,8 @@ const SETTING_TARGETS: Array<[string, string, Key]> = [
   ['#snd', 'sounds', 'soundEffects'], ['#vol', 'sounds', 'soundVolume'], ['#quiet', 'sounds', 'quietHours'], ['#qfrom', 'sounds', 'quietFrom'], ['#nar', 'sounds', 'narrate'], ['#nar-rate', 'sounds', 'narrateRate'],
   ['#pk-add', 'account', 'pkAdd'], ['#exp', 'backup', 'exportSettings'], ['#imp', 'backup', 'importSettings'], ['#sh', 'backup', 'settingsHistory'],
 ];
+const exportNames = (): Record<ExportFormat, string> => ({ csv: tx('expCsv'), json: tx('expJson'), md: tx('expMd'), html: tx('expHtml') });
+
 const SECTION_KEY: Record<string, Key> = { language: 'secLanguage', appearance: 'secAppearance', comfort: 'secComfort', sounds: 'secSounds', account: 'secAccount', extensions: 'secExtensions', backup: 'secBackup' };
 
 /** Open Settings at the section holding a control, scroll it into view, focus it and flash a ring round it. */
@@ -947,6 +950,9 @@ function activityPanel(): HTMLElement {
         ${events.length ? '' : `<p class="muted">${esc(tx('activityNone'))}</p>`}`;
       const box = searchBox('activity-search', tx('searchActivity'), rx);
       host.querySelector('#aq-host')!.replaceWith(box.el);
+      box.el.after(exportButton(tx('export'), exportNames(), (f) => downloadRows(
+        events.filter((_e, i) => !rows[i]?.hidden).map((e) => ({ time: new Date(e.time * 1000).toISOString(), kind: e.kind, who: e.who, message: e.message, commit: e.sha ?? '' })),
+        ['time', 'kind', 'who', 'message', 'commit'], f, tx('activity'), 'map-editor-activity')));
       const rows = Array.from(host.querySelectorAll<HTMLElement>('.act-list li'));
       const on = new Set<string>();
       let run = 0;
@@ -1037,6 +1043,9 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
     const val = (id: string) => (view.querySelector(id) as HTMLInputElement).value;
     const hq = searchBox('history-search', tx('searchHistory'), rx);
     view.querySelector('#hq-host')!.replaceWith(hq.el);
+    hq.el.after(exportButton(tx('export'), exportNames(), (f) => downloadRows(
+      entries.filter((_e, i) => !rows[i]?.hidden).map((e) => ({ time: new Date(e.time * 1000).toISOString(), action: e.action, message: e.message, commit: e.sha })),
+      ['time', 'action', 'message', 'commit'], f, `${tx('history')}: ${world?.name ?? ''}`, 'map-editor-history')));
     const rows = Array.from(view.querySelectorAll<HTMLElement>('[data-row]'));
     let run = 0;
     const filter = async () => {
