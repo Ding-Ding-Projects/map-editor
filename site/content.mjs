@@ -38,6 +38,7 @@ export const features = [
     ], related: ['appliance', 'web-app', 'desktop-app'] },
   { slug: 'worlds', title: 'Getting worlds in and out', group: 'Using the editor', summary: 'Upload a world as a .zip, download it again, or start a new flat world.',
     body: [
+      ['New worlds', 'New flat world asks for a name, a kind of world (Grass, Desert, Snow, Water, Stone bricks, or Void with one small stone platform under spawn) and a size from 64 to 384 blocks across.'],
       ['Upload a world', 'On the Worlds screen choose Upload world .zip and pick a .zip of a world folder from .minecraft/saves. Progress shows while it uploads. The server then checks every file path, looks for level.dat at the top of the archive or one folder down, and unpacks it into the worlds folder under a name that does not clash with an existing world. An archive without a world, or with a path that points outside its folder, is refused and nothing is kept.'],
       ['When an upload finishes', 'A full-screen card says Ready to edit with the file, size and time taken, and Open in the editor. If the upload fails, a card stays until you dismiss it with the exact reason, Choose another and Copy details; nothing is kept. Settings › Comfort and focus › Full-screen result cards turns these off and keeps only the small messages.'],
       ['Download a world', 'Download .zip on any world card streams the whole world back as a .zip with the world in its own folder, ready to drop into .minecraft/saves.'],

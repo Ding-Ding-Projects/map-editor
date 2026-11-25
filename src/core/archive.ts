@@ -154,20 +154,38 @@ export async function exportWorldZip(worldDir: string, out: NodeJS.WritableStrea
 }
 
 /** A small flat world (bedrock, two dirt, grass) around spawn, ready to edit. */
-export async function createFlatWorld(root: string, name: string, radiusChunks = 4): Promise<string> {
+/** Flat world presets: layers from the bottom up (block, thickness). The surface is the last layer. */
+export const WORLD_PRESETS = {
+  classic: [['minecraft:bedrock', 1], ['minecraft:dirt', 2], ['minecraft:grass_block', 1]],
+  desert: [['minecraft:bedrock', 1], ['minecraft:sandstone', 3], ['minecraft:sand', 2]],
+  snowy: [['minecraft:bedrock', 1], ['minecraft:dirt', 2], ['minecraft:snow_block', 1]],
+  water: [['minecraft:bedrock', 1], ['minecraft:sand', 2], ['minecraft:water', 4]],
+  stone: [['minecraft:bedrock', 1], ['minecraft:stone', 6], ['minecraft:stone_bricks', 1]],
+  void: [],
+} as const satisfies Record<string, ReadonlyArray<readonly [string, number]>>;
+export type WorldPreset = keyof typeof WORLD_PRESETS;
+export const WORLD_SIZES = [2, 4, 8, 12] as const; // radius in chunks: 64 to 384 blocks across
+
+/** A new flat world from a preset. Void gets one 3 by 3 stone platform under spawn. */
+export async function createFlatWorld(root: string, name: string, radiusChunks = 4, preset: WorldPreset = 'classic'): Promise<string> {
+  if (!(preset in WORLD_PRESETS)) throw new Error(`Unknown world preset ${preset}`);
+  if (!Number.isInteger(radiusChunks) || radiusChunks < 1 || radiusChunks > 12) throw new Error('World size must be 1 to 12 chunks from the centre.');
+  const layers = WORLD_PRESETS[preset] as ReadonlyArray<readonly [string, number]>;
+  const height = layers.reduce((n, [, t]) => n + t, 0);
+  const surface = preset === 'void' ? -60 : -64 + height - 1;
   const dir = await uniqueFolder(root, name);
-  await createWorld(dir, safeFolderName(name), 4189, -60);
+  await createWorld(dir, safeFolderName(name), 4189, surface + 1);
   const w = await World.open(dir);
   for (let cx = -radiusChunks; cx < radiusChunks; cx++) for (let cz = -radiusChunks; cz < radiusChunks; cz++) {
     const c = (await w.chunk('overworld', cx, cz, true))!;
-    for (let x = 0; x < 16; x++) for (let z = 0; z < 16; z++) {
-      c.setBlock(x, -64, z, { name: 'minecraft:bedrock' });
-      c.setBlock(x, -63, z, { name: 'minecraft:dirt' });
-      c.setBlock(x, -62, z, { name: 'minecraft:dirt' });
-      c.setBlock(x, -61, z, { name: 'minecraft:grass_block', properties: { snowy: 'false' } });
+    let y = -64;
+    for (const [block, thick] of layers) for (let k = 0; k < thick; k++, y++) {
+      const state = block === 'minecraft:grass_block' ? { name: block, properties: { snowy: 'false' } } : { name: block };
+      for (let x = 0; x < 16; x++) for (let z = 0; z < 16; z++) c.setBlock(x, y, z, state);
     }
-    await w.setBlock('overworld', cx * 16, -64, cz * 16, { name: 'minecraft:bedrock' });
+    await w.setBlock('overworld', cx * 16, -64, cz * 16, layers.length ? { name: layers[0][0] } : { name: 'minecraft:air' });
   }
+  if (preset === 'void') for (let x = -1; x <= 1; x++) for (let z = -1; z <= 1; z++) await w.setBlock('overworld', x, -61, z, { name: 'minecraft:stone' });
   await w.save();
   return dir;
 }

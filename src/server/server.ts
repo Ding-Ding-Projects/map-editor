@@ -14,7 +14,7 @@ import { EditSession, type OperationRequest } from '../core/session.js';
 import { decodeStructure } from '../core/structure.js';
 import { discoverWorlds, isWorldFolder, setLevelName, worldInfo, type Dimension } from '../core/world.js';
 import { volume, MAX_OPERATION_BLOCKS, OPERATIONS, type Box } from '../core/ops.js';
-import { importWorldZip, exportWorldZip, createFlatWorld } from '../core/archive.js';
+import { importWorldZip, exportWorldZip, createFlatWorld, WORLD_PRESETS, WORLD_SIZES, type WorldPreset } from '../core/archive.js';
 import { createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { randomBytes } from 'node:crypto';
@@ -211,10 +211,13 @@ export async function createServer(opts: ServerOptions) {
     if (p === '/api/worlds/new' && req.method === 'POST') {
       const root = opts.worldRoots[0];
       if (!root) throw new HttpError(409, 'This server has no worlds folder to create a world in.');
-      const { name } = await body(req);
+      const { name, preset, size } = await body(req);
       if (typeof name !== 'string' || !name.trim() || name.length > 80) throw new HttpError(400, 'Give the world a name of 1 to 80 characters.');
+      const p = (preset ?? 'classic') as WorldPreset, r = Number(size ?? 4);
+      if (!(p in WORLD_PRESETS)) throw new HttpError(400, 'Unknown world preset.');
+      if (!WORLD_SIZES.includes(r as typeof WORLD_SIZES[number])) throw new HttpError(400, 'World size must be 2, 4, 8 or 12 chunks from the centre.');
       await fs.mkdir(root, { recursive: true });
-      const dir = await createFlatWorld(root, name);
+      const dir = await createFlatWorld(root, name, r, p);
       note('world', user.name, `Created flat world ${path.basename(dir)}`);
       return send(201, { path: dir, name: path.basename(dir) });
     }

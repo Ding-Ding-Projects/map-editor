@@ -625,3 +625,12 @@ canvas#map[data-mode="pick"] { cursor: copy; } canvas#map[data-mode="goto"] { cu
 .slice-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .slice-bar md-outlined-text-field { width: 120px; }
 #slice { max-width: 100%; align-self: flex-start; image-rendering: pixelated; border-radius: 16px; background: var(--md-sys-color-surface-container-lowest); }
+/* New world presets */
+.nf-presets { border: 0; padding: 0; margin: 12px 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.nf-presets legend { font-weight: 700; margin-bottom: 6px; }
+.nf-preset { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 14px; background: var(--md-sys-color-surface-container); cursor: pointer; }
+.nf-preset:has(input:checked) { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+.nf-preset input { accent-color: var(--md-sys-color-primary); }
+.nf-swatch { width: 22px; height: 22px; border-radius: 6px; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .2); }
+.p-classic { background: #5f903a; } .p-desert { background: #dbcfa3; } .p-snowy { background: #f0f4f5; } .p-water { background: #3f68c9; } .p-stone { background: #7a7a7a; } .p-void { background: linear-gradient(135deg, #111 50%, #7a7a7a 50%); }
+.nf-size { display: flex; gap: 8px; align-items: center; } .nf-size select { font: inherit; padding: 6px 8px; border-radius: 8px; }

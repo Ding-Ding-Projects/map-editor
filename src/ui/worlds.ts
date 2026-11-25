@@ -132,20 +132,25 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
     status.querySelector('#dismiss')!.addEventListener('click', () => { status.innerHTML = ''; });
   }
 
+  const PRESETS = ['classic', 'desert', 'snowy', 'water', 'stone', 'void'];
   view.querySelector('#new')!.addEventListener('click', () => {
     const dlg = document.createElement('md-dialog');
     dlg.innerHTML = `<div slot="headline">${esc(tx('newFlat'))}</div>
       <form slot="content" id="nf" method="dialog"><md-outlined-text-field name="name" label="${esc(tx('worldName'))}" value="Flat World" maxlength="80" required style="width:100%"></md-outlined-text-field>
-      <p class="muted">${esc(tx('newFlatBody'))}</p></form>
+      <p class="muted">${esc(tx('newFlatBody'))}</p>
+      <fieldset class="nf-presets"><legend>${esc(tx('worldPreset'))}</legend>${PRESETS.map((p, i) => `<label class="nf-preset"><input type="radio" name="preset" value="${p}" ${i === 0 ? 'checked' : ''}><span class="nf-swatch p-${p}" aria-hidden="true"></span><span>${esc(tx(`preset_${p}` as never))}</span></label>`).join('')}</fieldset>
+      <label class="nf-size">${esc(tx('worldSize'))} <select name="size">${[[2, '64'], [4, '128'], [8, '256'], [12, '384']].map(([r, w]) => `<option value="${r}" ${r === 4 ? 'selected' : ''}>${w} × ${w}</option>`).join('')}</select></label></form>
       <div slot="actions"><md-text-button form="nf" value="cancel">${esc(tx('cancel'))}</md-text-button><md-filled-button form="nf" value="ok">${esc(tx('create'))}</md-filled-button></div>`;
     document.body.append(dlg);
     (dlg as HTMLElement & { show: () => void }).show();
     dlg.addEventListener('closed', async () => {
       const rv = (dlg as HTMLElement & { returnValue: string }).returnValue;
       const name = (dlg.querySelector('[name=name]') as HTMLInputElement).value.trim();
+      const preset = (dlg.querySelector('[name=preset]:checked') as HTMLInputElement | null)?.value ?? 'classic';
+      const size = Number((dlg.querySelector('[name=size]') as HTMLSelectElement).value);
       dlg.remove();
       if (rv !== 'ok' || !name) return;
-      try { const r = await c.api<{ name: string }>('/api/worlds/new', { method: 'POST', body: { name } }); c.notify(tx('created', { name: r.name })); c.play?.('create'); load(); }
+      try { const r = await c.api<{ name: string }>('/api/worlds/new', { method: 'POST', body: { name, preset, size } }); c.notify(tx('created', { name: r.name })); c.play?.('create'); load(); }
       catch (e) { c.notify((e as Error).message, true); }
     });
   });

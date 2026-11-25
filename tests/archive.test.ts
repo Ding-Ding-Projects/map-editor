@@ -68,3 +68,23 @@ describe('world archives', () => {
     expect((await readdir(root)).filter((n) => !n.endsWith('.importing'))).toEqual([]);
   });
 });
+
+describe('flat world presets', () => {
+  it('builds each preset with its surface block and refuses unknown presets or sizes', async () => {
+    const { createFlatWorld } = await import('../src/core/archive.js');
+    const { World } = await import('../src/core/world.js');
+    const { mkdtemp } = await import('node:fs/promises');
+    const os = await import('node:os');
+    const path = await import('node:path');
+    const root = await mkdtemp(path.join(os.tmpdir(), 'me-pre-'));
+    const want: Record<string, string> = { classic: 'minecraft:grass_block', desert: 'minecraft:sand', snowy: 'minecraft:snow_block', water: 'minecraft:water', stone: 'minecraft:stone_bricks', void: 'minecraft:stone' };
+    for (const [preset, block] of Object.entries(want)) {
+      const dir = await createFlatWorld(root, `P ${preset}`, 2, preset as never);
+      const w = await World.open(dir);
+      const c = await w.chunk('overworld', 0, 0);
+      expect(c?.top(0, 0)?.block.name, preset).toBe(block);
+    }
+    await expect(createFlatWorld(root, 'Bad', 2, 'lava' as never)).rejects.toThrow(/preset/);
+    await expect(createFlatWorld(root, 'Bad', 13)).rejects.toThrow(/size/);
+  });
+});
