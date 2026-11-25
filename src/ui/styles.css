@@ -1005,3 +1005,10 @@ md-outlined-text-field { --md-outlined-text-field-container-shape: 16px; --md-ou
 .search-pill { min-width: 0; overflow: hidden; }
 @media (max-width: 1100px) { .search-pill kbd, .search-pill .kbd { display: none; } }
 .map-toolbar { max-width: calc(100% - 16px); overflow-x: auto; scrollbar-width: none; }
+
+/* Deploy app: language switch and sound button in the header. */
+.lang-switch { display: inline-flex; gap: 2px; padding: 4px; border-radius: 999px; background: var(--md-sys-color-surface-container-high); margin-left: auto; }
+.lang-switch button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--md-sys-color-on-surface); font: inherit; font-weight: 700; cursor: pointer; }
+.lang-switch button[aria-pressed="true"] { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
+.lang-switch button:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; }
+#snd[aria-pressed="false"] { opacity: .5; }

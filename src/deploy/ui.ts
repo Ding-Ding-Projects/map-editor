@@ -6,6 +6,8 @@ import { showTakeover } from '../ui/takeover.js';
 import { downloadRows, exportButton } from '../ui/exporter.js';
 import { iconSvg, initButtonIcons } from '../ui/icons.js';
 import { superConfirm } from '../ui/moments.js';
+import { englishOf, initLang, langSwitch, setLang, type Lang } from './lang.js';
+import { configureSounds, play } from '../ui/sounds.js';
 
 interface Step { label: string; state: 'waiting' | 'running' | 'done' | 'failed'; detail?: string }
 interface Disk { id: string; name: string; sizeBytes: number }
@@ -239,7 +241,7 @@ async function render() {
   app.innerHTML = `<header class="top"><div class="brand"><div class="logo" aria-hidden="true"></div><div>
       <div class="md-typescale-headline-medium title">Put Map Editor on your network</div>
       <div class="muted" id="prov"></div></div></div>
-    <md-chip-set class="views"><md-filter-chip id="v-deploy" label="Deploy" ${view === 'deploy' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-inst" label="Instances" ${view === 'instances' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-disks" label="Virtual disks" ${view === 'disks' ? 'selected' : ''}></md-filter-chip></md-chip-set><md-text-button id="tour">Take a tour</md-text-button></header>
+    <md-chip-set class="views"><md-filter-chip id="v-deploy" label="Deploy" ${view === 'deploy' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-inst" label="Instances" ${view === 'instances' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-disks" label="Virtual disks" ${view === 'disks' ? 'selected' : ''}></md-filter-chip></md-chip-set><md-text-button id="tour">Take a tour</md-text-button>${langSwitch()}<button type="button" id="snd" class="icon-btn" aria-pressed="${soundsOn}" aria-label="Sound effects" title="Sound effects">${iconSvg('sound', 20)}</button></header>
     <div id="update-banner" class="update-banner" role="region" aria-label="Update" hidden></div>
     <div class="body"><main class="view" id="main"></main></div><div id="toasts" class="toasts"></div>`;
   showUpdate();
@@ -397,6 +399,7 @@ async function render() {
 }
 
 function toast(text: string, error = false) {
+  play(error ? 'error' : 'success');
   const el = document.createElement('div');
   el.className = `toast${error ? ' error' : ''}`; el.setAttribute('role', error ? 'alert' : 'status');
   el.innerHTML = `<span>${esc(text)}</span>`;
@@ -421,5 +424,13 @@ function failTakeover(o: { what: string; error: string; steps: Step[]; retry: { 
 }
 
 enableClearControls((field) => `Clear ${field}`);
-initButtonIcons();
+initButtonIcons(englishOf);
+initLang();
+let soundsOn = true; try { soundsOn = localStorage.getItem('map-editor-deploy.sounds') !== 'off'; } catch { /* default on */ }
+configureSounds(soundsOn, 0.4);
+document.addEventListener('click', (e) => {
+  const t = (e.target as HTMLElement).closest<HTMLElement>('[data-set-lang], #snd');
+  if (t?.dataset.setLang) setLang(t.dataset.setLang as Lang);
+  else if (t?.id === 'snd') { soundsOn = !soundsOn; configureSounds(soundsOn, 0.4); try { localStorage.setItem('map-editor-deploy.sounds', soundsOn ? 'on' : 'off'); } catch { /* not kept */ } t.setAttribute('aria-pressed', String(soundsOn)); if (soundsOn) play('success'); }
+});
 render().then(() => { let t: string | null = null; try { t = localStorage.getItem('map-editor-deploy.tour'); } catch { /* ignore */ } if (t === null) setTimeout(() => deployTour(), 800); });
