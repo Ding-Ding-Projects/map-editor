@@ -672,7 +672,7 @@ function shell() {
       </nav>` : ''}
       <main id="view" class="view" role="tabpanel"></main>
     </div>
-    ${user && prefs.onboarded ? `<nav class="bottom-nav" aria-label="${esc(tx('destinations'))}">${open.map((x) => `<button data-tab="${x}" ${x === prefs.tab ? 'aria-current="page"' : ''}><span class="pill">${TAB_ICON[x]}</span><span>${esc(tx(x as Key))}</span></button>`).join('')}</nav>` : ''}
+    ${user && prefs.onboarded ? `<nav class="bottom-nav" aria-label="${esc(tx('destinations'))}">${open.map((x) => `<button data-tab="${x}" ${x === prefs.tab ? 'aria-current="page"' : ''}><span class="pill">${TAB_ICON[x]}</span><span class="bn-label">${tx(x as Key).split(' · ').map((part) => `<span>${esc(part)}</span>`).join('')}</span></button>`).join('')}</nav>` : ''}
     <div id="toasts" class="toasts" aria-live="polite"></div>`;
   app.querySelectorAll<HTMLElement>('[data-lang]').forEach((c) => c.addEventListener('click', () => { prefs.lang = c.dataset.lang as Lang; savePrefs(); render(); }));
   app.querySelectorAll<HTMLElement>('[data-tab]').forEach((c) => c.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('[data-close]')) return; prefs.tab = c.dataset.tab!; savePrefs(); render(); }));
