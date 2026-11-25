@@ -350,7 +350,7 @@
    "x": 3080,
    "y": 0,
    "w": 420,
-   "text": "Every search field in the app: plain text by default, .* turns regex on for that field only, the builder sits beside it. Try: .* switch, builder button, presets (Invalid and Too slow show the error states), insert tokens, flags; Tweaks dark, seed, motion.\nIn the app: settings, history, changelog and palette searches; worker-isolated ECMAScript engine with 250 ms stop; raw pattern and field synced both ways; flags i m s u; sample with highlights and capture groups; copy and export; nothing saved. Not yet: the board's preset chips (the app has a free-text literal insert instead), tab close-by-text actions.",
+   "text": "Every search field in the app: plain text by default, .* turns regex on for that field only, the builder sits beside it. Try: .* switch, builder button, presets (Invalid and Too slow show the error states), insert tokens, flags; Tweaks dark, seed, motion.\nIn the app: settings, history, changelog and palette searches; worker-isolated ECMAScript engine with 250 ms stop; raw pattern and field synced both ways; flags i m s u; sample with highlights and capture groups; copy and export; nothing saved. Also: Find tabs with its own builder, Close tabs containing text and Close tabs not containing text (one predicate, count, preview, empty and invalid queries refused, last tab and running edits kept). Not yet: the board's preset chips (the app has a free-text literal insert instead).",
    "fill": "yellow",
    "page": "settings"
   },

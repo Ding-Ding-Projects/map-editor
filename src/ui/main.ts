@@ -9,6 +9,7 @@ import { configureSounds, play } from './sounds.js';
 import { startTour, type TourStep } from './tour.js';
 import { worldsView } from './worlds.js';
 import { openPalette, type Command } from './palette.js';
+import { showTabSearch } from './tabsearch.js';
 import { onboarding } from './onboarding.js';
 
 /** Present only inside the desktop app (see src/desktop/preload.ts). */
@@ -177,6 +178,15 @@ function toggleNoteCentre() {
   panel.querySelector('#nc-close')!.addEventListener('click', () => panel.remove());
 }
 
+function tabSearch() {
+  showTabSearch({
+    tabs: () => TABS.map((x) => ({ id: x, label: tx(x as Key), open: !prefs.closedTabs.includes(x), active: x === prefs.tab, busy: x === 'editor' && busy > 0 })),
+    go: (id) => { prefs.closedTabs = prefs.closedTabs.filter((x) => x !== id); prefs.tab = id; savePrefs(); render(); },
+    close: (ids) => { if (prefs.tabsLocked) { notify(tx('tabsLockedRefuse'), true); return; } prefs.closedTabs = [...new Set([...prefs.closedTabs, ...ids])]; savePrefs(); render(); },
+    t: (k, v) => tx(k as Key, v), rx, esc,
+  });
+}
+
 function paletteCommands(): Command[] {
   const go = (t: string) => () => { prefs.closedTabs = prefs.closedTabs.filter((x) => x !== t); prefs.tab = t; savePrefs(); render(); };
   const cmds: Command[] = [];
@@ -190,6 +200,8 @@ function paletteCommands(): Command[] {
   cmds.push({ id: 'sounds', label: tx('soundEffects'), where: `${tx('settings')} › ${tx('secSounds')}`, toggle: { get: () => prefs.sounds, set: (v) => { prefs.sounds = v; savePrefs(); applyTheme(); } } });
   cmds.push({ id: 'tour', label: tx('tourTake'), where: tx('help'), run: () => takeTour('app') });
   cmds.push({ id: 'tour-page', label: tx('tourThisPage'), where: `${tx('help')} › ${tx(prefs.tab as Key)}`, run: () => takeTour(prefs.tab as Tab) });
+  cmds.push({ id: 'tab-search', label: tx('tabSearch'), where: 'Tabs', run: () => tabSearch() });
+  cmds.push({ id: 'open-every-tab', label: tx('openEveryTab'), where: 'Tabs', run: () => { prefs.closedTabs = []; savePrefs(); render(); } });
   cmds.push({ id: 'reset-layouts', label: tx('resetLayouts'), where: `${tx('settings')} › ${tx('secAppearance')}`, run: () => { resetLayout(); notify(tx('resetLayoutsDone')); render(); } });
   cmds.push({ id: 'check-updates', label: tx('updCheck'), where: `${tx('about')}`, run: () => { void checkForUpdates(); } });
   for (const e of extCache) if (e.enabled) for (const c of e.commands) cmds.push({ id: `ext-${e.id}-${c.id}`, label: c.title, where: `${tx('secExtensions')} › ${e.name}`, run: () => { void runExtension(e.id, c.id); } });
@@ -425,7 +437,7 @@ function shell() {
         ${open.map((x) => `<md-list-item type="button" role="tab" aria-selected="${x === prefs.tab}" data-tab="${x}" class="${x === prefs.tab ? 'active' : ''}">${esc(tx(x as Key))}
           ${x === prefs.tab && !prefs.tabsLocked ? `<md-outlined-button slot="end" data-close="${x}">${esc(tx('close'))}</md-outlined-button>` : ''}</md-list-item>`).join('')}
         </md-list>
-        ${prefs.closedTabs.length ? `<md-text-button id="open-all">${esc(tx('openEveryTab'))}</md-text-button>` : ''}
+        <div class="tab-tools"><md-text-button id="tab-find">${esc(tx('tabSearch'))}</md-text-button>${prefs.closedTabs.length ? `<md-text-button id="open-all">${esc(tx('openEveryTab'))}</md-text-button>` : ''}</div>
       </nav>` : ''}
       <main id="view" class="view" role="tabpanel"></main>
     </div>
@@ -435,6 +447,7 @@ function shell() {
   app.querySelectorAll<HTMLElement>('[data-tab]').forEach((c) => c.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('[data-close]')) return; prefs.tab = c.dataset.tab!; savePrefs(); render(); }));
   app.querySelectorAll<HTMLElement>('[data-close]').forEach((c) => c.addEventListener('click', () => { prefs.closedTabs.push(c.dataset.close!); savePrefs(); render(); }));
   app.querySelector('#open-all')?.addEventListener('click', () => { prefs.closedTabs = []; savePrefs(); render(); });
+  app.querySelector('#tab-find')?.addEventListener('click', () => tabSearch());
   app.querySelector('#cmd')?.addEventListener('click', () => showPalette());
   app.querySelector('#bell')?.addEventListener('click', () => toggleNoteCentre());
   app.querySelector('#tour-help')?.addEventListener('click', (e) => helpMenu(e.currentTarget as HTMLElement));

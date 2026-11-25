@@ -535,3 +535,14 @@ md-list-item.picked { background: var(--md-sys-color-secondary-container); borde
 .panel-chip:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; }
 .phone-dock .dv-tabs-and-actions-container { display: none; }
 @media (prefers-reduced-motion: reduce) { .panel-chip { transition: none; } }
+
+/* Tab search dialog */
+.tab-tools { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 8px; }
+.tab-search { --md-dialog-container-max-inline-size: 560px; }
+.ts-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ts-row { all: unset; box-sizing: border-box; width: 100%; display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 16px; cursor: pointer; background: var(--md-sys-color-surface-container); color: var(--md-sys-color-on-surface); }
+.ts-row small { color: var(--md-sys-color-on-surface-variant); }
+.ts-row.active { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+.ts-row:hover { background: var(--md-sys-color-surface-container-high); }
+.ts-row:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; }
+.ts-preview { min-height: 1.4em; color: var(--md-sys-color-on-surface-variant); }
