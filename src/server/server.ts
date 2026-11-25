@@ -343,6 +343,13 @@ export async function createServer(opts: ServerOptions) {
       const top = await session.topBlock(dim, int(q.get('x'), 'x', -30_000_000, 30_000_000), int(q.get('z'), 'z', -30_000_000, 30_000_000));
       return send(200, { top: top ?? null });
     }
+    if (p === '/api/volume' && req.method === 'GET') {
+      const q = url.searchParams;
+      const dim = (q.get('dim') ?? 'overworld') as Dimension;
+      if (!DIMS.includes(dim)) throw new HttpError(400, 'Unknown dimension');
+      const box = Object.fromEntries((['x1', 'y1', 'z1', 'x2', 'y2', 'z2'] as const).map((k) => [k, int(q.get(k), k, -30_000_000, 30_000_000)])) as unknown as Box;
+      try { return send(200, await session.volume(dim, box)); } catch (e) { throw new HttpError(400, (e as Error).message); }
+    }
     if (p === '/api/slice' && req.method === 'GET') {
       const q = url.searchParams;
       const dim = (q.get('dim') ?? 'overworld') as Dimension;

@@ -11,6 +11,7 @@ import { worldsView } from './worlds.js';
 import { openPalette, type Command } from './palette.js';
 import { showTabSearch } from './tabsearch.js';
 import { toolsView } from './tools.js';
+import { drawVolume, type Volume } from './view3d.js';
 import { downloadRows, exportButton, type ExportFormat } from './exporter.js';
 import { browserSupportsWebAuthn, startAuthentication, startRegistration } from '@simplewebauthn/browser';
 import { onboarding } from './onboarding.js';
@@ -986,8 +987,36 @@ async function editorView(view: HTMLElement): Promise<void> {
   }
   drawPalette();
   view.innerHTML = '<div id="dock" class="dock"></div>';
-  mountWorkspace(view.querySelector<HTMLElement>('#dock')!, { map: mapEl, tool: toolEl, blocks: blocksEl, slice: sliceEl, history: histEl, notes: notesEl }, {
-    map: tx('editor'), tool: tx('fill'), blocks: tx('blockPalette'), slice: tx('sliceView'), history: tx('history'), notes: tx('notes'),
+  // 3D view of the selection: isometric cubes with turns and zoom, redrawn after edits.
+  const v3El = document.createElement('section'); v3El.className = 'panel-scroll view3d-panel';
+  v3El.innerHTML = `<div class="slice-bar"><md-outlined-button id="v3-left" aria-label="${esc(tx('v3TurnLeft'))}">⟲</md-outlined-button><md-outlined-button id="v3-right" aria-label="${esc(tx('v3TurnRight'))}">⟳</md-outlined-button>
+    <md-outlined-button id="v3-out" aria-label="${esc(tx('v3ZoomOut'))}">−</md-outlined-button><md-outlined-button id="v3-in" aria-label="${esc(tx('v3ZoomIn'))}">+</md-outlined-button><md-text-button id="v3-refresh">${esc(tx('v3Refresh'))}</md-text-button></div>
+    <div class="v3-stage"><canvas id="v3" role="img" aria-label="${esc(tx('view3d'))}"></canvas></div><p class="muted" id="v3-info" aria-live="polite"></p>`;
+  let v3Turn = 0, v3Zoom = 8, v3Data: Volume | undefined, v3Key = '';
+  const v3Canvas = v3El.querySelector<HTMLCanvasElement>('#v3')!;
+  const v3Paint = () => {
+    if (!v3Data) return;
+    const n = drawVolume(v3Canvas, v3Data, v3Turn, v3Zoom, getComputedStyle(v3El).getPropertyValue('--md-sys-color-surface-container-lowest') || '#fff');
+    v3El.querySelector('#v3-info')!.textContent = tx('v3Info', { x: v3Data.size[0], y: v3Data.size[1], z: v3Data.size[2], n: (v3Data.cells.length / 4).toLocaleString('en'), d: n.toLocaleString('en') });
+  };
+  async function v3Load(force = false) {
+    if (!v3El.isConnected) return;
+    const n = { x1: Math.min(sel.x1, sel.x2), y1: Math.min(sel.y1, sel.y2), z1: Math.min(sel.z1, sel.z2), x2: Math.max(sel.x1, sel.x2), y2: Math.max(sel.y1, sel.y2), z2: Math.max(sel.z1, sel.z2) };
+    const key = `${dim}:${Object.values(n).join(',')}`;
+    if (!force && key === v3Key) return;
+    v3Key = key;
+    try { v3Data = await api<Volume>(`/api/volume?dim=${dim}&${new URLSearchParams(Object.entries(n).map(([k, v]) => [k, String(v)]))}`); v3Paint(); }
+    catch (err) { v3Data = undefined; v3El.querySelector('#v3-info')!.textContent = (err as Error).message; const c = v3Canvas.getContext('2d')!; v3Canvas.width = 1; c.clearRect(0, 0, 1, 1); }
+  }
+  v3El.querySelector('#v3-left')!.addEventListener('click', () => { v3Turn = (v3Turn + 3) % 4; v3Paint(); });
+  v3El.querySelector('#v3-right')!.addEventListener('click', () => { v3Turn = (v3Turn + 1) % 4; v3Paint(); });
+  v3El.querySelector('#v3-in')!.addEventListener('click', () => { v3Zoom = Math.min(24, v3Zoom + 2); v3Paint(); });
+  v3El.querySelector('#v3-out')!.addEventListener('click', () => { v3Zoom = Math.max(2, v3Zoom - 2); v3Paint(); });
+  v3El.querySelector('#v3-refresh')!.addEventListener('click', () => { void v3Load(true); });
+  document.addEventListener('history-changed', () => { void v3Load(true); });
+  new ResizeObserver(() => { void v3Load(); }).observe(v3El);
+  mountWorkspace(view.querySelector<HTMLElement>('#dock')!, { map: mapEl, tool: toolEl, blocks: blocksEl, slice: sliceEl, view3d: v3El, history: histEl, notes: notesEl }, {
+    map: tx('editor'), tool: tx('fill'), blocks: tx('blockPalette'), slice: tx('sliceView'), view3d: tx('view3d'), history: tx('history'), notes: tx('notes'),
   }, prefs.dark, undefined, prefs.layoutLocked);
   historyView(histEl, true);
   document.addEventListener('history-changed', () => { if (histEl.isConnected) historyView(histEl, true); });

@@ -92,6 +92,11 @@ describe('server', () => {
     const alpha = (row: number) => spx[(row * 4 + 0) * 4 + 3];
     expect([alpha(0), alpha(1), alpha(2)]).toEqual([0, 255, 255]); // y 64 air, y 63 water, y 62 grass
     expect((await call('/api/slice?dim=overworld&axis=z&at=3&from=0&to=5000&y0=60&y1=64')).status).toBe(400);
+    const vol = await (await call('/api/volume?dim=overworld&x1=0&y1=62&z1=0&x2=1&y2=64&z2=1')).json();
+    expect(vol.size).toEqual([2, 3, 2]);
+    expect(vol.palette.sort()).toEqual(['minecraft:grass_block', 'minecraft:water']);
+    expect(vol.cells.length).toBe(8 * 4); // 4 grass + 4 water, air left out
+    expect((await call('/api/volume?dim=overworld&x1=0&y1=0&z1=0&x2=100&y2=1&z2=1')).status).toBe(400);
     expect([...after.slice(0, 3)]).toEqual([63, 104, 201]); // water, top-down
 
     const { entries } = await (await call('/api/history')).json();

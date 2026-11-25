@@ -111,6 +111,25 @@ export class EditSession {
     return { width, height, px };
   }
 
+  /**
+   * The blocks of a box for the 3D view: a palette of block names and, per non-air block, its offset and
+   * palette index (x, y, z, index as four numbers). Boxes are limited to 64 blocks a side.
+   */
+  async volume(dim: Dimension, box: ops.Box): Promise<{ size: [number, number, number]; palette: string[]; cells: number[] }> {
+    const b = ops.normalize(box);
+    const size: [number, number, number] = [b.x2 - b.x1 + 1, b.y2 - b.y1 + 1, b.z2 - b.z1 + 1];
+    if (size.some((n) => n > 64)) throw new Error('The 3D view shows up to 64 blocks in each direction; make the selection smaller.');
+    const palette: string[] = [], index = new Map<string, number>(), cells: number[] = [];
+    for (let x = b.x1; x <= b.x2; x++) for (let z = b.z1; z <= b.z2; z++) for (let y = b.y1; y <= b.y2; y++) {
+      const bl = await this.world.getBlock(dim, x, y, z);
+      if (!bl || /(^|:)(air|cave_air|void_air)$/.test(bl.name)) continue;
+      let i = index.get(bl.name);
+      if (i === undefined) { i = palette.length; palette.push(bl.name); index.set(bl.name, i); }
+      cells.push(x - b.x1, y - b.y1, z - b.z1, i);
+    }
+    return { size, palette, cells };
+  }
+
   /** The highest non-air block in one column, as the top-down map shows it. */
   async topBlock(dim: Dimension, x: number, z: number): Promise<{ y: number; block: string } | undefined> {
     const c = await this.world.chunk(dim, Math.floor(x / 16), Math.floor(z / 16));

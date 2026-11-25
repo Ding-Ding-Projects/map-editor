@@ -80,8 +80,7 @@ above). These checks still need a person, a browser session or hardware:
 - An empty `/worlds` folder may be left on the build machine from an earlier check. A safety rule
   stopped its removal.
 - Still to do, from `ROADMAP.md`:
-  - a 3D view and Bedrock worlds;
+  - Bedrock worlds;
   - a separate data partition on the appliance;
-  - the remaining built-in tools (file converter, Ollama suite, server manager, virtual disk manager);
-  - TinyMCE in other rich text fields.
+  - the remaining built-in tools (file converter, Ollama suite, server manager, virtual disk manager).
 - Code-signed extension sources are not planned: this project does not sign code.

@@ -16,7 +16,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Structure files (.nbt, the structure block and /place template format): save the selection, air included, and place a .nbt file at the selection's lowest corner after a confirmation, recorded in history as Placed so Undo restores; block-state properties kept, chunks that do not exist skipped, files checked for size and palette. Unit and server tests; checked in headless Chrome. Block entities (chest contents, sign text) travel with their blocks, and entities inside the box (mobs, item frames, armour stands) travel too, read from and written to the entities region files, with fresh UUIDs for copies.
 - [x] Side view: a panel with a vertical cut through the world along x or z at any position (through the selection by default), the selection outlined, fitted to the panel and redrawn after edits; server test of the cut, checked in headless Chrome.
 - [x] Biome editing: a Biome tool (key B) sets the biome over the selection per 4×4×4 cell, the unit the game stores, with common biomes as chips; saved packed in each section and recorded in history so Undo restores it. Unit tested.
-- [ ] 3D view.
+- [x] 3D view: a panel drawing the selection (up to 64 blocks a side) as shaded isometric cubes on a canvas, with four turns and zoom, skipping hidden cubes and redrawing after edits; server and unit tests, checked in headless Chrome.
 
 ## Phase 2: desktop app
 
@@ -73,7 +73,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] A lock on every settings switch: a locked switch is disabled, its row says so, the palette refuses to change it, unlocking asks first; and Quiet hours silence sounds and reading aloud between two times. Both in settings history and export; checked in headless Chrome.
 - [x] Locks on whole panels and screens: Lock panel layout (no dragging, floating, dropping or closing panels on any screen), Keep every tab open (no Close buttons), and Lock the Settings screen (read-only, palette switches refused, a banner with Unlock that asks first). Checked in headless Chrome.
 - [x] Rich text notes per world with self-hosted TinyMCE, autosaved; typing and saving checked in headless Chrome.
-- [ ] TinyMCE for every other rich text field.
+- [x] TinyMCE wherever rich text is written: world notes are the only long-form text in the app; every other field is a single-line name, number or code.
 - [x] Command palette on Ctrl+Shift+F: every tab, tool, undo, language and appearance setting, with settings as live switches in the result row; checked in headless Chrome.
 - [x] Palette: every setting has a row (switches keep their live toggle), and Shift+Enter or the arrow button teleports to the exact control: Settings opens at its section, the control scrolls into view, takes focus and a ring flashes round it. The palette can be resized from its corner and keeps a size changed by hand. Checked in headless Chrome.
 - [x] Infinite colour picker: continuous field, hue and opacity, any-notation translator (name, HEX, HEX8, RGB, HSL, HSV, HWB, LAB, LCH, OKLab, OKLCH, CMYK), gamut and contrast notes, copy, recent colours, animated rainbow marker with one global speed. Drives the theme seed live; checked in headless Chrome and unit tested.
