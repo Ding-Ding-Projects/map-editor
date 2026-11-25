@@ -178,13 +178,13 @@ describe('deploy targets', () => {
 
 describe('virtual disks (Windows)', () => {
   it('accepts only full Windows paths ending in .vhdx or .vhd', async () => {
-    const { validateVdiskPath } = await import('../src/deploy/targets');
+    const { validateVdiskPath } = await import('../src/deploy/targets.js');
     expect(validateVdiskPath('C:\\Disks\\worlds.vhdx')).toBeUndefined();
     expect(validateVdiskPath('d:\\a b\\w.VHD')).toBeUndefined();
     for (const bad of ['', 'worlds.vhdx', 'C:\\x.iso', 'C:\\a"b\\w.vhdx', 'C:\\a\r\nclean\\w.vhdx', '\\\\server\\share\\w.vhdx', 'C:\\a|b.vhdx', `C:\\${'a'.repeat(250)}.vhdx`]) expect(validateVdiskPath(bad), bad).toBeTruthy();
   });
   it('writes diskpart scripts and refuses unsafe input', async () => {
-    const { diskpartScript } = await import('../src/deploy/targets');
+    const { diskpartScript } = await import('../src/deploy/targets.js');
     expect(diskpartScript({ action: 'create', file: 'C:\\D\\w.vhdx', sizeMb: 8192, label: 'Worlds' }).split('\r\n')).toEqual(['create vdisk file="C:\\D\\w.vhdx" maximum=8192 type=expandable', 'attach vdisk', 'create partition primary', 'format fs=ntfs quick label="Worlds"', 'assign', '']);
     expect(diskpartScript({ action: 'create', file: 'C:\\D\\w.vhdx', sizeMb: 64, label: 'A', fixed: true })).toContain('type=fixed');
     expect(diskpartScript({ action: 'attach', file: 'C:\\D\\w.vhdx', readOnly: true })).toBe('select vdisk file="C:\\D\\w.vhdx"\r\nattach vdisk readonly\r\n');
@@ -196,14 +196,14 @@ describe('virtual disks (Windows)', () => {
     for (const j of [{ action: 'create', file: 'C:\\w.vhdx', sizeMb: 100, label: 'W' }, { action: 'attach', file: 'C:\\w.vhdx' }, { action: 'detach', file: 'C:\\w.vhdx' }] as const) expect(diskpartScript(j)).not.toMatch(/\b(clean|delete|select disk)\b/i);
   });
   it('reads the list Windows gives back', async () => {
-    const { parseVirtualDisks } = await import('../src/deploy/targets');
+    const { parseVirtualDisks } = await import('../src/deploy/targets.js');
     expect(parseVirtualDisks('')).toEqual([]);
     expect(parseVirtualDisks('{"Number":3,"Name":"Msft Virtual Disk","Size":8589934592,"File":"C:\\\\D\\\\w.vhdx","ReadOnly":false,"Letters":["e"]}')).toEqual([{ number: 3, name: 'Msft Virtual Disk', sizeBytes: 8589934592, file: 'C:\\D\\w.vhdx', readOnly: false, letters: ['E'] }]);
     const two = parseVirtualDisks('[{"Number":5,"Name":"b","Size":1,"File":"C:\\\\b.vhd","ReadOnly":true,"Letters":[]},{"Number":2,"Name":"a","Size":2,"File":"C:\\\\a.vhdx","ReadOnly":false,"Letters":"F"},{"Number":9,"File":""}]');
     expect(two.map((d) => [d.number, d.readOnly, d.letters.join('')])).toEqual([[2, false, 'F'], [5, true, '']]);
   });
   it('does nothing on other systems', async () => {
-    const { vdiskJob } = await import('../src/deploy/targets');
+    const { vdiskJob } = await import('../src/deploy/targets.js');
     if (process.platform !== 'win32') expect(await vdiskJob({ action: 'detach', file: 'C:\\w.vhdx' })).toEqual({ ok: false, message: 'Virtual disks are managed on Windows only.' });
   });
 });
