@@ -22,7 +22,7 @@ const TARGETS = [
   { id: 'pi', name: 'Raspberry Pi', desc: 'Write the Raspberry Pi image (unpack map-editor-appliance-rpi-arm64.img.xz first) to an SD card with USB drive, or use Docker on another computer if the Pi already runs Docker.' },
 ] as const;
 let target: typeof TARGETS[number]['id'] = 'docker';
-let view: 'deploy' | 'instances' = 'deploy';
+let view: 'deploy' | 'instances' | 'disks' = 'deploy';
 let managing: string | undefined;
 const STATE_LABEL: Record<string, string> = { running: 'Running', stopped: 'Stopped', missing: 'Not found in Docker, VirtualBox or VMware', unknown: 'State unknown' };
 
@@ -117,6 +117,71 @@ async function duplicateDialog(i: Instance) {
   });
 }
 
+const gb = (n: number) => n >= 2 ** 30 ? `${(n / 2 ** 30).toFixed(1)} GB` : `${Math.round(n / 2 ** 20)} MB`;
+interface VDisk { number: number; name: string; sizeBytes: number; file: string; letters: string[]; readOnly: boolean }
+
+/** Virtual disks: files that Windows shows as a drive. Create, attach and detach; never delete. */
+async function virtualDisks(main: Element) {
+  if (d.platform !== 'win32') {
+    main.innerHTML = `<section class="card"><h1 class="md-typescale-display-small">Virtual disks</h1>
+      <p>A virtual disk is one file that Windows shows as a drive. It is a handy way to keep worlds in one file you can copy to another computer.</p>
+      <p class="muted">This screen uses tools that come with Windows, so it works in the Windows app only. On this computer nothing here can be changed.</p></section>`;
+    return;
+  }
+  main.innerHTML = `<section class="card"><h1 class="md-typescale-display-small">Virtual disks</h1>
+      <p class="muted">A virtual disk is one file that Windows shows as a drive. Windows asks for permission before each change. Detaching keeps the file; this screen never deletes anything.</p>
+      <div class="vd-actions"><md-filled-button id="vd-new">New virtual disk…</md-filled-button><md-filled-tonal-button id="vd-attach">Attach a file…</md-filled-tonal-button><md-text-button id="vd-refresh">Refresh</md-text-button></div>
+      <label class="check"><input type="checkbox" id="vd-ro"> Attach read-only</label>
+      <p id="vd-status" class="muted" role="status" aria-live="polite">Loading…</p><md-list id="vd-list"></md-list></section>`;
+  const status = main.querySelector('#vd-status')!, listEl = main.querySelector('#vd-list')!;
+  const busy = (on: boolean) => main.querySelectorAll<HTMLElement & { disabled: boolean }>('md-filled-button, md-filled-tonal-button, md-text-button, md-outlined-button').forEach((b) => { b.disabled = on; });
+  const run = async (job: unknown, working: string) => {
+    busy(true); status.textContent = working;
+    try { const r = await d.vdiskJob(job); toast(r.message, !r.ok); } catch (e) { toast((e as Error).message, true); }
+    busy(false); await load();
+  };
+  async function load() {
+    try {
+      const disks: VDisk[] = await d.vdisks();
+      status.textContent = disks.length ? `${disks.length} attached` : 'No virtual disk is attached right now.';
+      listEl.innerHTML = disks.map((v, i) => `<md-list-item><div slot="headline">${esc(v.file)}</div>
+        <div slot="supporting-text">${v.letters.length ? `Drive ${esc(v.letters.join(', '))}: · ` : 'No drive letter · '}${gb(v.sizeBytes)}${v.readOnly ? ' · read-only' : ''}</div>
+        <md-outlined-button slot="end" data-detach="${i}">Detach</md-outlined-button></md-list-item>`).join('');
+      listEl.querySelectorAll<HTMLElement>('[data-detach]').forEach((b) => b.addEventListener('click', () => run({ action: 'detach', file: disks[Number(b.dataset.detach)].file }, 'Waiting for Windows permission…')));
+    } catch (e) { status.textContent = (e as Error).message; listEl.innerHTML = ''; }
+  }
+  main.querySelector('#vd-refresh')!.addEventListener('click', () => { status.textContent = 'Loading…'; void load(); });
+  main.querySelector('#vd-attach')!.addEventListener('click', async () => {
+    const file = await d.pickFile(['vhdx', 'vhd']); if (!file) return;
+    await run({ action: 'attach', file, readOnly: main.querySelector<HTMLInputElement>('#vd-ro')!.checked }, 'Waiting for Windows permission…');
+  });
+  main.querySelector('#vd-new')!.addEventListener('click', () => {
+    const dlg = document.createElement('md-dialog') as HTMLElement & { show(): void; close(): void };
+    dlg.innerHTML = `<div slot="headline">New virtual disk</div><form slot="content" method="dialog" class="vd-form">
+        <p class="muted">Makes a new file, formats it (NTFS) and gives it a drive letter. An existing file is never replaced.</p>
+        <div class="vd-file"><md-outlined-text-field id="vd-file" label="File" readonly style="flex:1"></md-outlined-text-field><md-filled-tonal-button type="button" id="vd-pick">Choose…</md-filled-tonal-button></div>
+        <md-outlined-text-field id="vd-size" label="Largest size in GB" type="number" min="1" max="2048" value="8"></md-outlined-text-field>
+        <md-outlined-text-field id="vd-label" label="Drive name" value="Worlds" maxlength="32"></md-outlined-text-field>
+        <label class="check"><input type="checkbox" id="vd-fixed"> Take all the space now (slower to make; otherwise the file grows as it fills)</label>
+        <p id="vd-err" class="error" role="alert"></p></form>
+      <div slot="actions"><md-text-button id="vd-cancel">Cancel</md-text-button><md-filled-button id="vd-go">Create</md-filled-button></div>`;
+    document.body.append(dlg); dlg.show();
+    const q = <T extends HTMLElement>(sel: string) => dlg.querySelector<T>(sel)!;
+    dlg.addEventListener('closed', () => dlg.remove());
+    q('#vd-cancel').addEventListener('click', () => dlg.close());
+    q('#vd-pick').addEventListener('click', async () => { const f = await d.saveFile('worlds.vhdx', ['vhdx', 'vhd']); if (f) q<HTMLInputElement>('#vd-file').value = f; });
+    q('#vd-go').addEventListener('click', async () => {
+      const file = q<HTMLInputElement>('#vd-file').value, sizeGb = Number(q<HTMLInputElement>('#vd-size').value), label = q<HTMLInputElement>('#vd-label').value.trim();
+      const err = !file ? 'Choose where the file goes.' : !Number.isInteger(sizeGb) || sizeGb < 1 || sizeGb > 2048 ? 'Size must be a whole number from 1 to 2048 GB.' : !/^[A-Za-z0-9 _-]{1,32}$/.test(label) ? 'The name can use letters, digits, spaces, _ and -, up to 32 characters.' : '';
+      q('#vd-err').textContent = err; if (err) return;
+      const fixed = q<HTMLInputElement>('#vd-fixed').checked;
+      dlg.close();
+      await run({ action: 'create', file, sizeMb: sizeGb * 1024, label, fixed }, 'Waiting for Windows permission, then making the disk…');
+    });
+  });
+  await load();
+}
+
 function stepsHtml(steps: Step[]) {
   return `<ol class="stack" aria-live="polite">${steps.map((s) => `<li><strong>${esc(s.label)}</strong> · ${esc(s.state)}${s.detail ? ` <span class="muted">${esc(s.detail)}</span>` : ''}</li>`).join('')}</ol>`;
 }
@@ -153,6 +218,7 @@ function deployTour(start = 0) {
     { target: '.grid', title: 'Choose where', body: 'Docker on this computer, Docker on another computer over SSH, VirtualBox, VMware, a USB drive, or a Raspberry Pi with Docker.', missing: toDeploy },
     { target: '#form', title: 'Fill in and deploy', body: 'Each target asks only for what it needs, shows every step while it runs, and ends with the working link or the exact error.', missing: toDeploy },
     { target: '#v-inst', title: 'Instances', body: 'Everything this app created: open, start, stop, restart, update, remove, and follow its live log.' },
+    { target: '#v-disks', title: 'Virtual disks', body: 'On Windows: make a disk that lives in one file, attach one you already have, or detach it. Files are never deleted here.' },
     { target: '#tour', title: 'Come back any time', body: 'Take a tour starts this walk-through again.' },
   ], { stepOf: (n, m) => `Step ${n} of ${m} of the deploy tour`, back: 'Back', skip: 'Skip this step', next: 'Next', done: 'Finish', close: 'Close', notHere: 'This part is not on screen right now.' }, {
     start,
@@ -166,14 +232,16 @@ async function render() {
   app.innerHTML = `<header class="top"><div class="brand"><div class="logo" aria-hidden="true"></div><div>
       <div class="md-typescale-headline-medium title">Put Map Editor on your network</div>
       <div class="muted" id="prov"></div></div></div>
-    <md-chip-set><md-filter-chip id="v-deploy" label="Deploy" ${view === 'deploy' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-inst" label="Instances" ${view === 'instances' ? 'selected' : ''}></md-filter-chip></md-chip-set><md-text-button id="tour">Take a tour</md-text-button></header>
+    <md-chip-set><md-filter-chip id="v-deploy" label="Deploy" ${view === 'deploy' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-inst" label="Instances" ${view === 'instances' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-disks" label="Virtual disks" ${view === 'disks' ? 'selected' : ''}></md-filter-chip></md-chip-set><md-text-button id="tour">Take a tour</md-text-button></header>
     <div id="update-banner" class="update-banner" role="region" aria-label="Update" hidden></div>
     <div class="body"><main class="view" id="main"></main></div><div id="toasts" class="toasts"></div>`;
   showUpdate();
   app.querySelector('#v-deploy')!.addEventListener('click', () => { view = 'deploy'; render(); });
   app.querySelector('#v-inst')!.addEventListener('click', () => { view = 'instances'; render(); });
+  app.querySelector('#v-disks')!.addEventListener('click', () => { view = 'disks'; render(); });
   app.querySelector('#tour')!.addEventListener('click', () => deployTour());
   const main = app.querySelector('#main')!;
+  if (view === 'disks') return virtualDisks(main);
   if (view === 'instances') {
     const list: Instance[] = await d.instances();
     if (managing && list.some((i) => i.name === managing)) return manage(main, list.find((i) => i.name === managing)!);

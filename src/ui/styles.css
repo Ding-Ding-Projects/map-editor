@@ -702,3 +702,9 @@ md-outlined-text-field[hidden] { display: none; }
 .select-button:hover { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent); }
 .select-button:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 1px; }
 .select-button:disabled { opacity: .5; cursor: default; }
+
+/* Deploy app: virtual disks (Windows). */
+.vd-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.vd-form { display: flex; flex-direction: column; gap: 14px; min-width: min(460px, 78vw); }
+.vd-file { display: flex; gap: 8px; align-items: center; }
+.vd-form .check, .card .check { display: flex; gap: 8px; align-items: flex-start; }

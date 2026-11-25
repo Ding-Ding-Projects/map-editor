@@ -49,6 +49,12 @@ ipcMain.handle('duplicate-suggest', async (_e, name: string) => {
   return i ? targets.duplicateSuggestion(i, list) : undefined;
 });
 ipcMain.handle('duplicate', async (_e, name: string, o: { name: string; port: number }) => record(`Duplicated ${name} as`, await track(targets.duplicateInstance(dataDir(), name, { name: String(o?.name ?? ''), port: Number(o?.port) }, progress))));
+ipcMain.handle('vdisks', () => targets.listVirtualDisks());
+ipcMain.handle('save-file', async (_e, name: string, exts: string[]) => (await dialog.showSaveDialog(win!, { defaultPath: name, filters: [{ name: 'Files', extensions: exts }] })).filePath);
+ipcMain.handle('vdisk-job', async (_e, job: targets.VdiskJob) => {
+  const what = job?.action === 'create' ? 'Created virtual disk' : job?.action === 'attach' ? 'Attached virtual disk' : 'Detached virtual disk';
+  return record(`${what} ${path.basename(String(job?.file))}`, await targets.vdiskJob(job));
+});
 ipcMain.handle('disks', async () => targets.flashableDisks(await targets.listDisks()));
 ipcMain.handle('flash', async (_e, image: string, diskId: string, typed: string) => {
   // Re-read the disk list here so the renderer can never hand us a disk we did not offer.

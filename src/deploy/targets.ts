@@ -1,7 +1,7 @@
 // One-click deployment targets. Every target ends with a verified link or an honest failure.
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { promises as fs, createReadStream } from 'node:fs';
+import { promises as fs, createReadStream, existsSync } from 'node:fs';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
@@ -458,4 +458,94 @@ export function followLogs(dataDir: string, i: Instance, onLine: (line: string) 
   p.stdout.on('data', feed); p.stderr.on('data', feed);
   p.on('error', (e) => onLine(`Could not read the log: ${e.message}`));
   return () => p.kill();
+}
+
+// ---------- Virtual disks (Windows) ----------
+// Windows' own diskpart does the work, started through the standard elevation prompt.
+// Nothing here deletes a file: a disk can be created (new file only), attached and detached.
+
+export interface VirtualDisk { number: number; name: string; sizeBytes: number; file: string; letters: string[]; readOnly: boolean }
+
+const VDISK_PATH_RE = /^[A-Za-z]:\\(?:[^<>:"/\\|?*\x00-\x1f]+\\)*[^<>:"/\\|?*\x00-\x1f]+\.vhdx?$/i;
+export const VDISK_MIN_MB = 64, VDISK_MAX_MB = 2 * 1024 * 1024;
+
+export function validateVdiskPath(p: string): string | undefined {
+  if (!p) return 'Choose where the virtual disk file goes.';
+  if (p.length > 240) return 'That path is too long. Keep it under 240 characters.';
+  if (!VDISK_PATH_RE.test(p)) return 'Use a full Windows path that ends in .vhdx or .vhd, such as C:\\Disks\\worlds.vhdx.';
+  return undefined;
+}
+export function validateVdiskSize(mb: number): string | undefined {
+  if (!Number.isInteger(mb) || mb < VDISK_MIN_MB || mb > VDISK_MAX_MB) return `Size must be a whole number from ${VDISK_MIN_MB} MB to ${VDISK_MAX_MB} MB (2 TB).`;
+  return undefined;
+}
+export function validateVdiskLabel(label: string): string | undefined {
+  return /^[A-Za-z0-9 _-]{1,32}$/.test(label) ? undefined : 'The name can use letters, digits, spaces, _ and -, up to 32 characters.';
+}
+
+export type VdiskJob =
+  | { action: 'create'; file: string; sizeMb: number; label: string; fixed?: boolean }
+  | { action: 'attach'; file: string; readOnly?: boolean }
+  | { action: 'detach'; file: string };
+
+/** The diskpart script for one job. Throws on anything that did not pass validation. */
+export function diskpartScript(job: VdiskJob): string {
+  const bad = validateVdiskPath(job.file); if (bad) throw new Error(bad);
+  if (job.action === 'create') {
+    const e = validateVdiskSize(job.sizeMb) ?? validateVdiskLabel(job.label); if (e) throw new Error(e);
+    return [`create vdisk file="${job.file}" maximum=${job.sizeMb} type=${job.fixed ? 'fixed' : 'expandable'}`, 'attach vdisk', 'create partition primary', `format fs=ntfs quick label="${job.label}"`, 'assign', ''].join('\r\n');
+  }
+  return [`select vdisk file="${job.file}"`, job.action === 'attach' ? `attach vdisk${job.readOnly ? ' readonly' : ''}` : 'detach vdisk', ''].join('\r\n');
+}
+
+export function parseVirtualDisks(json: string): VirtualDisk[] {
+  const text = json.trim(); if (!text) return [];
+  const raw = JSON.parse(text);
+  return (Array.isArray(raw) ? raw : [raw]).filter((d) => d && typeof d.File === 'string' && d.File).map((d: any) => ({
+    number: Number(d.Number), name: String(d.Name ?? ''), sizeBytes: Number(d.Size) || 0, file: String(d.File), readOnly: Boolean(d.ReadOnly),
+    letters: (Array.isArray(d.Letters) ? d.Letters : d.Letters ? [d.Letters] : []).map((l: unknown) => String(l)).filter((l: string) => /^[A-Za-z]$/.test(l)).map((l: string) => l.toUpperCase()),
+  })).sort((a, b) => a.number - b.number);
+}
+
+const VDISK_LIST_PS = "Get-Disk | Where-Object { $_.BusType -eq 'File Backed Virtual' } | ForEach-Object { $d = $_; [pscustomobject]@{ Number = $d.Number; Name = $d.FriendlyName; Size = $d.Size; File = $d.Location; ReadOnly = [bool]$d.IsReadOnly; Letters = @(Get-Partition -DiskNumber $d.Number -ErrorAction SilentlyContinue | Where-Object DriveLetter | ForEach-Object { [string]$_.DriveLetter }) } } | ConvertTo-Json -Compress -Depth 3";
+
+export async function listVirtualDisks(): Promise<VirtualDisk[]> {
+  if (process.platform !== 'win32') throw new Error('Virtual disks are managed on Windows only.');
+  const r = await run('powershell.exe', ['-NoProfile', '-Command', VDISK_LIST_PS], { timeoutMs: 30_000 });
+  if (r.code !== 0) throw new Error(`Could not list virtual disks: ${r.stderr.trim()}`);
+  return parseVirtualDisks(r.stdout);
+}
+
+const sameFile = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+
+/** Run one job with Windows' elevation prompt, then check for ourselves what actually happened. */
+export async function vdiskJob(job: VdiskJob): Promise<{ ok: boolean; message: string }> {
+  if (process.platform !== 'win32') return { ok: false, message: 'Virtual disks are managed on Windows only.' };
+  let script: string;
+  try { script = diskpartScript(job); } catch (e) { return { ok: false, message: (e as Error).message }; }
+  const exists = existsSync(job.file);
+  if (job.action === 'create' && exists) return { ok: false, message: 'A file with that name already exists. Nothing was changed; choose another name.' };
+  if (job.action !== 'create' && !exists) return { ok: false, message: 'That file was not found. Nothing was changed.' };
+  if (job.action === 'create' && !existsSync(path.dirname(job.file))) return { ok: false, message: 'That folder does not exist. Create it first, or choose another place.' };
+  const before = await listVirtualDisks();
+  const attached = before.some((d) => sameFile(d.file, job.file));
+  if (job.action === 'attach' && attached) return { ok: false, message: 'That disk is already attached.' };
+  if (job.action === 'detach' && !attached) return { ok: false, message: 'That disk is not attached.' };
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'me-vdisk-'));
+  const file = path.join(dir, 'job.txt');
+  try {
+    await fs.writeFile(file, script, 'utf8');
+    const ps = `$ErrorActionPreference = 'Stop'; $p = Start-Process -FilePath diskpart.exe -ArgumentList '/s', '"${file.replace(/'/g, "''")}"' -Verb RunAs -Wait -PassThru -WindowStyle Hidden; exit $p.ExitCode`;
+    const r = await run('powershell.exe', ['-NoProfile', '-Command', ps], { timeoutMs: 15 * 60_000 });
+    const after = await listVirtualDisks();
+    const now = after.find((d) => sameFile(d.file, job.file));
+    const done = job.action === 'detach' ? !now : Boolean(now);
+    if (!done) {
+      const declined = /cancel/i.test(r.stderr);
+      return { ok: false, message: declined ? 'Windows did not get permission, so nothing was changed.' : `diskpart did not finish (code ${r.code}). ${job.action === 'create' && existsSync(job.file) ? 'The file was created but is not attached.' : 'Nothing was changed.'}` };
+    }
+    if (job.action === 'create') return { ok: true, message: `Created ${job.file}${now!.letters.length ? ` as drive ${now!.letters.join(', ')}:` : ''}.` };
+    if (job.action === 'attach') return { ok: true, message: `Attached ${job.file}${now!.letters.length ? ` as drive ${now!.letters.join(', ')}:` : ''}${job.readOnly ? ' (read-only)' : ''}.` };
+    return { ok: true, message: `Detached ${job.file}. The file is kept.` };
+  } finally { await fs.rm(dir, { recursive: true, force: true }); }
 }
