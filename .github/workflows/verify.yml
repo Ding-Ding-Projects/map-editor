@@ -1,0 +1,124 @@
+name: Real-world checks
+# Runs the shipped code against real systems after each release: Docker and Docker over SSH on a
+# real daemon, USB flashing onto a loop device, a Squirrel update of the installed Windows app from
+# the previous release to this one, and booting the Raspberry Pi image under QEMU's raspi4b machine.
+on:
+  workflow_run:
+    workflows: ['Build and release']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: verify
+  cancel-in-progress: true
+jobs:
+  meta:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.r.outputs.tag }}
+      version: ${{ steps.r.outputs.version }}
+      prev: ${{ steps.r.outputs.prev }}
+    steps:
+      - id: r
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          TAGS=$(gh api "repos/${{ github.repository }}/releases?per_page=10" --jq '[.[] | select(.draft == false) | .tag_name] | .[0:2] | join(" ")')
+          set -- $TAGS
+          echo "tag=$1" >> "$GITHUB_OUTPUT"; echo "version=${1#v}" >> "$GITHUB_OUTPUT"; echo "prev=$2" >> "$GITHUB_OUTPUT"
+          echo "Checking $1 (previous $2)"
+
+  deploy-linux:
+    needs: meta
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --no-audit --no-fund
+      - run: npx esbuild scripts/verify-deploy.ts --bundle --platform=node --format=esm --target=node22 --outfile=/tmp/verify-deploy.mjs
+      - name: Docker on this computer
+        env: { MAP_EDITOR_VERSION: '${{ needs.meta.outputs.version }}' }
+        run: node /tmp/verify-deploy.mjs docker
+      - name: Docker on another computer over SSH (this runner's own sshd, key login)
+        env: { MAP_EDITOR_VERSION: '${{ needs.meta.outputs.version }}' }
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq openssh-server
+          ssh-keygen -t ed25519 -N '' -f ~/.ssh/id_ed25519 -q
+          cat ~/.ssh/id_ed25519.pub >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys
+          sudo systemctl start ssh
+          ssh-keyscan -H 127.0.0.1 >> ~/.ssh/known_hosts 2>/dev/null
+          ssh -o BatchMode=yes "$USER@127.0.0.1" docker version --format '{{.Server.Version}}'
+          node /tmp/verify-deploy.mjs ssh "$USER@127.0.0.1"
+      - name: USB flashing onto a loop device
+        run: |
+          truncate -s 16M /tmp/drive.img
+          DEV=$(sudo losetup --find --show /tmp/drive.img)
+          sudo chmod 666 "$DEV"
+          node /tmp/verify-deploy.mjs flash "$DEV"
+          sudo losetup -d "$DEV"
+
+  windows-update:
+    needs: meta
+    if: needs.meta.outputs.prev != ''
+    runs-on: windows-latest
+    steps:
+      - name: Install the previous release, then update it to this release with Squirrel
+        shell: pwsh
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prev = '${{ needs.meta.outputs.prev }}'; $tag = '${{ needs.meta.outputs.tag }}'; $ver = '${{ needs.meta.outputs.version }}'
+          gh release download $prev --repo ${{ github.repository }} --pattern 'Map.EditorSetup.exe' --dir prev
+          $p = Start-Process prev\Map.EditorSetup.exe -ArgumentList '--silent' -PassThru; $p.WaitForExit()
+          $root = Join-Path $env:LOCALAPPDATA 'MapEditor'
+          Start-Sleep 10
+          Get-Process MapEditor -ErrorAction SilentlyContinue | Stop-Process -Force
+          $before = Get-ChildItem $root -Directory -Filter 'app-*' | Select-Object -ExpandProperty Name
+          "Installed from $prev`: $before"
+          if (-not $before) { throw 'previous release did not install' }
+          New-Item -ItemType Directory feed | Out-Null
+          gh release download $tag --repo ${{ github.repository }} --pattern 'RELEASES-MapEditor' --pattern "MapEditor-$ver-full.nupkg" --dir feed
+          Rename-Item feed\RELEASES-MapEditor RELEASES
+          $feed = (Resolve-Path feed).Path
+          $u = Start-Process (Join-Path $root 'Update.exe') -ArgumentList "--update `"$feed`"" -PassThru -Wait
+          "Update.exe exit code $($u.ExitCode)"
+          $after = Get-ChildItem $root -Directory -Filter 'app-*' | Select-Object -ExpandProperty Name
+          "After update: $after"
+          if (-not (Test-Path (Join-Path $root "app-$ver\MapEditor.exe"))) { throw "app-$ver was not installed by the update" }
+          "PASS: Squirrel update $prev -> $tag"
+
+  pi-boot:
+    needs: meta
+    runs-on: ubuntu-latest
+    steps:
+      - name: Boot the Raspberry Pi image on QEMU's raspi4b machine
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          set -eu
+          sudo apt-get update -qq && sudo apt-get install -y -qq qemu-system-arm mtools xz-utils
+          qemu-system-aarch64 --version | head -1
+          gh release download ${{ needs.meta.outputs.tag }} --repo ${{ github.repository }} --pattern 'map-editor-appliance-rpi-arm64.img.xz'
+          xz -d map-editor-appliance-rpi-arm64.img.xz
+          IMG=map-editor-appliance-rpi-arm64.img
+          for f in vmlinuz-rpi initramfs-rpi bcm2711-rpi-4-b.dtb config.txt cmdline.txt; do mcopy -n -i "$IMG@@1M" "::$f" .; done
+          cat config.txt cmdline.txt
+          # QEMU does not run the Pi firmware, so the kernel, initramfs and device tree from the boot
+          # partition are loaded directly; the root file system is the image's own second partition.
+          ( timeout 900 qemu-system-aarch64 -M raspi4b -m 2G -kernel vmlinuz-rpi -initrd initramfs-rpi -dtb bcm2711-rpi-4-b.dtb \
+              -append "root=LABEL=map-editor rootfstype=ext4 modules=ext4 rootwait console=ttyAMA0,115200" \
+              -drive file=$IMG,format=raw,if=sd -serial mon:stdio -display none -no-reboot > serial.log 2>&1 || true ) &
+          for i in $(seq 1 180); do
+            if grep -q 'Starting Map Editor' serial.log; then echo "Reached the Map Editor service after ~$((i*5)) s"; break; fi
+            sleep 5
+          done
+          tail -60 serial.log
+          grep -q 'Linux version' serial.log || { echo 'FAIL: kernel did not start'; exit 1; }
+          grep -qi 'openrc\|Starting' serial.log || { echo 'FAIL: init did not start'; exit 1; }
+          grep -q 'Starting Map Editor' serial.log || { echo 'FAIL: the Map Editor service did not start'; exit 1; }
+          echo 'PASS: Pi image kernel, initramfs, root file system and services boot on raspi4b'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: pi-serial-log, path: serial.log, if-no-files-found: ignore }
