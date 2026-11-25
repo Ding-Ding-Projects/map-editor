@@ -4,6 +4,7 @@
 import { createDockview } from 'dockview-core/dist/dockview-core.js';
 
 const LAYOUT = 'map-editor-site.layout.v1', PLAIN = 'map-editor-site.plain';
+const two = (en, yue) => `<span data-l="en" lang="en">${en}</span><span data-l="yue" lang="yue-Hant-HK">${yue}</span>`;
 const read = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const write = (k, v) => { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch { /* storage blocked */ } };
 
@@ -12,7 +13,7 @@ function start() {
   if (!body || !article || !toc) return;
   const bar = document.createElement('div');
   bar.className = 'dock-bar';
-  bar.innerHTML = '<button type="button" id="dock-toggle" aria-pressed="false"></button><button type="button" id="dock-reset">Reset layout</button><span class="dock-hint">Drag a tab to move it, drop it on an edge to split, or drag it out to float.</span>';
+  bar.innerHTML = `<button type="button" id="dock-toggle" aria-pressed="false"></button><button type="button" id="dock-reset">${two('Reset layout', '重設版面')}</button><span class="dock-hint">${two('Drag a tab to move it, drop it on an edge to split, or drag it out to float.', '拖個分頁就郁到，放喺邊位就分割，拖出嚟就浮動。')}</span>`;
   body.before(bar);
   const toggle = bar.querySelector('#dock-toggle'), reset = bar.querySelector('#dock-reset'), hint = bar.querySelector('.dock-hint');
   const wide = matchMedia('(min-width: 900px)');
@@ -52,7 +53,7 @@ function start() {
   function sync() {
     const plain = read(PLAIN) === '1' || !wide.matches;
     toggle.hidden = !wide.matches;
-    toggle.textContent = plain ? 'Workspace view' : 'Plain page';
+    toggle.innerHTML = plain ? two('Workspace view', '工作區檢視') : two('Plain page', '普通頁面');
     toggle.setAttribute('aria-pressed', String(!plain));
     if (plain) close(); else open();
   }

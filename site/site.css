@@ -177,3 +177,14 @@ article figure { margin: 16px 0 24px; } article figure img { width: 100%; height
 @media (max-width: 899px) { .dock-bar { display: none; } }
 @media print { .dock-bar { display: none; } }
 .site-dock .dv-groupview { border-radius: 24px; overflow: hidden; }
+
+/* Language modes: English (default), Cantonese, or both with Cantonese under the English. */
+[data-l="yue"] { display: none; }
+[data-lang="yue"] [data-l="en"] { display: none; } [data-lang="yue"] [data-l="yue"] { display: inline; }
+[data-lang="both"] [data-l="yue"] { display: inline; } [data-lang="both"] [data-l="en"]::after { content: ' · '; opacity: .6; }
+[data-lang="both"] p > [data-l="yue"], [data-lang="both"] .lead > [data-l="yue"] { display: block; margin-top: 6px; opacity: .9; } [data-lang="both"] p > [data-l="en"]::after, [data-lang="both"] .lead > [data-l="en"]::after { content: none; }
+.lang-switch { display: inline-flex; gap: 2px; padding: 4px; border-radius: 999px; background: var(--sc2); }
+.lang-switch button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--on-s); font: inherit; font-weight: 700; cursor: pointer; }
+.lang-switch button[aria-pressed="true"] { background: var(--p); color: var(--on-p); }
+.lang-switch button:focus-visible { outline: 3px solid var(--p); outline-offset: 2px; }
+@media print { .lang-switch { display: none; } }
