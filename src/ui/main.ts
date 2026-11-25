@@ -33,6 +33,7 @@ import { RAINBOW } from './color.js';
 import { blockColor } from '../core/colors.js';
 import { argbFromHex, themeFromSourceColor, applyTheme as applyM3Theme } from '@material/material-color-utilities';
 import { notesPanel as notesPanelImpl } from './notes.js';
+import { contextMenu, initMenus } from './menu.js';
 
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
 
@@ -130,6 +131,7 @@ function loadVocab(): Record<string, { en?: string; yue?: string }> { try { retu
 function saveVocab(v: Record<string, { en?: string; yue?: string }>) { try { localStorage.setItem(VOCAB_KEY, JSON.stringify(v)); } catch { /* storage blocked */ } setVocabulary(v); }
 setVocabulary(loadVocab());
 const rx: RegexText = (k, v) => tx(k, v);
+initMenus({ rx, search: () => tx('searchMenu'), none: () => tx('menuNone') });
 const esc = (s: unknown) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
 // ---------- api ----------
@@ -711,7 +713,7 @@ async function editorView(view: HTMLElement): Promise<void> {
     <section class="map card flat"><div class="map-bar">
         <md-chip-set aria-label="Dimension">${(world.dimensions?.length ? world.dimensions : ['overworld']).map((d) => `<md-filter-chip data-dim="${d}" label="${esc(tx(d as Key))}" ${d === dim ? 'selected' : ''}></md-filter-chip>`).join('')}</md-chip-set>
         <span class="spacer"></span><md-filled-tonal-button id="undo" title="Ctrl+Z">${esc(tx('undo'))}</md-filled-tonal-button></div>
-      <canvas id="map" role="img" aria-label="Top-down map"></canvas>
+      <canvas id="map" role="img" tabindex="0" aria-label="Top-down map"></canvas>
       <div class="coords md-typescale-body-small" id="coords">x 0 · z 0</div>
       <div class="map-toolbar" role="toolbar" aria-label="${esc(tx('mapTools'))}">
         ${MAP_MODES.map((m) => `<button type="button" data-mode="${m}" aria-pressed="${m === mapMode}" title="${esc(tx(`mode_${m}` as Key))} (${MAP_MODE_KEYS[m]})">${esc(tx(`mode_${m}` as Key))}</button>`).join('')}
@@ -925,6 +927,23 @@ async function editorView(view: HTMLElement): Promise<void> {
   };
   mapEl.querySelectorAll<HTMLElement>('[data-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode as MapMode)));
   setMapMode = setMode;
+  const mapMenu = (cx: number, cy: number, b: { x: number; z: number }) => contextMenu(cx, cy, tx('mapMenu'), [
+    [tx('menuCopyCoords', b), () => void navigator.clipboard?.writeText(`${b.x} ${b.z}`).then(() => notify(tx('copied')), () => notify(tx('copyFailed'), true))],
+    [tx('menuPick'), () => void pickAt(b.x, b.z)],
+    [tx('menuCorner1'), () => { sel.x1 = b.x; sel.z1 = b.z; drawSel(); syncSel?.(); }],
+    [tx('menuCorner2'), () => { sel.x2 = b.x; sel.z2 = b.z; drawSel(); syncSel?.(); }],
+    [tx('menuCentre'), () => { const r = canvas.getBoundingClientRect(); originX = b.x - r.width / scale / 2; originZ = b.z - r.height / scale / 2; keepView(true); void drawMap(); }],
+    [tx('menuGoto'), () => { setMode('goto'); openGoto(b.x, b.z); }],
+    ...MAP_MODES.filter((k) => k !== 'goto' && k !== mapMode).map((k) => [`${tx('menuMode')}: ${tx(`mode_${k}` as Key)}`, () => setMode(k)] as [string, () => void]),
+    [tx('undo'), () => document.querySelector<HTMLElement>('#undo')?.click()],
+  ], canvas);
+  canvas.addEventListener('contextmenu', (e) => { e.preventDefault(); mapMenu(e.clientX, e.clientY, toBlock(e as unknown as PointerEvent)); });
+  canvas.addEventListener('keydown', (e) => {
+    if (e.key !== 'ContextMenu' && !(e.shiftKey && e.key === 'F10')) return;
+    e.preventDefault();
+    const r = canvas.getBoundingClientRect();
+    mapMenu(r.left + r.width / 2, r.top + r.height / 2, { x: Math.floor(originX + r.width / scale / 2), z: Math.floor(originZ + r.height / scale / 2) });
+  });
   canvas.dataset.mode = mapMode;
   canvas.addEventListener('wheel', (e) => { e.preventDefault(); scale = Math.max(0.5, Math.min(16, scale * (e.deltaY < 0 ? 1.25 : 0.8))); keepView(true); drawMap(); }, { passive: false });
   syncSel = () => toolEl.querySelectorAll<HTMLInputElement>('.coords-grid md-outlined-text-field').forEach((f) => { f.value = String((sel as Record<string, number>)[f.getAttribute('name')!]); });

@@ -53,7 +53,7 @@ describe('regex evaluation', () => {
 
 // Completeness guard: every search field in the UI must be a regex-builder search box listed here.
 // A new search input that bypasses searchBox() fails this test.
-const SEARCH_SURFACES = ['palette-search', 'settings-search', 'history-search', 'changelog-search', 'notification-search', 'extension-search', 'tab-search', 'activity-search'];
+const SEARCH_SURFACES = ['palette-search', 'settings-search', 'history-search', 'changelog-search', 'notification-search', 'extension-search', 'tab-search', 'activity-search', 'menu-search'];
 describe('search surface catalogue', () => {
   const dir = path.join(__dirname, '..', 'src');
   const files = (d: string): string[] => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? files(path.join(d, e.name)) : [path.join(d, e.name)]).filter((f) => f.endsWith('.ts'));

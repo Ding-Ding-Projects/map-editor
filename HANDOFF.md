@@ -9,6 +9,7 @@ this file covers testing.
 | Area | What | Where |
 | --- | --- | --- |
 | Editor | Map toolbar (Pan, Select, Pick block, Measure, Go to; keys H S I M G) | `src/ui/main.ts` |
+| Editor | Right-click menu on the map and searchable dropdowns everywhere, each with the regex builder; map view kept when you leave and return; phone toolbar clear of the bottom bar | `src/ui/menu.ts`, `src/ui/main.ts` |
 | Editor | Blocks panel of colour swatches feeding Fill and Replace | `src/ui/main.ts` |
 | Editor | Side view panel: a vertical cut along x or z through the selection | `src/core/session.ts` (`renderSlice`), `/api/slice` |
 | Editor | Biome tool (key B), per 4×4×4 cell, saved packed in each section | `src/core/chunk.ts`, `src/core/ops.ts` (`setBiome`) |
@@ -81,8 +82,7 @@ above). These checks still need a person, a browser session or hardware:
   stopped its removal.
 - Still to do, from `ROADMAP.md`:
   - editing Bedrock Edition worlds directly (they are recognised and listed, not edited);
-  - a virtual disk manager on Windows;
-  - the regex builder on dropdowns and right-click menus, once the app has them.
+  - a virtual disk manager on Windows.
 - Not yet tried for real: the local AI helper against a running Ollama, and the server.properties editor
   with a file from a live server.
 - Code-signed extension sources are not planned: this project does not sign code.
