@@ -125,4 +125,18 @@ describe('extensions', () => {
     await expect(ex.installUrl('https://192.168.1.5/x.zip', false, fake)).rejects.toThrow(/local network/);
     await expect(ex.installUrl('not a link', false, fake)).rejects.toThrow(/not a link/);
   });
+  it('checks a download against the SHA-256 the author published', async () => {
+    const data = await mkdtemp(path.join(os.tmpdir(), 'me-ext-'));
+    const ex = new Extensions(builtIn, data);
+    const zip = path.join(data, 'n.zip');
+    await new Promise<void>((ok) => { const z = new yazl.ZipFile(); z.addFile(path.join(__dirname, '..', 'samples', 'extensions', 'hello-node', 'manifest.json'), 'manifest.json'); z.addFile(path.join(__dirname, '..', 'samples', 'extensions', 'hello-node', 'main.mjs'), 'main.mjs'); z.end(); z.outputStream.pipe(createWriteStream(zip)).on('close', () => ok()); });
+    const bytes = await (await import('node:fs/promises')).readFile(zip);
+    const sha = (await import('node:crypto')).createHash('sha256').update(bytes).digest('hex');
+    const fake = (async () => new Response(bytes, { status: 200 })) as unknown as typeof fetch;
+    await expect(ex.installUrl('https://example.com/hello.zip', false, fake, '0'.repeat(64))).rejects.toThrow(/does not match/);
+    expect((await ex.list()).some((e) => e.manifest.id === 'hello-node')).toBe(false);
+    await expect(ex.installUrl('https://example.com/hello.zip', false, fake, 'not-a-hash')).rejects.toThrow(/64 characters/);
+    const ok = await ex.installUrl('https://example.com/hello.zip', false, fake, sha.toUpperCase());
+    expect(ok).toMatchObject({ id: 'hello-node', sha256: sha });
+  });
 });

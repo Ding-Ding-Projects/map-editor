@@ -202,8 +202,8 @@ export async function createServer(opts: ServerOptions) {
       }
     }
     if (p === '/api/extensions/add-url' && req.method === 'POST') {
-      const { url: link, replace } = await body(req);
-      try { const m = await extensions.installUrl(String(link ?? ''), replace === true, opts.fetchImpl); return send(201, { id: m.id, name: m.name, version: m.version }); }
+      const { url: link, replace, sha256 } = await body(req);
+      try { const m = await extensions.installUrl(String(link ?? ''), replace === true, opts.fetchImpl, typeof sha256 === 'string' ? sha256 : undefined); return send(201, { id: m.id, name: m.name, version: m.version, sha256: m.sha256 }); }
       catch (e) {
         if (e instanceof ReplaceNeeded) return send(409, { replace: true, id: e.id, installed: e.installed, incoming: e.incoming, error: e.message });
         throw new HttpError(400, (e as Error).message);

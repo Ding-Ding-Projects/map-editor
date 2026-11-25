@@ -138,21 +138,30 @@ export class Extensions {
     finally { await fs.rm(tmp, { recursive: true, force: true }); }
   }
 
-  /** Download a .zip from an https link (20 MiB at most, 30 s) and install it like an uploaded one. */
-  async installUrl(link: string, replace = false, fetchImpl: typeof fetch = fetch): Promise<Manifest> {
+  /**
+   * Download a .zip from an https link (20 MiB at most, 30 s) and install it like an uploaded one.
+   * With an expected SHA-256 (as an author publishes next to the link), a download that differs is refused.
+   */
+  async installUrl(link: string, replace = false, fetchImpl: typeof fetch = fetch, expectedSha256?: string): Promise<Manifest & { sha256: string }> {
+    const want = expectedSha256?.trim().toLowerCase() || undefined;
+    if (want && !/^[0-9a-f]{64}$/.test(want)) throw new Error('A SHA-256 is 64 characters, 0 to 9 and a to f.');
     let u: URL;
     try { u = new URL(link); } catch { throw new Error('That is not a link.'); }
     if (u.protocol !== 'https:') throw new Error('Only https links are accepted.');
     if (/^(localhost|127\.|10\.|192\.168\.|169\.254\.|0\.|\[?::1\]?$)/i.test(u.hostname) || /^172\.(1[6-9]|2\d|3[01])\./.test(u.hostname)) throw new Error('Links to this computer or the local network are not accepted.');
-    const res = await fetchImpl(u, { signal: AbortSignal.timeout(30_000), redirect: 'follow' });
+    let res: Response;
+    try { res = await fetchImpl(u, { signal: AbortSignal.timeout(30_000), redirect: 'follow' }); }
+    catch (e) { throw new Error(`Could not download from ${u.hostname}: ${(e as Error).cause instanceof Error ? ((e as Error).cause as Error).message : (e as Error).message}. Check the link and this computer's internet connection.`); }
     if (!res.ok) throw new Error(`The link answered ${res.status}.`);
     if (Number(res.headers.get('content-length') ?? 0) > LIMITS.folderBytes) throw new Error('Extension archives are limited to 20 MiB.');
     const buf = Buffer.from(await res.arrayBuffer());
     if (buf.length > LIMITS.folderBytes) throw new Error('Extension archives are limited to 20 MiB.');
+    const sha256 = createHash('sha256').update(buf).digest('hex');
+    if (want && sha256 !== want) throw new Error(`The download does not match the SHA-256 you gave (it is ${sha256}). Nothing was installed.`);
     await fs.mkdir(path.join(this.dataDir, 'uploads'), { recursive: true });
     const tmp = path.join(this.dataDir, 'uploads', `ext-link-${Date.now()}.zip`);
     await fs.writeFile(tmp, buf);
-    try { return await this.installZip(tmp, replace); } finally { await fs.rm(tmp, { force: true }); }
+    try { return { ...(await this.installZip(tmp, replace)), sha256 }; } finally { await fs.rm(tmp, { force: true }); }
   }
 
   /** Remove an extension the user added (built-in ones can only be switched off). */

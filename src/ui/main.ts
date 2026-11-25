@@ -787,7 +787,7 @@ async function extensionsPanel(view: HTMLElement) {
       r = await doIt(true); j = await r.json().catch(() => ({}));
     }
     if (!r.ok) { notify(j.error ?? `${r.status}`, true); return; }
-    notify(tx('extAdded', { name: j.name, version: j.version })); play('create'); void extensionsPanel(view);
+    notify(j.sha256 ? tx('extAddedSha', { name: j.name, version: j.version, sha: j.sha256 }) : tx('extAdded', { name: j.name, version: j.version })); play('create'); void extensionsPanel(view);
   };
   const zipIn = bar.querySelector<HTMLInputElement>('#ext-zip-file')!;
   bar.querySelector('#ext-zip')!.addEventListener('click', () => zipIn.click());
@@ -796,9 +796,26 @@ async function extensionsPanel(view: HTMLElement) {
     void added((replace) => fetch('/api/extensions/upload', { method: 'POST', headers: { 'content-type': 'application/zip', 'x-map-editor': '1', ...(replace ? { 'x-replace': '1' } : {}) }, body: f }));
     zipIn.value = '';
   });
+  // A dialog rather than prompt(): the desktop app has no prompt(), and the SHA-256 needs its own field.
   bar.querySelector('#ext-link')!.addEventListener('click', () => {
-    const link = prompt(tx('extLinkAsk'))?.trim(); if (!link) return;
-    void added((replace) => fetch('/api/extensions/add-url', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url: link, replace }) }));
+    const dlg = document.createElement('md-dialog') as HTMLElement & { show: () => void; close: () => void; returnValue: string };
+    dlg.innerHTML = `<div slot="headline">${esc(tx('extAddLink'))}</div>
+      <form slot="content" id="ext-link-form" method="dialog" class="stack">
+        <md-outlined-text-field name="url" type="url" label="${esc(tx('extLinkAsk'))}" required></md-outlined-text-field>
+        <p class="muted">${esc(tx('extLinkOff'))}</p>
+        <md-outlined-text-field name="sha" label="${esc(tx('extShaLabel'))}" supporting-text="${esc(tx('extShaNote'))}" maxlength="64"></md-outlined-text-field>
+      </form>
+      <div slot="actions"><md-text-button form="ext-link-form" value="cancel">${esc(tx('cancel'))}</md-text-button><md-filled-button form="ext-link-form" value="ok">${esc(tx('extInstall'))}</md-filled-button></div>`;
+    document.body.append(dlg);
+    dlg.show();
+    dlg.addEventListener('closed', () => {
+      const link = (dlg.querySelector('[name=url]') as HTMLInputElement).value.trim();
+      const sha = (dlg.querySelector('[name=sha]') as HTMLInputElement).value.trim();
+      const ok = dlg.returnValue === 'ok';
+      dlg.remove();
+      if (!ok || !link) return;
+      void added((replace) => fetch('/api/extensions/add-url', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url: link, replace, ...(sha ? { sha256: sha } : {}) }) }));
+    });
   });
   bar.querySelector('#ext-folder')?.addEventListener('click', async () => {
     const dir = await desktopBridge!.pickFolder(); if (!dir) return;
