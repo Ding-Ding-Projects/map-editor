@@ -1,7 +1,7 @@
 // Map Editor web UI, shared by the desktop app, the Docker web app and the appliance.
 import '@material/web/all.js';
 import { styles as typescaleStyles } from '@material/web/typography/md-typescale-styles.js';
-import { t as tr, setVocabulary, parseVocabulary, STRINGS, type I18nState, type Key, type Lang } from './i18n.js';
+import { t as tr, englishOf, setVocabulary, parseVocabulary, STRINGS, type I18nState, type Key, type Lang } from './i18n.js';
 import { mountWorkspace, PHONE, resetLayout } from './workspace.js';
 import { searchBox, type RegexText } from './regex.js';
 import { enableClearControls } from './clearable.js';
@@ -34,6 +34,7 @@ import { blockColor } from '../core/colors.js';
 import { argbFromHex, themeFromSourceColor, applyTheme as applyM3Theme } from '@material/material-color-utilities';
 import { notesPanel as notesPanelImpl } from './notes.js';
 import { contextMenu, initMenus } from './menu.js';
+import { initButtonIcons } from './icons.js';
 
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
 
@@ -132,6 +133,7 @@ function saveVocab(v: Record<string, { en?: string; yue?: string }>) { try { loc
 setVocabulary(loadVocab());
 const rx: RegexText = (k, v) => tx(k, v);
 initMenus({ rx, search: () => tx('searchMenu'), none: () => tx('menuNone') });
+initButtonIcons(englishOf);
 const esc = (s: unknown) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
 // ---------- api ----------
@@ -575,7 +577,7 @@ function shell() {
       </md-chip-set>
       ${user && prefs.onboarded ? `<md-icon-button id="tour-help" aria-label="${esc(tx('help'))}" title="${esc(tx('help'))}"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.7-2.5 2-2.5 4M12 17h.01"/></svg></md-icon-button>` : ''}
       ${user ? `<span class="bell-wrap"><md-icon-button id="bell" aria-label="${esc(tx('notifications'))}${notes.length ? `, ${notes.length}` : ''}"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21h4"/></svg></md-icon-button>${notes.length ? `<span class="badge">${notes.length}</span>` : ''}</span>` : ''}
-      ${user ? `<md-outlined-button id="logout">${esc(user.name)}</md-outlined-button>` : ''}
+      ${user ? `<md-outlined-button id="logout" data-icon="user">${esc(user.name)}</md-outlined-button>` : ''}
     </header>
     <div id="update-banner" class="update-banner" role="region" aria-label="${esc(tx('updateRegion'))}" hidden></div>
     <div class="body">
@@ -717,7 +719,7 @@ async function editorView(view: HTMLElement): Promise<void> {
       <canvas id="map" role="img" tabindex="0" aria-label="Top-down map"></canvas>
       <div class="coords md-typescale-body-small" id="coords">x 0 · z 0</div>
       <div class="map-toolbar" role="toolbar" aria-label="${esc(tx('mapTools'))}">
-        ${MAP_MODES.map((m) => `<button type="button" data-mode="${m}" aria-pressed="${m === mapMode}" title="${esc(tx(`mode_${m}` as Key))} (${MAP_MODE_KEYS[m]})">${esc(tx(`mode_${m}` as Key))}</button>`).join('')}
+        ${MAP_MODES.map((m) => `<button type="button" data-mode="${m}" aria-pressed="${m === mapMode}" title="${esc(tx(`mode_${m}` as Key))} (${MAP_MODE_KEYS[m]})" aria-label="${esc(tx(`mode_${m}` as Key))}"><span class="lbl">${esc(tx(`mode_${m}` as Key))}</span></button>`).join('')}
       </div>
       <div class="mt-status" id="mt-status" aria-live="polite"></div>
       <form class="goto-form" id="goto" hidden><md-outlined-text-field name="gx" type="number" label="x"></md-outlined-text-field><md-outlined-text-field name="gz" type="number" label="z"></md-outlined-text-field><md-filled-button type="submit">${esc(tx('mode_goto'))}</md-filled-button><md-text-button type="button" id="goto-x">${esc(tx('close'))}</md-text-button></form></section>

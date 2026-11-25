@@ -614,10 +614,15 @@ export function t(state: I18nState, key: Key, vars: Record<string, string | numb
   const e = (o ? { ...(S[key] as Entry), ...(o.en ? { en: o.en, en5: o.en } : {}), ...(o.yue ? { yue: o.yue, yue5: o.yue } : {}) } : S[key]) as Entry;
   const en = fill(pick(e, 'en', state.funnyEn), vars);
   const yue = fill(pick(e, 'yue', state.funnyYue), vars);
-  if (state.lang === 'en') return en;
-  if (state.lang === 'yue') return yue;
-  return en === yue ? en : `${en} · ${yue}`; // a name that is the same in both is shown once
+  const out = state.lang === 'en' ? en : state.lang === 'yue' ? yue : en === yue ? en : `${en} · ${yue}`; // a name that is the same in both is shown once
+  // Remember the plain English behind each shown string, so icons can be chosen in any language mode.
+  if (out.length < 80) { if (shown.size > 4000) shown.clear(); shown.set(out, fill((S[key] as Entry).en, vars)); }
+  return out;
 }
+
+const shown = new Map<string, string>();
+/** The built-in English wording of a string exactly as it was last shown, if it came from here. */
+export function englishOf(label: string): string | undefined { return shown.get(label); }
 
 export const ALL_KEYS = Object.keys(S) as Key[];
 export const STRINGS = S as Record<Key, Entry>;

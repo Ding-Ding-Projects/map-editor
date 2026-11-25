@@ -3,6 +3,7 @@
 //  - JSON to TypeScript: types for a JSON sample (the kind of job quicktype does).
 //  - Coordinates: block, chunk, region file and Nether/Overworld positions.
 
+import { iconSvg } from './icons.js';
 import { readNbt, TagType, type Tag } from '../core/nbt.js';
 
 export type ToolsText = (k: string, v?: Record<string, string | number>) => string;
@@ -114,32 +115,32 @@ export function coordinates(x: number, z: number) {
 
 export function toolsView(view: HTMLElement, t: ToolsText, esc: (s: unknown) => string, notify: (text: string, error?: boolean) => void) {
   view.innerHTML = `<div class="tools-grid">
-    <section class="card tool-card" aria-labelledby="tb64"><h2 id="tb64">${esc(t('toolBase64'))}</h2><p class="muted">${esc(t('toolBase64Note'))}</p>
+    <section class="card tool-card" aria-labelledby="tb64"><h2 id="tb64"><span class="tool-badge" aria-hidden="true">${iconSvg('code', 22)}</span>${esc(t('toolBase64'))}</h2><p class="muted">${esc(t('toolBase64Note'))}</p>
       <label class="tool-field">${esc(t('toolInput'))}<textarea id="b64-in" rows="5" spellcheck="false"></textarea></label>
       <div class="row-actions"><md-filled-tonal-button id="b64-enc">${esc(t('toolEncode'))}</md-filled-tonal-button><md-outlined-button id="b64-dec">${esc(t('toolDecode'))}</md-outlined-button>
         <md-outlined-button id="b64-file">${esc(t('toolFile'))}</md-outlined-button><input type="file" id="b64-file-in" hidden></div>
       <label class="tool-field">${esc(t('toolOutput'))}<textarea id="b64-out" rows="5" readonly spellcheck="false"></textarea></label>
       <div class="row-actions"><md-text-button data-copy="b64-out">${esc(t('toolCopy'))}</md-text-button></div></section>
-    <section class="card tool-card" aria-labelledby="tts"><h2 id="tts">${esc(t('toolTypes'))}</h2><p class="muted">${esc(t('toolTypesNote'))}</p>
+    <section class="card tool-card" aria-labelledby="tts"><h2 id="tts"><span class="tool-badge" aria-hidden="true">${iconSvg('braces', 22)}</span>${esc(t('toolTypes'))}</h2><p class="muted">${esc(t('toolTypesNote'))}</p>
       <label class="tool-field">${esc(t('toolJson'))}<textarea id="ts-in" rows="7" spellcheck="false">{ "name": "Survival", "spawn": { "x": 0, "y": 64, "z": 0 }, "players": [{ "name": "Alex", "op": true }, { "name": "Sam" }] }</textarea></label>
       <md-outlined-text-field id="ts-name" label="${esc(t('toolTypeName'))}" value="World"></md-outlined-text-field>
       <div class="row-actions"><md-filled-tonal-button id="ts-go">${esc(t('toolMakeTypes'))}</md-filled-tonal-button><md-text-button data-copy="ts-out">${esc(t('toolCopy'))}</md-text-button></div>
       <pre class="tool-pre" id="ts-out" aria-live="polite"></pre></section>
-    <section class="card tool-card" aria-labelledby="tcv"><h2 id="tcv">${esc(t('toolConvert'))}</h2><p class="muted">${esc(t('toolConvertNote'))}</p>
+    <section class="card tool-card" aria-labelledby="tcv"><h2 id="tcv"><span class="tool-badge" aria-hidden="true">${iconSvg('swap', 22)}</span>${esc(t('toolConvert'))}</h2><p class="muted">${esc(t('toolConvertNote'))}</p>
       <div class="row-actions"><md-outlined-button id="cv-pick">${esc(t('toolConvertPick'))}</md-outlined-button><input type="file" id="cv-file" hidden>
         <label class="tool-inline">${esc(t('toolConvertTo'))} <select id="cv-to"><option value="image/png">PNG</option><option value="image/jpeg">JPEG</option><option value="image/webp">WebP</option><option value="json">JSON (NBT)</option></select></label></div>
       <p class="muted" id="cv-info" aria-live="polite"></p><pre class="tool-pre" id="cv-out" hidden></pre>
       <div class="row-actions"><md-text-button id="cv-save" disabled>${esc(t('toolConvertSave'))}</md-text-button></div></section>
-    <section class="card tool-card" aria-labelledby="tsp"><h2 id="tsp">${esc(t('toolServer'))}</h2><p class="muted">${esc(t('toolServerNote'))}</p>
+    <section class="card tool-card" aria-labelledby="tsp"><h2 id="tsp"><span class="tool-badge" aria-hidden="true">${iconSvg('server', 22)}</span>${esc(t('toolServer'))}</h2><p class="muted">${esc(t('toolServerNote'))}</p>
       <div class="row-actions"><md-outlined-button id="sp-pick">${esc(t('toolServerPick'))}</md-outlined-button><md-text-button id="sp-new">${esc(t('toolServerNew'))}</md-text-button><input type="file" id="sp-file" accept=".properties,text/plain" hidden></div>
       <div id="sp-form" class="sp-form"></div>
       <div class="row-actions"><md-filled-tonal-button id="sp-save" disabled>${esc(t('toolServerSave'))}</md-filled-tonal-button></div></section>
-    <section class="card tool-card" aria-labelledby="tai"><h2 id="tai">${esc(t('toolAi'))}</h2><p class="muted">${esc(t('toolAiNote'))}</p>
+    <section class="card tool-card" aria-labelledby="tai"><h2 id="tai"><span class="tool-badge" aria-hidden="true">${iconSvg('spark', 22)}</span>${esc(t('toolAi'))}</h2><p class="muted">${esc(t('toolAiNote'))}</p>
       <div class="row-actions"><label class="tool-inline">${esc(t('toolAiModel'))} <select id="ai-model"><option value="">…</option></select></label><md-text-button id="ai-refresh">${esc(t('toolAiRefresh'))}</md-text-button></div>
       <label class="tool-field">${esc(t('toolAiPrompt'))}<textarea id="ai-in" rows="4" maxlength="8000"></textarea></label>
       <div class="row-actions"><md-filled-tonal-button id="ai-go">${esc(t('toolAiAsk'))}</md-filled-tonal-button><md-text-button data-copy="ai-out">${esc(t('toolCopy'))}</md-text-button></div>
       <pre class="tool-pre tool-wrap" id="ai-out" aria-live="polite"></pre></section>
-    <section class="card tool-card" aria-labelledby="tco"><h2 id="tco">${esc(t('toolCoords'))}</h2><p class="muted">${esc(t('toolCoordsNote'))}</p>
+    <section class="card tool-card" aria-labelledby="tco"><h2 id="tco"><span class="tool-badge" aria-hidden="true">${iconSvg('target', 22)}</span>${esc(t('toolCoords'))}</h2><p class="muted">${esc(t('toolCoordsNote'))}</p>
       <div class="row-actions"><md-outlined-text-field id="co-x" type="number" label="x" value="1234"></md-outlined-text-field><md-outlined-text-field id="co-z" type="number" label="z" value="-567"></md-outlined-text-field></div>
       <dl class="tool-dl" id="co-out" aria-live="polite"></dl></section>
   </div>`;

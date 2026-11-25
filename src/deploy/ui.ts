@@ -4,6 +4,7 @@ import { enableClearControls } from '../ui/clearable.js';
 import { startTour } from '../ui/tour.js';
 import { showTakeover } from '../ui/takeover.js';
 import { downloadRows, exportButton } from '../ui/exporter.js';
+import { iconSvg, initButtonIcons } from '../ui/icons.js';
 
 interface Step { label: string; state: 'waiting' | 'running' | 'done' | 'failed'; detail?: string }
 interface Disk { id: string; name: string; sizeBytes: number }
@@ -13,6 +14,7 @@ const d = window.deploy;
 const esc = (s: unknown) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
+const TARGET_ICONS: Record<string, string> = {'docker': 'docker', 'ssh': 'remote', 'virtualbox': 'box', 'vmware': 'layers', 'usb': 'usb', 'pi': 'chip'};
 const TARGETS = [
   { id: 'docker', name: 'Docker', desc: 'Pulls the published image and starts it with Compose on this computer.' },
   { id: 'ssh', name: 'Docker on another computer', desc: 'Uses Docker on a server or spare PC through SSH, with your own SSH key. No passwords are stored.' },
@@ -262,7 +264,7 @@ async function render() {
     for (const i of list) d.state(i.name).then((st: string) => { const el = main.querySelector(`[data-state="${CSS.escape(i.name)}"]`); if (el) el.textContent = STATE_LABEL[st] ?? st; });
     return;
   }
-  main.innerHTML = `<div class="editor"><section class="grid" style="flex: 999 1 560px; align-self: flex-start">${TARGETS.map((t) => `<button class="world" data-t="${t.id}" aria-pressed="${t.id === target}" style="${t.id === target ? 'background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary)' : ''}"><span class="md-typescale-title-large">${esc(t.name)}</span><span>${esc(t.desc)}</span></button>`).join('')}</section>
+  main.innerHTML = `<div class="editor"><section class="grid" style="flex: 999 1 560px; align-self: flex-start">${TARGETS.map((t) => `<button class="world" data-t="${t.id}" aria-pressed="${t.id === target}" style="${t.id === target ? 'background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary)' : ''}"><span class="target-badge" aria-hidden="true">${iconSvg(TARGET_ICONS[t.id] ?? 'next', 26)}</span><span class="md-typescale-title-large">${esc(t.name)}</span><span>${esc(t.desc)}</span></button>`).join('')}</section>
     <aside class="card tool" id="form"></aside></div>`;
   main.querySelectorAll<HTMLElement>('[data-t]').forEach((b) => b.addEventListener('click', () => { target = b.dataset.t as typeof target; render(); }));
   const form = main.querySelector('#form')!;
@@ -412,4 +414,5 @@ function failTakeover(o: { what: string; error: string; steps: Step[]; retry: { 
 }
 
 enableClearControls((field) => `Clear ${field}`);
+initButtonIcons();
 render().then(() => { let t: string | null = null; try { t = localStorage.getItem('map-editor-deploy.tour'); } catch { /* ignore */ } if (t === null) setTimeout(() => deployTour(), 800); });
