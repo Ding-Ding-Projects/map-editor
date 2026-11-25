@@ -115,6 +115,8 @@ let hasPasskeys = false;
 const passkeysUsable = () => window.isSecureContext && browserSupportsWebAuthn();
 let world: { name: string; versionName?: string; path: string; dimensions?: string[]; spawn?: { x: number; y: number; z: number } } | undefined;
 let fitPending = false; // centre the map on the world's chunks the next time the editor draws
+// Where the map was looking, kept while a world is open so leaving the Editor tab and coming back does not lose the view.
+let mapView: { x: number; z: number; s: number; moved: boolean } | undefined;
 
 const tx = (k: Key, v: Record<string, string | number> = {}) => tr(prefs, k, v);
 // Personal vocabulary, kept in this browser.
@@ -669,7 +671,7 @@ function worldsScreen(view: HTMLElement) {
     browse: desktopBridge?.pickFolder,
     open: async (w) => {
       const r = await api('/api/worlds/open', { method: 'POST', body: { path: w.path } });
-      world = { ...r.info }; dim = 'overworld'; fitPending = true;
+      world = { ...r.info }; dim = 'overworld'; fitPending = true; mapView = undefined;
       const sp = world!.spawn ?? { x: 0, y: 64, z: 0 };
       Object.assign(sel, { x1: sp.x - 8, y1: sp.y - 1, z1: sp.z - 8, x2: sp.x + 7, y2: sp.y - 1, z2: sp.z + 7 }); prefs.tab = 'editor'; savePrefs(); render(); },
   });
@@ -749,7 +751,7 @@ async function editorView(view: HTMLElement): Promise<void> {
   };
   selectTool = (o) => setOp(o as typeof op);
   setOp('fill'); size();
-  mapEl.querySelectorAll<HTMLElement>('[data-dim]').forEach((c) => c.addEventListener('click', () => { dim = c.dataset.dim!; mapEl.querySelectorAll<HTMLElement & { selected: boolean }>('[data-dim]').forEach((x) => { x.selected = x === c; }); fitToWorld().then(() => drawMap()); }));
+  mapEl.querySelectorAll<HTMLElement>('[data-dim]').forEach((c) => c.addEventListener('click', () => { dim = c.dataset.dim!; mapView = undefined; mapEl.querySelectorAll<HTMLElement & { selected: boolean }>('[data-dim]').forEach((x) => { x.selected = x === c; }); fitToWorld().then(() => drawMap()); }));
   mapEl.querySelector('#undo')!.addEventListener('click', () => undoLast());
   document.addEventListener('world-changed', () => { if (canvas.isConnected) drawMap(); });
   toolEl.querySelectorAll<HTMLElement & { selected: boolean }>('[data-op]').forEach((chip, _i, all) => chip.addEventListener('click', () => { all.forEach((c) => { c.selected = c === chip; }); setOp(chip.dataset.op as typeof op); }));
@@ -803,7 +805,9 @@ async function editorView(view: HTMLElement): Promise<void> {
 
   const canvas = root.querySelector<HTMLCanvasElement>('#map')!;
   const ctx = canvas.getContext('2d')!;
-  let originX = -64, originZ = -64, scale = 2; // block coordinate of the canvas's top-left, pixels per block
+  let originX = mapView?.x ?? -64, originZ = mapView?.z ?? -64, scale = mapView?.s ?? 2; // block coordinate of the canvas's top-left, pixels per block
+  if (!mapView) fitPending = true;
+  const keepView = (moved: boolean) => { mapView = { x: originX, z: originZ, s: scale, moved: moved || Boolean(mapView?.moved) }; };
   async function fitToWorld() {
     try {
       const { chunks } = await api<{ chunks: Array<[number, number]> }>(`/api/world?dim=${dim}`);
@@ -874,7 +878,7 @@ async function editorView(view: HTMLElement): Promise<void> {
     else if (drag.kind === 'measure') { measure = { ...measure!, x2: b.x, z2: b.z }; drawSel(); drawMeasure(); status.textContent = measureText(); }
     else { originX = drag.ox - (e.clientX - drag.x) / scale; originZ = drag.oz - (e.clientY - drag.y) / scale; drawSel(); drawMeasure(); }
   });
-  canvas.addEventListener('pointerup', () => { const was = drag; drag = undefined; if (was?.kind === 'pan') drawMap(); else if (was?.kind === 'select') syncSel?.(); });
+  canvas.addEventListener('pointerup', () => { const was = drag; drag = undefined; if (was?.kind === 'pan') { keepView(true); drawMap(); } else if (was?.kind === 'select') syncSel?.(); });
   async function pickAt(x: number, z: number) {
     try {
       const { top } = await api<{ top: { y: number; block: string } | null }>(`/api/top?dim=${dim}&x=${x}&z=${z}`);
@@ -907,7 +911,7 @@ async function editorView(view: HTMLElement): Promise<void> {
     const rect = canvas.getBoundingClientRect();
     originX = x - rect.width / scale / 2; originZ = z - rect.height / scale / 2;
     status.textContent = tx('gotoDone', { x: Math.trunc(x), z: Math.trunc(z) });
-    gotoForm.hidden = true; void drawMap();
+    gotoForm.hidden = true; keepView(true); void drawMap();
   });
   gotoForm.querySelector('#goto-x')!.addEventListener('click', () => { gotoForm.hidden = true; });
   gotoForm.querySelector('md-filled-button')!.addEventListener('click', () => gotoForm.requestSubmit());
@@ -922,9 +926,10 @@ async function editorView(view: HTMLElement): Promise<void> {
   mapEl.querySelectorAll<HTMLElement>('[data-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode as MapMode)));
   setMapMode = setMode;
   canvas.dataset.mode = mapMode;
-  canvas.addEventListener('wheel', (e) => { e.preventDefault(); scale = Math.max(0.5, Math.min(16, scale * (e.deltaY < 0 ? 1.25 : 0.8))); drawMap(); }, { passive: false });
+  canvas.addEventListener('wheel', (e) => { e.preventDefault(); scale = Math.max(0.5, Math.min(16, scale * (e.deltaY < 0 ? 1.25 : 0.8))); keepView(true); drawMap(); }, { passive: false });
   syncSel = () => toolEl.querySelectorAll<HTMLInputElement>('.coords-grid md-outlined-text-field').forEach((f) => { f.value = String((sel as Record<string, number>)[f.getAttribute('name')!]); });
-  new ResizeObserver(async () => { if (fitPending && canvas.clientWidth > 0) { fitPending = false; await fitToWorld(); } drawMap(); }).observe(canvas);
+  // Until the person moves the map themselves, it stays fitted to the world as the panel settles into its size.
+  new ResizeObserver(async () => { if ((fitPending || !mapView?.moved) && canvas.clientWidth > 0) { fitPending = false; await fitToWorld(); keepView(false); } drawMap(); }).observe(canvas);
   const histEl = document.createElement('div'); histEl.className = 'panel-scroll';
   const notesEl = document.createElement('div'); notesEl.className = 'panel-scroll';
   const blocksEl = document.createElement('section'); blocksEl.className = 'panel-scroll block-palette';
@@ -1115,7 +1120,7 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
           const r = await api<{ path: string; name: string }>('/api/history/copy', { method: 'POST', body: { sha: e.sha } });
           notify(tx('hCopyMade', { name: r.name }), false, { label: tx('hCopyOpen'), run: async () => {
             const o = await api('/api/worlds/open', { method: 'POST', body: { path: r.path } });
-            world = { ...o.info }; dim = 'overworld'; fitPending = true; prefs.tab = 'editor'; savePrefs(); render();
+            world = { ...o.info }; dim = 'overworld'; fitPending = true; mapView = undefined; prefs.tab = 'editor'; savePrefs(); render();
           } });
           play('success');
         } catch (err) { notify((err as Error).message, true); } finally { b.disabled = false; }
