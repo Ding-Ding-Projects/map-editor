@@ -490,7 +490,7 @@ md-list-item[hidden] { display: none; }
 .ext-runs .dot { flex: none; width: 10px; height: 10px; margin-top: 6px; border-radius: 5px; background: var(--md-sys-color-primary); } .ext-runs li.bad .dot { background: var(--md-sys-color-error); }
 .set-times { display: flex; flex-wrap: wrap; gap: 12px; padding: 4px 4px 12px; }
 .edit-locked #run, .edit-locked #undo { opacity: .45; }
-.edit-locked .map-bar::after { content: '🔒'; font-size: 18px; margin-left: 8px; }
+.edit-locked .map-bar::after { content: ''; width: 18px; height: 18px; margin-left: 8px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M8 11V8a4 4 0 018 0v3'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M8 11V8a4 4 0 018 0v3'/%3E%3C/svg%3E") center/contain no-repeat; }
 .h-detail { display: flex; flex-direction: column; gap: 12px; padding: 24px; }
 .h-detail h2 { margin: 0; font-size: 24px; line-height: 30px; }
 .h-kind { align-self: flex-start; padding: 4px 12px; border-radius: 12px; background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); font-weight: 700; }

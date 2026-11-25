@@ -706,6 +706,8 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
   } catch (err) { notify((err as Error).message, true); }
 }
 
+const LOCK_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>';
+const UNLOCK_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 017.5-2"/></svg>';
 const SECTIONS = [['language', 'secLanguage'], ['appearance', 'secAppearance'], ['comfort', 'secComfort'], ['sounds', 'secSounds'], ['extensions', 'secExtensions'], ['backup', 'secBackup'], ['later', 'secLater']] as const;
 
 async function extensionsPanel(view: HTMLElement) {
@@ -821,7 +823,7 @@ function settingsView(view: HTMLElement) {
   // Every switch can be locked on its own, so it cannot be changed by accident (here or in the palette).
   const lockedSet = new Set(prefs.lockedSettings);
   const sw = (id: string, label: Key, note: Key, on: boolean) => { const locked = lockedSet.has(id); return `<div class="set-row${locked ? ' locked' : ''}" data-find="${esc(tx(label))} ${esc(tx(note))}"><label for="${id}"><span><b>${esc(tx(label))}</b><small>${esc(tx(locked ? 'settingLocked' : note))}</small></span></label>
-    <md-icon-button class="set-lock" data-lock="${id}" aria-pressed="${locked}" aria-label="${esc(tx(locked ? 'unlockSetting' : 'lockSetting', { name: tx(label) }))}" title="${esc(tx(locked ? 'unlockSetting' : 'lockSetting', { name: tx(label) }))}">${locked ? '🔒' : '🔓'}</md-icon-button>
+    <md-icon-button class="set-lock" data-lock="${id}" aria-pressed="${locked}" aria-label="${esc(tx(locked ? 'unlockSetting' : 'lockSetting', { name: tx(label) }))}" title="${esc(tx(locked ? 'unlockSetting' : 'lockSetting', { name: tx(label) }))}">${locked ? LOCK_SVG : UNLOCK_SVG}</md-icon-button>
     <md-switch id="${id}" ${on ? 'selected' : ''} ${locked ? 'disabled' : ''} aria-label="${esc(tx(label))}"></md-switch></div>`; };
   const body: Record<string, string> = {
     language: `<div class="set-langs" role="group" aria-label="${esc(tx('secLanguage'))}" data-find="English 粵語 ${esc(tx('secLanguage'))}">${(['en', 'yue', 'both'] as const).map((l) => `<button class="set-lang${prefs.lang === l ? ' on' : ''}" data-set-lang="${l}" aria-pressed="${prefs.lang === l}">${l === 'en' ? 'English' : l === 'yue' ? '粵語' : 'English + 粵語'}</button>`).join('')}</div>
