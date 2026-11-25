@@ -2,6 +2,8 @@
 
 **Documentation: https://ding-ding-projects.github.io/map-editor/**
 
+The same guide is in this repository as plain Markdown, one page per feature: [docs/features](docs/features/README.md). It is also inside the app, offline, under **Guide**.
+
 A Minecraft world editor for Java Edition and Bedrock Edition worlds, based on [Amulet Map Editor](https://github.com/Amulet-Team/Amulet-Map-Editor), rebuilt in TypeScript so the same editor runs three ways:
 
 | Form | What you get |

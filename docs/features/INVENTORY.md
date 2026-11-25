@@ -6,7 +6,7 @@ lands; anything not rechecked keeps its last audited status.
 
 Re-audited on 2026-11-25 after the changes of that day.
 
-Counts (126 features): built 14 / partial 80 / unbuilt 18 / not applicable 14
+Counts (126 features): built 14 / partial 81 / unbuilt 17 / not applicable 14
 
 
 ## Language, voice, and personalization
@@ -157,7 +157,7 @@ Counts (126 features): built 14 / partial 80 / unbuilt 18 / not applicable 14
 `agents-md-vocabulary-block` | APPLIES: yes | STATUS: BUILT | EVIDENCE: AGENTS.md `## Agent conversation vocabulary` (text matches the canonical wording; byte-exactness not machine-checked) | MISSING: -
 `vocabulary-hash-lock` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: none | MISSING: scripts/check-vocabulary.mjs wired into build.bat and a pre-push hook through core.hooksPath
 `roadmap-checklist` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: ROADMAP.md with `- [ ]`/`- [x]` by phase | MISSING: several ticked items say "not run", "not yet run on Windows" or "not verified yet", which breaks the tick-only-when-verified rule; no deliberately-not-doing section
-`feature-docs` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: docs/ holds screenshots, this inventory and docs/postman/README.md only | MISSING: README index per documentation category and one Markdown file per feature
+`feature-docs` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: scripts/feature-docs.mjs writes docs/features/README.md, an index per category and one Markdown file per guide article (English and Cantonese) from site/content.mjs; tests/feature-docs.test.ts fails when they are out of date or a link is dead | MISSING: features without a guide article have no page yet
 `postman-collections` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: scripts/postman.mjs writes docs/postman/map-editor.postman_collection.json from the server's route list (51 requests in 7 area folders); docs/postman/README.md; tests/server.test.ts fails when the two differ | MISSING: separate collection per area (areas are folders inside the one master file); request bodies are empty `{}` placeholders
 `wiki-site-sync` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: site source updated with features; wiki is enabled on GitHub | MISSING: wiki content could not be confirmed (anonymous read refused); wiki content inside the site
 `handoff-record` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: HANDOFF.md (built, checks run, checks left, leftovers; covers Bedrock worlds, virtual disks and the other 2026-11-25 work) | MISSING: the matching handoff section on a GitHub issue (not found in repository records)
