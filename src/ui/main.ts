@@ -219,6 +219,40 @@ function askText(title: string, label: string, value = ''): Promise<string | und
   });
 }
 
+/**
+ * Unlock ladder: each unlock within ten minutes asks a little more, so locks hold against quick
+ * clicking. First a confirmation, then typing the name of what is unlocked, then a 15-second wait.
+ */
+const LADDER_KEY = 'map-editor.unlocks.v1';
+function askUnlock(what: string): Promise<boolean> {
+  const now = Date.now();
+  let recent: number[] = [];
+  try { recent = (JSON.parse(sessionStorage.getItem(LADDER_KEY) ?? '[]') as number[]).filter((t) => now - t < 10 * 60_000); } catch { /* storage blocked */ }
+  const rung = Math.min(recent.length, 2);
+  const done = (ok: boolean) => { if (ok) { try { sessionStorage.setItem(LADDER_KEY, JSON.stringify([...recent, now])); } catch { /* ignore */ } } return ok; };
+  if (rung === 0) return askConfirm(tx('unlockAsk'), tx('unlockOk')).then(done);
+  return new Promise((resolve) => {
+    const dlg = document.createElement('md-dialog') as HTMLElement & { show: () => void; returnValue: string };
+    dlg.innerHTML = `<div slot="headline">${esc(tx('unlockLadderTitle'))}</div><form slot="content" id="ul-form" method="dialog" class="stack">
+      <p>${esc(tx(rung === 1 ? 'unlockType' : 'unlockWait', { what }))}</p>
+      ${rung === 1 ? `<md-outlined-text-field name="typed" label="${esc(what)}" autocomplete="off"></md-outlined-text-field>` : '<p class="ul-count" aria-live="polite"></p>'}</form>
+      <div slot="actions"><md-text-button form="ul-form" value="cancel">${esc(tx('cancel'))}</md-text-button><md-filled-button form="ul-form" value="ok" disabled>${esc(tx('unlockOk'))}</md-filled-button></div>`;
+    document.body.append(dlg);
+    const okBtn = dlg.querySelector<HTMLElement & { disabled: boolean }>('md-filled-button')!;
+    let timer: ReturnType<typeof setInterval> | undefined;
+    if (rung === 1) {
+      const f = dlg.querySelector<HTMLInputElement>('[name=typed]')!;
+      f.addEventListener('input', () => { okBtn.disabled = f.value.trim().toLowerCase() !== what.trim().toLowerCase(); });
+    } else {
+      let left = 15; const c = dlg.querySelector<HTMLElement>('.ul-count')!;
+      c.textContent = tx('unlockSeconds', { n: left });
+      timer = setInterval(() => { left--; c.textContent = left > 0 ? tx('unlockSeconds', { n: left }) : tx('unlockReady'); if (left <= 0) { clearInterval(timer); okBtn.disabled = false; } }, 1000);
+    }
+    dlg.addEventListener('closed', () => { clearInterval(timer); resolve(done(dlg.returnValue === 'ok' && !okBtn.disabled)); dlg.remove(); });
+    dlg.show();
+  });
+}
+
 /** Material confirm dialog in place of the browser's confirm(): themed, translated and keyboard friendly. */
 function askConfirm(text: string, ok = tx('ok'), danger = false): Promise<boolean> {
   return new Promise((resolve) => {
@@ -1302,7 +1336,7 @@ function settingsView(view: HTMLElement) {
   // Every switch can be locked on its own, so it cannot be changed by accident (here or in the palette).
   const lockedSet = new Set(prefs.lockedSettings);
   const sw = (id: string, label: Key, note: Key, on: boolean) => { const locked = lockedSet.has(id); return `<div class="set-row${locked ? ' locked' : ''}" data-find="${esc(tx(label))} ${esc(tx(note))}"><label for="${id}"><span><b>${esc(tx(label))}</b><small>${esc(tx(locked ? 'settingLocked' : note))}</small></span></label>
-    <md-icon-button class="set-lock" data-lock="${id}" aria-pressed="${locked}" aria-label="${esc(tx(locked ? 'unlockSetting' : 'lockSetting', { name: tx(label) }))}" title="${esc(tx(locked ? 'unlockSetting' : 'lockSetting', { name: tx(label) }))}">${locked ? LOCK_SVG : UNLOCK_SVG}</md-icon-button>
+    <md-icon-button class="set-lock" data-lock="${id}" data-name="${esc(tx(label))}" aria-pressed="${locked}" aria-label="${esc(tx(locked ? 'unlockSetting' : 'lockSetting', { name: tx(label) }))}" title="${esc(tx(locked ? 'unlockSetting' : 'lockSetting', { name: tx(label) }))}">${locked ? LOCK_SVG : UNLOCK_SVG}</md-icon-button>
     <md-switch id="${id}" ${on ? 'selected' : ''} ${locked ? 'disabled' : ''} aria-label="${esc(tx(label))}"></md-switch></div>`; };
   const body: Record<string, string> = {
     language: `<div class="set-langs" role="group" aria-label="${esc(tx('secLanguage'))}" data-find="English 粵語 ${esc(tx('secLanguage'))}">${(['en', 'yue', 'both'] as const).map((l) => `<button class="set-lang${prefs.lang === l ? ' on' : ''}" data-set-lang="${l}" aria-pressed="${prefs.lang === l}">${l === 'en' ? 'English' : l === 'yue' ? '粵語' : 'English + 粵語'}</button>`).join('')}</div>
@@ -1350,7 +1384,7 @@ function settingsView(view: HTMLElement) {
     bar.className = 'banner lock-banner'; bar.setAttribute('role', 'status');
     bar.innerHTML = `<div><b>${esc(tx('settingsLocked'))}</b><p>${esc(tx('settingsLockedBanner'))}</p></div><md-filled-button id="unlock-settings">${esc(tx('unlockScreen'))}</md-filled-button>`;
     main.prepend(bar);
-    bar.querySelector('#unlock-settings')!.addEventListener('click', async () => { if (!await askConfirm(tx('unlockAsk'), tx('unlockOk'))) return; prefs.settingsLocked = false; savePrefs(); render(); notify(tx('settingUnlockedMsg')); });
+    bar.querySelector('#unlock-settings')!.addEventListener('click', async () => { if (!await askUnlock(tx('settingsLocked'))) return; prefs.settingsLocked = false; savePrefs(); render(); notify(tx('settingUnlockedMsg')); });
   }
   view.querySelectorAll<HTMLElement>('[data-sec]').forEach((b) => b.addEventListener('click', () => { prefs.settingsSection = b.dataset.sec!; savePrefs(); render(); }));
   view.querySelector('[role=tablist]')!.addEventListener('keydown', (e) => {
@@ -1418,7 +1452,7 @@ function settingsView(view: HTMLElement) {
   view.querySelectorAll<HTMLElement>('[data-lock]').forEach((b) => b.addEventListener('click', async () => {
     const id = b.dataset.lock!;
     const isLocked = prefs.lockedSettings.includes(id);
-    if (isLocked && !await askConfirm(tx('unlockAsk'), tx('unlockOk'))) return;
+    if (isLocked && !await askUnlock(b.dataset.name ?? tx('lockedSettings'))) return;
     prefs.lockedSettings = isLocked ? prefs.lockedSettings.filter((x) => x !== id) : [...prefs.lockedSettings, id];
     savePrefs(); render(); notify(tx(isLocked ? 'settingUnlockedMsg' : 'settingLockedMsg'));
   }));
