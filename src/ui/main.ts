@@ -585,6 +585,7 @@ function helpMenu(anchor: HTMLElement) {
   m.querySelector<HTMLElement>('button')?.focus();
 }
 
+const RAIL_ICONS: Record<string, string> = { worlds: 'globe', editor: 'map', history: 'undo', tools: 'wrench', settings: 'sliders', about: 'info' };
 function shell() {
   const app = document.getElementById('app')!;
   const open = TABS.filter((x) => !prefs.closedTabs.includes(x));
@@ -605,8 +606,8 @@ function shell() {
     <div id="update-banner" class="update-banner" role="region" aria-label="${esc(tx('updateRegion'))}" hidden></div>
     <div class="body">
       ${user && prefs.onboarded ? `<nav class="tabs" aria-label="Tabs"><md-list role="tablist" aria-orientation="vertical">
-        ${open.map((x) => `<md-list-item type="button" role="tab" aria-selected="${x === prefs.tab}" data-tab="${x}" class="${x === prefs.tab ? 'active' : ''}">${esc(tx(x as Key))}
-          ${x === prefs.tab && !prefs.tabsLocked ? `<md-outlined-button slot="end" data-close="${x}">${esc(tx('close'))}</md-outlined-button>` : ''}</md-list-item>`).join('')}
+        ${open.map((x) => `<md-list-item type="button" role="tab" aria-selected="${x === prefs.tab}" data-tab="${x}" class="${x === prefs.tab ? 'active' : ''}"><span slot="start" class="rail-ico" aria-hidden="true">${iconSvg(RAIL_ICONS[x] ?? 'next', 22)}</span>${esc(tx(x as Key))}
+          ${x === prefs.tab && !prefs.tabsLocked ? `<div slot="supporting-text" class="rail-close"><md-outlined-button data-close="${x}">${esc(tx('close'))}</md-outlined-button></div>` : ''}</md-list-item>`).join('')}
         </md-list>
         <div class="tab-tools"><md-text-button id="tab-find">${esc(tx('tabSearch'))}</md-text-button>${prefs.closedTabs.length ? `<md-text-button id="open-all">${esc(tx('openEveryTab'))}</md-text-button>` : ''}</div>
       </nav>` : ''}
