@@ -71,7 +71,7 @@ const S = {
   toolConvertUnsupported: { en: 'This browser cannot write that picture format.', yue: '呢個瀏覽器寫唔到嗰種圖片格式。' },
   toolServer: { en: 'Server settings', yue: '伺服器設定' },
   toolServerNote: { en: 'Open a Minecraft server.properties file, change the common settings with the values the game accepts, and save it. Comments and other lines are kept.', yue: '打開 Minecraft 嘅 server.properties，用遊戲接受嘅值改常用設定，再儲存。註解同其他行會保留。' },
-  toolServerPick: { en: 'Open server.properties…', yue: '打開 server.properties…' },
+  toolServerPick: { en: 'Open server.properties…', yue: '揀檔案…' },
   toolServerNew: { en: 'Start a new one', yue: '開個新嘅' },
   toolServerSave: { en: 'Save server.properties', yue: '儲存 server.properties' },
   toolServerOther: { en: '{n} other settings in the file are kept as they are.', yue: '檔案入面另外 {n} 個設定會原樣保留。' },

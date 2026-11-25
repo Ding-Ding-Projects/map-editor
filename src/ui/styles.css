@@ -708,3 +708,9 @@ md-outlined-text-field[hidden] { display: none; }
 .vd-form { display: flex; flex-direction: column; gap: 14px; min-width: min(460px, 78vw); }
 .vd-file { display: flex; gap: 8px; align-items: center; }
 .vd-form .check, .card .check { display: flex; gap: 8px; align-items: flex-start; }
+md-outlined-button, md-filled-button, md-filled-tonal-button, md-text-button { max-width: 100%; }
+/* 320 px wide screens: sliders and bottom destinations stay inside the page. */
+md-slider { min-inline-size: 0; max-width: 100%; }
+.picker-row { min-width: 0; } .picker-row > * { min-width: 0; }
+@media (max-width: 720px) { .bottom-nav button { min-width: 0; flex: 1 1 0; } .bottom-nav .pill { width: min(56px, 100%); } .bottom-nav [aria-current] .pill { width: min(64px, 100%); } }
+@media (max-width: 720px) { .top md-chip-set.views { display: flex; flex: 1 1 100%; order: 3; } }
