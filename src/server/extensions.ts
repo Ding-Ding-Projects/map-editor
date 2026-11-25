@@ -13,6 +13,7 @@ import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { OPERATIONS, MAX_OPERATION_BLOCKS, volume, type Box } from '../core/ops.js';
+import { extractZip, zipEntryNames } from '../core/archive.js';
 import type { OperationRequest } from '../core/session.js';
 
 export const PERMISSIONS = {
@@ -22,7 +23,10 @@ export const PERMISSIONS = {
 } as const;
 export type Permission = keyof typeof PERMISSIONS;
 
-export const LIMITS = { timeoutMs: 10_000, outputBytes: 1024 * 1024, ops: 64, manifestBytes: 64 * 1024 } as const;
+export const LIMITS = { timeoutMs: 10_000, outputBytes: 1024 * 1024, ops: 64, manifestBytes: 64 * 1024, folderBytes: 20 * 1024 * 1024, runs: 50 } as const;
+
+export interface RunRecord { at: string; id: string; name: string; command: string; ok: boolean; message: string; ms: number; ops: number }
+export class ReplaceNeeded extends Error { constructor(public id: string, public installed: string, public incoming: string) { super(`${id} ${installed} is already installed. Replace it with ${incoming}?`); } }
 
 export interface Manifest {
   manifestVersion: 1;
@@ -55,8 +59,8 @@ export function validateManifest(raw: unknown): Manifest {
   return { manifestVersion: 1, id: m.id!, name: m.name!.trim(), version: m.version!, description: typeof m.description === 'string' ? m.description.slice(0, 300) : undefined, run: m.run!, permissions: [...new Set(m.permissions!)], commands: m.commands!.map((c) => ({ id: c.id, title: c.title.trim() })) };
 }
 
-/** Consent is tied to the exact permission set, so any change asks again. */
-export const permissionKey = (m: Manifest) => createHash('sha256').update([...m.permissions].sort().join(',')).digest('hex').slice(0, 16);
+/** Consent is tied to the exact version and permission set, so any change asks again. */
+export const permissionKey = (m: Manifest) => createHash('sha256').update(`${m.version}|${[...m.permissions].sort().join(',')}`).digest('hex').slice(0, 16);
 
 export interface RunContext {
   world: { name: string; version?: string; dataVersion?: number; spawn?: { x: number; y: number; z: number }; dimensions: string[] };
@@ -78,12 +82,76 @@ export class Extensions {
     await fs.rename(`${this.consentFile}.tmp`, this.consentFile);
   }
 
+  private get settingsFile() { return path.join(this.dataDir, 'extensions-settings.json'); }
+  private get runsFile() { return path.join(this.dataDir, 'extensions-runs.json'); }
+
+  /** The master switch: when off, no extension runs at all. */
+  async masterOn(): Promise<boolean> { try { return JSON.parse(await fs.readFile(this.settingsFile, 'utf8')).masterOn !== false; } catch { return true; } }
+  async setMaster(on: boolean) { await fs.mkdir(this.dataDir, { recursive: true }); await fs.writeFile(this.settingsFile, JSON.stringify({ masterOn: on })); }
+
+  async recentRuns(): Promise<RunRecord[]> { try { const r = JSON.parse(await fs.readFile(this.runsFile, 'utf8')); return Array.isArray(r) ? r : []; } catch { return []; } }
+  private async logRun(r: RunRecord) {
+    const runs = [r, ...(await this.recentRuns())].slice(0, LIMITS.runs);
+    await fs.mkdir(this.dataDir, { recursive: true });
+    await fs.writeFile(`${this.runsFile}.tmp`, JSON.stringify(runs)); await fs.rename(`${this.runsFile}.tmp`, this.runsFile);
+  }
+
+  /** Where users put their own extensions (shown in the manager so they can find it). */
+  folder() { return this.userDir; }
+
+  /**
+   * Copy an extension folder into the user extensions folder. A different version of the same id
+   * is only replaced when `replace` is true; built-in ids can never be replaced. Links are refused.
+   */
+  async installFolder(src: string, replace = false): Promise<Manifest> {
+    const m = validateManifest(JSON.parse(await fs.readFile(path.join(src, 'manifest.json'), 'utf8')));
+    let total = 0;
+    const walk = async (d: string): Promise<void> => {
+      for (const e of await fs.readdir(d, { withFileTypes: true })) {
+        const p = path.join(d, e.name);
+        if (e.isSymbolicLink()) throw new Error(`${e.name} is a link; extensions must be plain files.`);
+        if (e.isDirectory()) await walk(p); else { total += (await fs.stat(p)).size; if (total > LIMITS.folderBytes) throw new Error('Extensions are limited to 20 MiB.'); }
+      }
+    };
+    await walk(src);
+    const existing = (await this.list()).find((e) => e.manifest.id === m.id);
+    if (existing?.builtIn) throw new Error(`${m.id} is a built-in extension and cannot be replaced.`);
+    if (existing && !replace) throw new ReplaceNeeded(m.id, existing.manifest.version, m.version);
+    const dest = path.join(this.userDir, m.id);
+    const tmp = `${dest}.installing`;
+    await fs.rm(tmp, { recursive: true, force: true });
+    await fs.mkdir(this.userDir, { recursive: true });
+    await fs.cp(src, tmp, { recursive: true });
+    await fs.rm(dest, { recursive: true, force: true });
+    await fs.rename(tmp, dest);
+    return m;
+  }
+
+  /** Install from a .zip whose manifest.json is at the top or one folder down. */
+  async installZip(zipFile: string, replace = false): Promise<Manifest> {
+    const names = await zipEntryNames(zipFile);
+    const prefix = names.includes('manifest.json') ? '' : names.filter((n) => /^[^/]+\/manifest\.json$/.test(n)).length === 1 ? names.find((n) => /^[^/]+\/manifest\.json$/.test(n))!.slice(0, -'manifest.json'.length) : undefined;
+    if (prefix === undefined) throw new Error('That .zip has no manifest.json at the top or one folder down.');
+    const tmp = path.join(this.dataDir, 'uploads', `ext-${Date.now()}`);
+    await fs.rm(tmp, { recursive: true, force: true });
+    try { await extractZip(zipFile, tmp, { prefix, maxBytes: LIMITS.folderBytes }); return await this.installFolder(tmp, replace); }
+    finally { await fs.rm(tmp, { recursive: true, force: true }); }
+  }
+
+  /** Remove an extension the user added (built-in ones can only be switched off). */
+  async remove(id: string) {
+    const ext = (await this.list()).find((e) => e.manifest.id === id);
+    if (!ext) throw new Error(`No extension called ${id}.`);
+    if (ext.builtIn) throw new Error('Built-in extensions can be switched off but not removed.');
+    await fs.rm(ext.dir, { recursive: true, force: true });
+  }
+
   private async folders(): Promise<Array<{ dir: string; builtIn: boolean }>> {
     const out: Array<{ dir: string; builtIn: boolean }> = [];
     for (const [root, builtIn] of [[this.builtInDir, true], [this.userDir, false]] as const) {
       let names: string[] = [];
       try { names = await fs.readdir(root); } catch { continue; }
-      for (const n of names.sort()) out.push({ dir: path.join(root, n), builtIn });
+      for (const n of names.sort()) if (!n.endsWith('.installing')) out.push({ dir: path.join(root, n), builtIn });
     }
     return out;
   }
@@ -124,6 +192,7 @@ export class Extensions {
   }
 
   async run(id: string, command: string, ctx: RunContext): Promise<RunResult> {
+    if (!(await this.masterOn())) throw new Error('Extensions are switched off. Turn them on in Settings › Extensions.');
     const ext = (await this.list()).find((e) => e.manifest.id === id);
     if (!ext || ext.error) throw new Error(`No working extension called ${id}.`);
     if (!ext.enabled) throw new Error(`${ext.manifest.name} is switched off. Turn it on in Settings › Extensions.`);
@@ -135,8 +204,16 @@ export class Extensions {
       selection: perms.has('selection') ? ctx.selection : undefined,
       limits: { ops: LIMITS.ops, opBlocks: MAX_OPERATION_BLOCKS },
     };
-    const response = await exchange(ext.dir, ext.manifest.run, request);
-    return checkResponse(response, perms.has('edit-world'));
+    const t0 = Date.now();
+    const title = ext.manifest.commands.find((c) => c.id === command)!.title;
+    try {
+      const result = checkResponse(await exchange(ext.dir, ext.manifest.run, request), perms.has('edit-world'));
+      await this.logRun({ at: new Date().toISOString(), id, name: ext.manifest.name, command: title, ok: true, message: result.message.slice(0, 300), ms: Date.now() - t0, ops: result.ops.length });
+      return result;
+    } catch (e) {
+      await this.logRun({ at: new Date().toISOString(), id, name: ext.manifest.name, command: title, ok: false, message: (e as Error).message.slice(0, 300), ms: Date.now() - t0, ops: 0 });
+      throw e;
+    }
   }
 }
 

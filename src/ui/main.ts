@@ -15,6 +15,7 @@ import { onboarding } from './onboarding.js';
 type UpdState = { state: 'disabled'; reason: string } | { state: 'idle' | 'checking' | 'none' | 'downloading'; at?: string } | { state: 'ready'; version: string; notes: string } | { state: 'error'; message: string };
 interface DesktopBridge {
   pickFolder: () => Promise<string | undefined>;
+  openDataFolder?: (p: string) => Promise<string>;
   updates?: { state: () => Promise<UpdState>; check: () => Promise<UpdState>; restart: () => Promise<boolean>; onState: (fn: (s: UpdState) => void) => void };
 }
 const desktopBridge = (window as unknown as { mapEditorDesktop?: DesktopBridge }).mapEditorDesktop;
@@ -222,10 +223,11 @@ const TAB_ICON: Record<Tab, string> = {
 // Extension commands appear in the palette once their extension is switched on.
 type ExtInfo = { id: string; name: string; version: string; description?: string; builtIn: boolean; enabled: boolean; needsConsent: boolean; error?: string; permissions: string[]; permissionKey?: string; commands: Array<{ id: string; title: string }> };
 let extCache: ExtInfo[] = [];
-async function loadExtensions(): Promise<{ list: ExtInfo[]; perms: Record<string, string> }> {
-  const r = await api<{ extensions: ExtInfo[]; permissions: Record<string, string> }>('/api/extensions');
-  extCache = r.extensions;
-  return { list: r.extensions, perms: r.permissions };
+type ExtState = { list: ExtInfo[]; perms: Record<string, string>; masterOn: boolean; canAddFolder: boolean; folder?: string };
+async function loadExtensions(): Promise<ExtState> {
+  const r = await api<{ extensions: ExtInfo[]; permissions: Record<string, string>; masterOn: boolean; canAddFolder: boolean; folder?: string }>('/api/extensions');
+  extCache = r.masterOn ? r.extensions : [];
+  return { list: r.extensions, perms: r.permissions, masterOn: r.masterOn, canAddFolder: r.canAddFolder, folder: r.folder };
 }
 async function runExtension(id: string, command: string) {
   if (!world) { notify(tx('extNeedsWorld'), true); return; }
@@ -640,16 +642,57 @@ const SECTIONS = [['language', 'secLanguage'], ['appearance', 'secAppearance'], 
 async function extensionsPanel(view: HTMLElement) {
   const host = view.querySelector<HTMLElement>('#ext-list');
   if (!host) return;
-  let data: { list: ExtInfo[]; perms: Record<string, string> };
+  let data: ExtState;
   try { data = await loadExtensions(); } catch (e) { host.innerHTML = `<p class="muted">${esc((e as Error).message)}</p>`; return; }
   const q = searchBox('extension-search', tx('searchExtensions'), rx, { compact: true });
-  view.querySelector('#ext-q')?.replaceWith(q.el);
+  const qHost = view.querySelector('#ext-q') ?? view.querySelector('[data-search=extension-search]');
+  qHost?.replaceWith(q.el);
+  view.querySelector('.ext-bar')?.remove(); view.querySelector('.ext-runs')?.remove();
+  const bar = document.createElement('div');
+  bar.className = 'ext-bar';
+  bar.innerHTML = `<label class="ext-master"><md-switch id="ext-master" ${data.masterOn ? 'selected' : ''} aria-label="${esc(tx('extMaster'))}"></md-switch><span><b>${esc(tx('extMaster'))}</b><small>${esc(tx(data.masterOn ? 'extMasterOn' : 'extMasterOff'))}</small></span></label>
+    <span class="spacer"></span>
+    <md-outlined-button id="ext-zip">${esc(tx('extAddZip'))}</md-outlined-button><input type="file" id="ext-zip-file" accept=".zip,application/zip" hidden>
+    ${data.canAddFolder && desktopBridge ? `<md-outlined-button id="ext-folder">${esc(tx('extAddFolder'))}</md-outlined-button>` : ''}
+    ${data.folder && desktopBridge?.openDataFolder ? `<md-text-button id="ext-open">${esc(tx('extOpenFolder'))}</md-text-button>` : ''}
+    <md-text-button id="ext-reload">${esc(tx('extReload'))}</md-text-button>`;
+  q.el.before(bar);
+  bar.querySelector('#ext-master')!.addEventListener('change', async (ev) => {
+    const on = (ev.target as HTMLElement & { selected: boolean }).selected;
+    await api('/api/extensions/master', { method: 'POST', body: { on } }).catch((err) => notify((err as Error).message, true));
+    notify(tx(on ? 'extMasterOn' : 'extMasterOff')); void extensionsPanel(view);
+  });
+  bar.querySelector('#ext-reload')!.addEventListener('click', () => { void extensionsPanel(view); notify(tx('extReloaded')); });
+  bar.querySelector('#ext-open')?.addEventListener('click', async () => { const r = await desktopBridge!.openDataFolder!(data.folder!); if (r) notify(r, true); });
+  // Adding asks before replacing an installed copy with a different version.
+  const added = async (doIt: (replace: boolean) => Promise<Response>) => {
+    let r = await doIt(false);
+    let j = await r.json().catch(() => ({}));
+    if (r.status === 409 && j.replace) {
+      if (!confirm(tx('extReplace', { id: j.id, installed: j.installed, incoming: j.incoming }))) return;
+      r = await doIt(true); j = await r.json().catch(() => ({}));
+    }
+    if (!r.ok) { notify(j.error ?? `${r.status}`, true); return; }
+    notify(tx('extAdded', { name: j.name, version: j.version })); play('create'); void extensionsPanel(view);
+  };
+  const zipIn = bar.querySelector<HTMLInputElement>('#ext-zip-file')!;
+  bar.querySelector('#ext-zip')!.addEventListener('click', () => zipIn.click());
+  zipIn.addEventListener('change', () => {
+    const f = zipIn.files?.[0]; if (!f) return;
+    void added((replace) => fetch('/api/extensions/upload', { method: 'POST', headers: { 'content-type': 'application/zip', 'x-map-editor': '1', ...(replace ? { 'x-replace': '1' } : {}) }, body: f }));
+    zipIn.value = '';
+  });
+  bar.querySelector('#ext-folder')?.addEventListener('click', async () => {
+    const dir = await desktopBridge!.pickFolder(); if (!dir) return;
+    void added((replace) => fetch('/api/extensions/add-folder', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: dir, replace }) }));
+  });
   const card = (e: ExtInfo) => `<article class="ext-card${e.error ? ' broken' : ''}" data-ext="${esc(e.id)}">
       <header><span class="ext-icon" aria-hidden="true">${esc(e.name.slice(0, 1).toUpperCase())}</span><span class="ext-title"><b>${esc(e.name)}</b><small>${esc(e.version)} · ${esc(e.builtIn ? tx('extBuiltIn') : tx('extYours'))}${e.needsConsent && !e.error ? ` · ${esc(tx('extNeedsConsent'))}` : ''}</small></span>
       ${e.error ? '' : `<md-switch data-ext-toggle="${esc(e.id)}" ${e.enabled ? 'selected' : ''} aria-label="${esc(e.name)}"></md-switch>`}</header>
       ${e.error ? `<p class="ext-error" role="alert">${esc(e.error)}</p>` : `<p>${esc(e.description ?? '')}</p>
       <ul class="ext-perms">${e.permissions.map((p) => `<li>${esc(data.perms[p] ?? p)}</li>`).join('')}</ul>
-      <div class="ext-cmds">${e.commands.map((c) => `<md-assist-chip data-ext-run="${esc(e.id)}" data-cmd="${esc(c.id)}" label="${esc(c.title)}" ${e.enabled ? '' : 'disabled'}></md-assist-chip>`).join('')}</div>`}
+      <div class="ext-cmds">${e.commands.map((c) => `<md-assist-chip data-ext-run="${esc(e.id)}" data-cmd="${esc(c.id)}" label="${esc(c.title)}" ${e.enabled && data.masterOn ? '' : 'disabled'}></md-assist-chip>`).join('')}</div>`}
+      ${e.builtIn ? '' : `<md-text-button class="ext-remove" data-ext-remove="${esc(e.id)}">${esc(tx('extRemove'))}</md-text-button>`}
     </article>`;
   host.innerHTML = data.list.length ? data.list.map(card).join('') : `<p class="muted">${esc(tx('extNone'))}</p>`;
   const cards = Array.from(host.querySelectorAll<HTMLElement>('[data-ext]'));
@@ -681,7 +724,23 @@ async function extensionsPanel(view: HTMLElement) {
     });
     dlg.show();
   }));
-  host.querySelectorAll<HTMLElement>('[data-ext-run]').forEach((c) => c.addEventListener('click', () => { void runExtension(c.dataset.extRun!, c.dataset.cmd!); }));
+  host.querySelectorAll<HTMLElement>('[data-ext-run]').forEach((c) => c.addEventListener('click', async () => { await runExtension(c.dataset.extRun!, c.dataset.cmd!); void showRuns(); }));
+  host.querySelectorAll<HTMLElement>('[data-ext-remove]').forEach((b) => b.addEventListener('click', async () => {
+    const e = data.list.find((x) => x.id === b.dataset.extRemove)!;
+    if (!confirm(tx('extRemoveAsk', { name: e.name }))) return;
+    try { await api('/api/extensions/remove', { method: 'POST', body: { id: e.id } }); notify(tx('extRemoved', { name: e.name })); } catch (err) { notify((err as Error).message, true); }
+    void extensionsPanel(view);
+  }));
+  // Recent runs: what ran, when, how long, and whether it worked.
+  const runsEl = document.createElement('section');
+  runsEl.className = 'ext-runs';
+  host.after(runsEl);
+  async function showRuns() {
+    let runs: Array<{ at: string; name: string; command: string; ok: boolean; message: string; ms: number; ops: number }> = [];
+    try { runs = (await api<{ runs: typeof runs }>('/api/extensions/runs')).runs; } catch { /* shown empty */ }
+    runsEl.innerHTML = `<h3>${esc(tx('extRuns'))}</h3>${runs.length ? `<ol>${runs.slice(0, 20).map((r) => `<li class="${r.ok ? '' : 'bad'}"><span class="dot" aria-hidden="true"></span><span><b>${esc(r.name)} › ${esc(r.command)}</b><small>${esc(new Date(r.at).toLocaleString())} · ${r.ms} ms${r.ops ? ` · ${r.ops} ${esc(tx('extOps'))}` : ''} · ${esc(r.ok ? tx('extRunOk') : tx('extRunFailed'))}</small>${r.message ? `<small>${esc(r.message)}</small>` : ''}</span></li>`).join('')}</ol>` : `<p class="muted">${esc(tx('extNoRuns'))}</p>`}`;
+  }
+  void showRuns();
 }
 
 function settingsView(view: HTMLElement) {

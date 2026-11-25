@@ -101,6 +101,40 @@ export async function importWorldZip(zipFile: string, root: string, suggestedNam
   }
 }
 
+/**
+ * Unpack the files under `prefix` of a .zip into `dest` (which must not exist yet), refusing any
+ * path that would land outside it and archives that would unpack to more than `maxBytes`.
+ */
+export async function extractZip(zipFile: string, dest: string, opts: { prefix?: string; maxBytes: number }): Promise<void> {
+  const entries = await listEntries(zipFile).catch((e) => { throw friendly(e); });
+  const prefix = opts.prefix ?? '';
+  if (entries.reduce((a, e) => a + (e.name.startsWith(prefix) ? e.size : 0), 0) > opts.maxBytes) throw new Error(`That .zip would unpack to more than ${Math.round(opts.maxBytes / 1024 / 1024)} MiB. Nothing was unpacked.`);
+  await fs.mkdir(dest, { recursive: true });
+  const zip = await openZip(zipFile);
+  try {
+    await new Promise<void>((resolve, reject) => {
+      zip.on('entry', (e: yauzl.Entry) => {
+        (async () => {
+          if (!e.fileName.startsWith(prefix) || e.fileName.endsWith('/')) return;
+          const target = path.resolve(dest, e.fileName.slice(prefix.length));
+          if (!target.startsWith(path.resolve(dest) + path.sep)) throw new Error(`Unsafe path in the .zip: ${e.fileName}. Nothing was kept.`);
+          await fs.mkdir(path.dirname(target), { recursive: true });
+          const stream = await new Promise<NodeJS.ReadableStream>((res, rej) => zip.openReadStream(e, (err, st) => (err || !st ? rej(err) : res(st))));
+          await pipeline(stream, createWriteStream(target));
+        })().then(() => zip.readEntry(), (err) => { zip.close(); reject(err); });
+      });
+      zip.on('end', resolve);
+      zip.on('error', reject);
+      zip.readEntry();
+    });
+  } catch (e) { await fs.rm(dest, { recursive: true, force: true }); throw friendly(e); }
+}
+
+/** Names of the entries in a .zip (for finding where a manifest or world sits). */
+export async function zipEntryNames(zipFile: string): Promise<string[]> {
+  return (await listEntries(zipFile).catch((e) => { throw friendly(e); })).map((e) => e.name);
+}
+
 /** Stream a world folder as a .zip, with the world in a top folder of its own name. */
 export async function exportWorldZip(worldDir: string, out: NodeJS.WritableStream): Promise<void> {
   const zip = new yazl.ZipFile();

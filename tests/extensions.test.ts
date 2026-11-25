@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { Extensions, validateManifest, checkResponse, exchange, permissionKey } from '../src/server/extensions.js';
+import { Extensions, validateManifest, checkResponse, exchange, permissionKey, ReplaceNeeded } from '../src/server/extensions.js';
+import yazl from 'yazl';
+import { createWriteStream } from 'node:fs';
 
 const builtIn = path.join(__dirname, '..', 'extensions');
 const ctx = { world: { name: 'Test', spawn: { x: 10, y: 70, z: -5 }, dimensions: ['overworld'] }, selection: { dimension: 'overworld', box: { x1: 0, y1: 60, z1: 0, x2: 3, y2: 61, z2: 4 } } };
@@ -75,5 +77,39 @@ describe('extensions', () => {
       const r = await ex.run('hello-python', 'glass-floor', ctx);
       expect(r.ops).toEqual([{ op: 'fill', dimension: 'overworld', block: 'minecraft:glass', box: { x1: 0, y1: 60, z1: 0, x2: 3, y2: 60, z2: 4 } }]);
     }
+  });
+  it('adds from a folder or .zip, asks before replacing, keeps built-ins, and honours the master switch', async () => {
+    const data = await mkdtemp(path.join(os.tmpdir(), 'me-ext-'));
+    const ex = new Extensions(builtIn, data);
+    const sample = path.join(__dirname, '..', 'samples', 'extensions', 'hello-node');
+    const m = await ex.installFolder(sample);
+    expect(m.id).toBe('hello-node');
+    await expect(ex.installFolder(sample)).rejects.toBeInstanceOf(ReplaceNeeded);
+    await expect(ex.installFolder(path.join(builtIn, 'spawn-platform'))).rejects.toThrow(/built-in/);
+    // A new version needs consent again.
+    await ex.setEnabled('hello-node', true, permissionKey(m));
+    const v2 = await mkdtemp(path.join(os.tmpdir(), 'me-v2-'));
+    await writeFile(path.join(v2, 'manifest.json'), JSON.stringify({ ...JSON.parse(await (await import('node:fs/promises')).readFile(path.join(sample, 'manifest.json'), 'utf8')), version: '1.1.0' }));
+    await writeFile(path.join(v2, 'main.mjs'), await (await import('node:fs/promises')).readFile(path.join(sample, 'main.mjs'), 'utf8'));
+    await ex.installFolder(v2, true);
+    expect((await ex.list()).find((e) => e.manifest.id === 'hello-node')).toMatchObject({ enabled: false, needsConsent: true });
+
+    // From a .zip with the extension one folder down.
+    const zip = path.join(data, 'x.zip');
+    await new Promise<void>((ok) => { const z = new yazl.ZipFile(); z.addFile(path.join(__dirname, '..', 'samples', 'extensions', 'hello-python', 'manifest.json'), 'hello-python/manifest.json'); z.addFile(path.join(__dirname, '..', 'samples', 'extensions', 'hello-python', 'main.py'), 'hello-python/main.py'); z.end(); z.outputStream.pipe(createWriteStream(zip)).on('close', () => ok()); });
+    expect((await ex.installZip(zip)).id).toBe('hello-python');
+    await ex.remove('hello-python');
+    expect((await ex.list()).some((e) => e.manifest.id === 'hello-python')).toBe(false);
+    await expect(ex.remove('spawn-platform')).rejects.toThrow(/Built-in/);
+
+    // Master switch and recent runs.
+    const sp = (await ex.list()).find((e) => e.manifest.id === 'selection-report')!;
+    await ex.setEnabled('selection-report', true, permissionKey(sp.manifest));
+    await ex.run('selection-report', 'measure', ctx);
+    await ex.setMaster(false);
+    await expect(ex.run('selection-report', 'measure', ctx)).rejects.toThrow(/switched off/);
+    await ex.setMaster(true);
+    const runs = await ex.recentRuns();
+    expect(runs[0]).toMatchObject({ id: 'selection-report', command: 'Measure the selection', ok: true });
   });
 });

@@ -358,7 +358,7 @@
    "x": 4640,
    "y": 0,
    "w": 420,
-   "text": "Extensions manager in Settings. Try: switch Spawn platform on to see the consent dialog, Cancel or Allow; Tweaks dark, seed, motion.\nIn the app: manifest.json v1 per folder, out-of-process JSON-lines protocol, permissions world-info, selection, edit-world with consent tied to the exact set (changes ask again), 10 s and 1 MiB limits, clean environment with no secrets or paths, edits through the recorded history path, searchable manager with its own regex builder, palette commands, two built-in extensions, author article with Node and Python samples. Not yet: installing from a file or link, extension updates.",
+   "text": "Extensions manager in Settings. Try: switch Spawn platform on to see the consent dialog, Cancel or Allow; Tweaks dark, seed, motion.\nIn the app: manifest.json v1 per folder, out-of-process JSON-lines protocol, permissions world-info, selection, edit-world with consent tied to the exact set (changes ask again), 10 s and 1 MiB limits, clean environment with no secrets or paths, edits through the recorded history path, searchable manager with its own regex builder, palette commands, two built-in extensions, author article with Node and Python samples, master switch, add from .zip (and from a folder in the desktop app) asking before replacing, remove, reload, open extensions folder, recent runs, consent again on any version or permission change. Not yet: installing from a web link.",
    "fill": "yellow",
    "page": "settings"
   },

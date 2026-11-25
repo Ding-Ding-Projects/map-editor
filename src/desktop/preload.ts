@@ -2,6 +2,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 contextBridge.exposeInMainWorld('mapEditorDesktop', {
   pickFolder: (): Promise<string | undefined> => ipcRenderer.invoke('pick-folder'),
+  openDataFolder: (p: string): Promise<string> => ipcRenderer.invoke('open-data-folder', p),
   updates: {
     state: () => ipcRenderer.invoke('update-state'),
     check: () => ipcRenderer.invoke('update-check'),

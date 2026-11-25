@@ -1,7 +1,7 @@
 // HTTP server shared by every form: the desktop app runs it on 127.0.0.1, the Docker
 // image and the appliance run it on the LAN. Same API, same UI.
 import { DimSum } from './dimsum.js';
-import { Extensions, PERMISSIONS, permissionKey } from './extensions.js';
+import { Extensions, PERMISSIONS, permissionKey, ReplaceNeeded } from './extensions.js';
 import http from 'node:http';
 import { promises as fs, existsSync } from 'node:fs';
 import path from 'node:path';
@@ -94,7 +94,7 @@ export async function createServer(opts: ServerOptions) {
     if (p === '/api/changelog') return send(200, { entries: build.changelog ?? null });
 
     // Same-origin JSON only for state-changing calls (blocks cross-site form posts).
-    const isUpload = p === '/api/worlds/upload' && req.method === 'POST';
+    const isUpload = (p === '/api/worlds/upload' || p === '/api/extensions/upload') && req.method === 'POST';
     // Same-origin JSON only for state-changing calls (blocks cross-site form posts). Uploads instead
     // carry a custom header, which a cross-site form cannot send.
     if (req.method !== 'GET' && !isUpload && !(req.headers['content-type'] ?? '').startsWith('application/json')) throw new HttpError(415, 'Send JSON');
@@ -174,10 +174,48 @@ export async function createServer(opts: ServerOptions) {
       session = await EditSession.open(opts.dataDir, wp);
       return send(200, { info: session.world.info });
     }
+    if (p === '/api/extensions/upload' && req.method === 'POST') {
+      const limit = 20 * 1024 * 1024;
+      if (Number(req.headers['content-length'] ?? 0) > limit) throw new HttpError(413, 'Extension archives are limited to 20 MiB.');
+      const tmpDir = path.join(opts.dataDir, 'uploads');
+      await fs.mkdir(tmpDir, { recursive: true });
+      const tmp = path.join(tmpDir, randomBytes(8).toString('hex') + '.zip');
+      let size = 0;
+      req.on('data', (c: Buffer) => { size += c.length; if (size > limit) req.destroy(new Error('too large')); });
+      try {
+        await pipeline(req, createWriteStream(tmp));
+        const m = await extensions.installZip(tmp, req.headers['x-replace'] === '1');
+        return send(201, { id: m.id, name: m.name, version: m.version });
+      } catch (e) {
+        if (e instanceof ReplaceNeeded) return send(409, { replace: true, id: e.id, installed: e.installed, incoming: e.incoming, error: e.message });
+        throw new HttpError(size > limit ? 413 : 400, size > limit ? 'Extension archives are limited to 20 MiB.' : (e as Error).message);
+      } finally { await fs.rm(tmp, { force: true }); }
+    }
+    if (p === '/api/extensions/add-folder' && req.method === 'POST') {
+      // Only the desktop app (which runs for one person on their own computer) may read any folder.
+      if (!opts.allowAnyPath) throw new HttpError(403, 'Adding from a folder is only available in the desktop app. Upload a .zip instead.');
+      const { path: src, replace } = await body(req);
+      try { const m = await extensions.installFolder(String(src ?? ''), replace === true); return send(201, { id: m.id, name: m.name, version: m.version }); }
+      catch (e) {
+        if (e instanceof ReplaceNeeded) return send(409, { replace: true, id: e.id, installed: e.installed, incoming: e.incoming, error: e.message });
+        throw new HttpError(400, (e as Error).message);
+      }
+    }
+    if (p === '/api/extensions/remove' && req.method === 'POST') {
+      const { id } = await body(req);
+      try { await extensions.remove(String(id ?? '')); } catch (e) { throw new HttpError(400, (e as Error).message); }
+      return send(200, { ok: true });
+    }
+    if (p === '/api/extensions/master' && req.method === 'POST') {
+      const { on } = await body(req);
+      await extensions.setMaster(on === true);
+      return send(200, { on: on === true });
+    }
+    if (p === '/api/extensions/runs' && req.method === 'GET') return send(200, { runs: await extensions.recentRuns() });
     if (p === '/api/extensions' && req.method === 'GET') {
       // Folder paths stay on the server; the page gets what the manager shows.
       const list = await extensions.list();
-      return send(200, { permissions: PERMISSIONS, extensions: list.map((e) => ({ ...e.manifest, run: undefined, builtIn: e.builtIn, enabled: e.enabled, needsConsent: e.needsConsent, error: e.error, permissionKey: e.error ? undefined : permissionKey(e.manifest) })) });
+      return send(200, { masterOn: await extensions.masterOn(), canAddFolder: !!opts.allowAnyPath, folder: opts.allowAnyPath ? extensions.folder() : undefined, permissions: PERMISSIONS, extensions: list.map((e) => ({ ...e.manifest, run: undefined, builtIn: e.builtIn, enabled: e.enabled, needsConsent: e.needsConsent, error: e.error, permissionKey: e.error ? undefined : permissionKey(e.manifest) })) });
     }
     if (p === '/api/extensions/enable' && req.method === 'POST') {
       const { id, enabled, permissionKey: key } = await body(req);

@@ -1,6 +1,7 @@
 // Desktop app: runs the shared server on loopback and shows it in a window.
 import { app, BrowserWindow, shell, dialog, ipcMain } from 'electron';
 import path from 'node:path';
+import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import { createServer } from '../server/server.js';
 import { handleSquirrelEvent } from './squirrel.js';
@@ -26,6 +27,13 @@ if (!squirrel) app.whenReady().then(async () => {
   win = new BrowserWindow({
     width: 1440, height: 900, minWidth: 360, minHeight: 600, title: 'Map Editor', backgroundColor: '#10140F',
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false },
+  });
+  // Opens a folder in Explorer, but only inside this app's own data folder (the extensions folder).
+  ipcMain.handle('open-data-folder', async (_e, p: string) => {
+    const target = path.resolve(String(p ?? ''));
+    if (!target.startsWith(path.resolve(dataDir) + path.sep)) return 'Only folders inside the app data folder can be opened.';
+    await fs.mkdir(target, { recursive: true });
+    return shell.openPath(target);
   });
   ipcMain.handle('pick-folder', async () => (await dialog.showOpenDialog(win!, { title: 'Open a Minecraft world folder', properties: ['openDirectory'] })).filePaths[0]);
   // Links to other sites open in the normal browser, never inside the app window.

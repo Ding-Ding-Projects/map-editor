@@ -479,3 +479,12 @@ md-list-item[hidden] { display: none; }
 .help-menu button { height: 48px; padding: 0 16px; border: 0; background: transparent; color: var(--md-sys-color-on-surface); font: inherit; text-align: left; cursor: pointer; }
 .help-menu button:hover, .help-menu button:focus-visible { background: color-mix(in srgb, var(--md-sys-color-on-surface) 10%, transparent); outline: none; }
 .tour-target[tabindex="-1"]:focus { outline: none; }
+.ext-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px; border-radius: 24px; background: var(--md-sys-color-surface-container-high); }
+.ext-master { display: flex; align-items: center; gap: 12px; cursor: pointer; } .ext-master span { display: flex; flex-direction: column; } .ext-master small { color: var(--md-sys-color-on-surface-variant); }
+.ext-bar .spacer { flex: 1; }
+.ext-remove { align-self: flex-start; --md-text-button-label-text-color: var(--md-sys-color-error); }
+.ext-runs h3 { margin: 8px 0; font-size: 18px; }
+.ext-runs ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ext-runs li { display: flex; gap: 12px; align-items: flex-start; padding: 10px 14px; border-radius: 16px; background: var(--md-sys-color-surface-container-high); }
+.ext-runs li > span:last-child { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; } .ext-runs small { color: var(--md-sys-color-on-surface-variant); }
+.ext-runs .dot { flex: none; width: 10px; height: 10px; margin-top: 6px; border-radius: 5px; background: var(--md-sys-color-primary); } .ext-runs li.bad .dot { background: var(--md-sys-color-error); }
