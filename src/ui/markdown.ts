@@ -17,7 +17,12 @@ export function safeHref(raw: string, base?: string): string | undefined {
   try { const u = new URL(t, base); return /^https?:$/.test(u.protocol) ? u.href : undefined; } catch { return undefined; }
 }
 
+/** Longest paragraph or line that gets inline formatting. */
+export const MAX_INLINE = 4000;
+
 function inline(text: string, base?: string): string {
+  // A very long line is shown as plain text: the patterns below are only run on text of bounded length, so hostile input cannot make them slow.
+  if (text.length > MAX_INLINE) return esc(text);
   const keep: string[] = [];
   const hold = (html: string) => `\u0000${keep.push(html) - 1}\u0000`;
   let s = text.replace(/`([^`\n]+)`/g, (_m, c: string) => hold(`<code>${esc(c)}</code>`));

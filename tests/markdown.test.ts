@@ -22,7 +22,11 @@ describe('safe Markdown', () => {
     expect(renderMarkdown('see https://example.org/x.')).toBe('<p>see <a href="https://example.org/x" target="_blank" rel="noopener noreferrer">https://example.org/x</a>.</p>');
     expect(renderMarkdown('a\nb')).toBe('<p>a b</p>'); expect(renderMarkdown('世界，\n你好')).toBe('<p>世界，你好</p>'); expect(renderMarkdown('  \n\n')).toBe('');
   });
-  it('stays quick on hostile input', () => {
-    const t = Date.now(); renderMarkdown(`${'*'.repeat(20000)}${'['.repeat(20000)}${'_a'.repeat(20000)}`); expect(Date.now() - t).toBeLessThan(2000);
+  it('stays quick on hostile input, long or just under the limit for formatting', () => {
+    const t = Date.now();
+    renderMarkdown(`${'*'.repeat(20000)}${'['.repeat(20000)}${'_a'.repeat(20000)}`);
+    for (const ch of ['[', '*', '_a', '`', '~', ':a']) renderMarkdown(Array.from({ length: 50 }, () => ch.repeat(Math.floor(3900 / ch.length))).join('\n\n'));
+    expect(Date.now() - t).toBeLessThan(1500);
+    expect(renderMarkdown('x'.repeat(5000) + ' **b**')).not.toContain('<strong>');
   });
 });
