@@ -93,7 +93,7 @@ jobs:
 
   pi-boot:
     needs: meta
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest # needs a QEMU new enough to have the raspi4b machine, which the 24.04 image lacks
     steps:
       - name: Boot the Raspberry Pi image on QEMU's raspi4b machine
         env: { GH_TOKEN: '${{ github.token }}' }
