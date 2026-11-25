@@ -65,16 +65,13 @@ export function setLang(next: Lang) {
 
 export function initLang() {
   try { const v = localStorage.getItem(KEY); if (v === 'yue' || v === 'both') lang = v; } catch { /* default */ }
-  let busy = false;
+  // Our own rewrites come back through here too; they already match, so they are left alone and nothing loops.
   new MutationObserver((ms) => {
-    if (busy) return; busy = true;
-    try {
-      for (const m of ms) {
-        if (m.type === 'characterData') walk(m.target);
-        else if (m.type === 'attributes') { if (m.target instanceof Element) attributes(m.target); }
-        else m.addedNodes.forEach(walk);
-      }
-    } finally { queueMicrotask(() => { busy = false; }); }
+    for (const m of ms) {
+      if (m.type === 'characterData') walk(m.target);
+      else if (m.type === 'attributes') { if (m.target instanceof Element) attributes(m.target); }
+      else m.addedNodes.forEach(walk);
+    }
   }).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
   setLang(lang);
 }
