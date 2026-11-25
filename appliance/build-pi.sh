@@ -23,7 +23,8 @@ cp "$IMAGE_TAR" "$OUT/pi-payload/map-editor-image.tar"
 echo "$VERSION" > "$OUT/pi-payload/VERSION"
 
 rm -rf "$ROOT"
-"$OUT/alpine-make-rootfs" --branch v3.21 --arch aarch64 \
+# alpine-make-rootfs v0.7.2 has no --arch option; apk itself installs arm64 packages with --arch.
+APK_OPTS="--no-progress --arch aarch64" "$OUT/alpine-make-rootfs" --branch v3.21 \
   --packages "alpine-base linux-rpi raspberrypi-bootloader docker openrc chrony e2fsprogs dosfstools" \
   --fs-skel-dir "$OUT/pi-payload" --fs-skel-chown root:root \
   --script-chroot "$ROOT" -- "$HERE/configure.sh"
