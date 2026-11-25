@@ -1,7 +1,7 @@
 // Map Editor web UI, shared by the desktop app, the Docker web app and the appliance.
 import '@material/web/all.js';
 import { styles as typescaleStyles } from '@material/web/typography/md-typescale-styles.js';
-import { t as tr, type I18nState, type Key, type Lang } from './i18n.js';
+import { t as tr, setVocabulary, parseVocabulary, STRINGS, type I18nState, type Key, type Lang } from './i18n.js';
 import { mountWorkspace, PHONE, resetLayout } from './workspace.js';
 import { searchBox, type RegexText } from './regex.js';
 import { enableClearControls } from './clearable.js';
@@ -115,6 +115,11 @@ let world: { name: string; versionName?: string; path: string; dimensions?: stri
 let fitPending = false; // centre the map on the world's chunks the next time the editor draws
 
 const tx = (k: Key, v: Record<string, string | number> = {}) => tr(prefs, k, v);
+// Personal vocabulary, kept in this browser.
+const VOCAB_KEY = 'map-editor.vocabulary.v1';
+function loadVocab(): Record<string, { en?: string; yue?: string }> { try { return parseVocabulary(JSON.parse(localStorage.getItem(VOCAB_KEY) ?? '{}')).ok; } catch { return {}; } }
+function saveVocab(v: Record<string, { en?: string; yue?: string }>) { try { localStorage.setItem(VOCAB_KEY, JSON.stringify(v)); } catch { /* storage blocked */ } setVocabulary(v); }
+setVocabulary(loadVocab());
 const rx: RegexText = (k, v) => tx(k, v);
 const esc = (s: unknown) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
@@ -1266,7 +1271,9 @@ function settingsView(view: HTMLElement) {
       <div class="set-sliders">
         <label class="set-slider" data-find="${esc(tx('funnyEn'))}"><span><b>${esc(tx('funnyEn'))}</b><em>${prefs.funnyEn}</em></span><md-slider id="fen" min="1" max="5" step="1" ticks labeled value="${prefs.funnyEn}"></md-slider></label>
         <label class="set-slider" data-find="${esc(tx('funnyYue'))}"><span><b>${esc(tx('funnyYue'))}</b><em>${prefs.funnyYue}</em></span><md-slider id="fyue" min="1" max="5" step="1" ticks labeled value="${prefs.funnyYue}"></md-slider></label>
-      </div><p class="muted">${esc(tx('funnyNote'))}</p>`,
+      </div><p class="muted">${esc(tx('funnyNote'))}</p>
+      <div class="set-row vocab-row" data-find="${esc(tx('vocab'))} ${esc(tx('vocabNote'))}"><span><b>${esc(tx('vocab'))}</b><small>${esc(tx('vocabNote'))} ${esc(tx('vocabCount', { n: Object.keys(loadVocab()).length }))}</small></span></div>
+      <div class="row-actions"><md-filled-tonal-button id="vocab-up">${esc(tx('vocabUpload'))}</md-filled-tonal-button><md-outlined-button id="vocab-template">${esc(tx('vocabTemplate'))}</md-outlined-button>${Object.keys(loadVocab()).length ? `<md-text-button id="vocab-reset">${esc(tx('vocabReset'))}</md-text-button>` : ''}<input type="file" id="vocab-file" accept=".json,application/json" hidden></div>`,
     appearance: `${sw('dark', 'dark', 'darkNote', prefs.dark)}${sw('dsched', 'darkSchedule', 'darkScheduleNote', prefs.darkSchedule)}
       <div class="set-times" data-find="${esc(tx('darkSchedule'))} ${esc(tx('darkFrom'))} ${esc(tx('darkTo'))}"><md-outlined-text-field id="dfrom" type="time" label="${esc(tx('darkFrom'))}" value="${prefs.darkFrom}"></md-outlined-text-field><md-outlined-text-field id="dto" type="time" label="${esc(tx('darkTo'))}" value="${prefs.darkTo}"></md-outlined-text-field></div>${sw('ds', 'dimSum', 'dimSumNote', prefs.dimSum)}
       <div class="set-row seed-row" data-find="${esc(tx('seed'))}"><span><b>${esc(tx('seed'))}</b></span><span class="seed-now"><span class="seed-swatch ${prefs.seed === RAINBOW ? 'rainbow' : ''}" style="background:${prefs.seed === RAINBOW ? 'none' : esc(prefs.seed)}"></span><code>${esc(prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed)}</code><md-text-button id="seed-reset">${esc(tx('reset'))}</md-text-button></span></div>
@@ -1337,6 +1344,24 @@ function settingsView(view: HTMLElement) {
   const num = (id: string) => Number((view.querySelector(id) as HTMLInputElement).value);
   const sel = (e: Event) => (e.target as HTMLElement & { selected: boolean }).selected;
   view.querySelector('#fen')!.addEventListener('change', () => { prefs.funnyEn = num('#fen'); savePrefs(); render(); });
+  const vf = view.querySelector<HTMLInputElement>('#vocab-file')!;
+  view.querySelector('#vocab-up')!.addEventListener('click', () => vf.click());
+  vf.addEventListener('change', async () => {
+    const f = vf.files?.[0]; vf.value = ''; if (!f) return;
+    try {
+      if (f.size > 512 * 1024) throw new Error(tx('vocabTooBig'));
+      const { ok, skipped } = parseVocabulary(JSON.parse(await f.text()));
+      saveVocab(ok);
+      notify(tx('vocabLoaded', { n: Object.keys(ok).length, s: skipped.length }), skipped.length > 0 && !Object.keys(ok).length);
+      render();
+    } catch (err) { notify(tx('vocabBad', { e: (err as Error).message }), true); }
+  });
+  view.querySelector('#vocab-template')!.addEventListener('click', () => {
+    const cur = loadVocab();
+    const all = Object.fromEntries(Object.entries(STRINGS).map(([k, e]) => [k, { en: cur[k]?.en ?? e.en, yue: cur[k]?.yue ?? e.yue }]));
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' })); a.download = 'map-editor-words.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+  view.querySelector('#vocab-reset')?.addEventListener('click', async () => { if (!await askConfirm(tx('vocabResetAsk'), tx('vocabReset'))) return; saveVocab({}); notify(tx('vocabCleared')); render(); });
   view.querySelector('#fyue')!.addEventListener('change', () => { prefs.funnyYue = num('#fyue'); savePrefs(); render(); });
   view.querySelector('#dark')!.addEventListener('change', (e) => { prefs.dark = sel(e); savePrefs(); applyTheme(); });
   view.querySelector('#rm')!.addEventListener('change', (e) => { prefs.reduceMotion = sel(e); savePrefs(); applyTheme(); });

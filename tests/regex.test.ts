@@ -85,3 +85,18 @@ describe('ready-made patterns', () => {
     }
   });
 });
+
+describe('personal vocabulary', () => {
+  it('accepts known ids as text or per language, and refuses the rest', async () => {
+    const { parseVocabulary, setVocabulary, t } = await import('../src/ui/i18n.js');
+    const { ok, skipped } = parseVocabulary({ undo: 'Oops, take it back', tools: { yue: '百寶箱' }, nope: 'x', history: 5, about: { en: '' } });
+    expect(ok).toEqual({ undo: { en: 'Oops, take it back', yue: 'Oops, take it back' }, tools: { yue: '百寶箱' } });
+    expect(skipped.sort()).toEqual(['about', 'history', 'nope']);
+    setVocabulary(ok);
+    expect(t({ lang: 'en', funnyEn: 5, funnyYue: 5 }, 'undo')).toBe('Oops, take it back');
+    expect(t({ lang: 'yue', funnyEn: 1, funnyYue: 1 }, 'tools')).toBe('百寶箱');
+    expect(t({ lang: 'en', funnyEn: 1, funnyYue: 1 }, 'tools')).toBe('Tools');
+    setVocabulary({});
+    expect(() => parseVocabulary([1, 2])).toThrow(/JSON object/);
+  });
+});

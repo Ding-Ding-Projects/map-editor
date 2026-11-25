@@ -84,5 +84,5 @@ above). These checks still need a person, a browser session or hardware:
   - a separate data partition on the appliance;
   - the remaining built-in tools (file converter, Ollama suite, server manager, virtual disk manager);
   - per-element appearance and logo customization, and TinyMCE in other fields;
-  - personal vocabulary upload, the element unlock ladder, and an authenticator.
+  - the element unlock ladder and an authenticator.
 - Code-signed extension sources are not planned: this project does not sign code.

@@ -19,6 +19,17 @@ const S = {
   settings: { en: 'Settings', yue: '設定' },
   about: { en: 'About', yue: '關於' },
   tools: { en: 'Tools', yue: '工具箱' },
+  vocab: { en: 'Your own words', yue: '自己嘅用字' },
+  vocabNote: { en: 'Upload a JSON file to change any wording in this browser, in English, Cantonese or both. Download the template to see every id.', yue: '上載 JSON 檔，喺呢個瀏覽器改任何用字，英文、廣東話或者兩樣都得。下載範本就睇到所有 id。' },
+  vocabCount: { en: '{n} words changed now.', yue: '而家改咗 {n} 個。' },
+  vocabUpload: { en: 'Upload words…', yue: '上載用字…' },
+  vocabTemplate: { en: 'Download the template', yue: '下載範本' },
+  vocabReset: { en: 'Back to the built-in words', yue: '還原內置用字' },
+  vocabResetAsk: { en: 'Remove your own words and use the built-in wording again?', yue: '移除自己嘅用字，用返內置嗰套？' },
+  vocabCleared: { en: 'Using the built-in words again.', yue: '已經用返內置用字。' },
+  vocabLoaded: { en: 'Using {n} of your own words; {s} entries were not recognised and left out.', yue: '用緊你 {n} 個用字；有 {s} 項認唔到，冇用。' },
+  vocabBad: { en: 'That file could not be used: {e}', yue: '用唔到呢個檔：{e}' },
+  vocabTooBig: { en: 'Vocabulary files are limited to 512 KiB.', yue: '用字檔上限係 512 KiB。' },
   focusMode: { en: 'Focus mode', yue: '專注模式' },
   focusModeNote: { en: 'Fewer interruptions: routine messages wait in the bell, no dim sum surprises, motion reduced and the panel you are in stands out. Problems still show.', yue: '少啲打擾：普通訊息留喺鈴入面，冇點心驚喜，減少動畫，正在用嘅面板會突出啲。有問題照樣彈出。' },
   schoolMode: { en: 'School mode', yue: '學校模式' },
@@ -504,8 +515,36 @@ function fill(s: string, vars: Record<string, string | number>) {
   return s.replace(/\{(\w+)\}/g, (_, k) => (k in vars ? String(vars[k]) : `{${k}}`));
 }
 
+/** Personal vocabulary: the owner's own wording for any string, in either or both languages. */
+let overrides: Record<string, { en?: string; yue?: string }> = {};
+export function setVocabulary(v: Record<string, { en?: string; yue?: string }>) { overrides = v; }
+
+/**
+ * Check an uploaded vocabulary file: { key: "text" } or { key: { en, yue } }. Unknown keys and
+ * over-long or non-text values are refused so a bad file cannot break the interface.
+ */
+export function parseVocabulary(raw: unknown): { ok: Record<string, { en?: string; yue?: string }>; skipped: string[] } {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('A vocabulary file is a JSON object of string ids.');
+  const ok: Record<string, { en?: string; yue?: string }> = {}, skipped: string[] = [];
+  const good = (v: unknown) => typeof v === 'string' && v.trim().length > 0 && v.length <= 400;
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!(k in S)) { skipped.push(k); continue; }
+    if (good(v)) { ok[k] = { en: v as string, yue: v as string }; continue; }
+    if (v && typeof v === 'object') {
+      const o = v as { en?: unknown; yue?: unknown };
+      const e: { en?: string; yue?: string } = {};
+      if (good(o.en)) e.en = o.en as string;
+      if (good(o.yue)) e.yue = o.yue as string;
+      if (e.en || e.yue) { ok[k] = e; continue; }
+    }
+    skipped.push(k);
+  }
+  return { ok, skipped };
+}
+
 export function t(state: I18nState, key: Key, vars: Record<string, string | number> = {}): string {
-  const e = S[key] as Entry;
+  const o = overrides[key];
+  const e = (o ? { ...(S[key] as Entry), ...(o.en ? { en: o.en, en5: o.en } : {}), ...(o.yue ? { yue: o.yue, yue5: o.yue } : {}) } : S[key]) as Entry;
   const en = fill(pick(e, 'en', state.funnyEn), vars);
   const yue = fill(pick(e, 'yue', state.funnyYue), vars);
   if (state.lang === 'en') return en;
