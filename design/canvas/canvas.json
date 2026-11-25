@@ -1,1 +1,314 @@
-{"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-23T21:45:00Z"}, "title": "Map Editor and Deploy Wizard", "launch": {"view": "canvas", "page": "editor"}, "pages": [{"id": "editor", "name": "Editor"}, {"id": "setup", "name": "Setup"}, {"id": "history", "name": "History"}, {"id": "deploy", "name": "Deploy"}, {"id": "settings", "name": "Settings"}, {"id": "feedback", "name": "Feedback"}, {"id": "mobile", "name": "Phone"}, {"id": "site", "name": "Docs site"}], "boards": {"Main.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 900, "title": "Editor workspace", "expand": "fill", "is_interactive": true, "page": "editor"}, "FirstRun.dc.html": {"x": 0, "y": 0, "w": 1280, "h": 800, "title": "First-run wizard", "expand": "fill", "is_interactive": true, "page": "setup"}, "History.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 860, "title": "Edit history (local Git)", "expand": "fill", "is_interactive": true, "page": "history"}, "Deploy.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 960, "title": "Deploy wizard and instances", "expand": "fill", "is_interactive": true, "page": "deploy"}, "Settings.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 900, "title": "Settings", "expand": "fill", "is_interactive": true, "page": "settings"}, "Palette.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 900, "title": "Command palette, notifications, update coming soon, dim sum", "expand": "fill", "page": "feedback"}, "Takeover.dc.html": {"x": 1520, "y": 0, "w": 1440, "h": 820, "title": "Install success and failure takeovers", "expand": "fill", "page": "feedback"}, "Phone.dc.html": {"x": 0, "y": 0, "w": 390, "h": 844, "title": "Phone width: one dockview group", "is_interactive": true, "page": "mobile"}, "SiteHome.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 2600, "title": "Docs site: home", "expand": "fill", "page": "site"}}, "order": ["Main.dc.html", "FirstRun.dc.html", "History.dc.html", "Deploy.dc.html", "Settings.dc.html", "Palette.dc.html", "Takeover.dc.html", "Phone.dc.html", "SiteHome.dc.html"], "notes": {"t1": {"x": 0, "y": -300, "text": "Editor", "kind": "title1", "maxW": 1440, "page": "editor"}, "t2": {"x": 0, "y": -300, "text": "Setup", "kind": "title1", "maxW": 1280, "page": "setup"}, "t3": {"x": 0, "y": -300, "text": "History", "kind": "title1", "maxW": 1440, "page": "history"}, "t4": {"x": 0, "y": -300, "text": "Deploy", "kind": "title1", "maxW": 1440, "page": "deploy"}, "t5": {"x": 0, "y": -300, "text": "Settings", "kind": "title1", "maxW": 1440, "page": "settings"}, "t6": {"x": 0, "y": -300, "text": "Feedback", "kind": "title1", "maxW": 2960, "page": "feedback"}, "t7": {"x": 0, "y": -300, "text": "Phone", "kind": "title1", "maxW": 800, "page": "mobile"}, "t8": {"x": 0, "y": -300, "text": "Docs site", "kind": "title1", "maxW": 2960, "page": "site"}}, "designSystems": []}
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-23T21:45:00Z"
+ },
+ "title": "Map Editor and Deploy Wizard",
+ "launch": {
+  "view": "canvas",
+  "page": "editor"
+ },
+ "pages": [
+  {
+   "id": "editor",
+   "name": "Editor"
+  },
+  {
+   "id": "worlds",
+   "name": "Worlds"
+  },
+  {
+   "id": "setup",
+   "name": "First run"
+  },
+  {
+   "id": "history",
+   "name": "Edit history"
+  },
+  {
+   "id": "settings",
+   "name": "Settings"
+  },
+  {
+   "id": "feedback",
+   "name": "Feedback"
+  },
+  {
+   "id": "mobile",
+   "name": "Phone"
+  },
+  {
+   "id": "deploy",
+   "name": "Deploy app"
+  },
+  {
+   "id": "site",
+   "name": "Docs site"
+  }
+ ],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Editor workspace",
+   "expand": "fill",
+   "page": "editor",
+   "is_interactive": true
+  },
+  "Worlds.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Worlds: list, upload, new, every stage",
+   "expand": "fill",
+   "page": "worlds"
+  },
+  "FirstRun.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1280,
+   "h": 800,
+   "title": "First-run wizard",
+   "expand": "fill",
+   "page": "setup",
+   "is_interactive": true
+  },
+  "History.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 860,
+   "title": "Edit history",
+   "expand": "fill",
+   "page": "history",
+   "is_interactive": true
+  },
+  "Settings.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Settings",
+   "expand": "fill",
+   "page": "settings",
+   "is_interactive": true
+  },
+  "Palette.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Command palette, notifications, update coming soon, dim sum",
+   "expand": "fill",
+   "page": "feedback"
+  },
+  "Takeover.dc.html": {
+   "x": 2120,
+   "y": 0,
+   "w": 1440,
+   "h": 820,
+   "title": "Install success and failure takeovers",
+   "expand": "fill",
+   "page": "feedback"
+  },
+  "Phone.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Phone width: one panel group",
+   "page": "mobile",
+   "is_interactive": true
+  },
+  "Deploy.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 960,
+   "title": "Deploy wizard and instances",
+   "expand": "fill",
+   "page": "deploy",
+   "is_interactive": true
+  },
+  "SiteHome.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 2600,
+   "title": "Docs site: home",
+   "expand": "fill",
+   "page": "site"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Worlds.dc.html",
+  "FirstRun.dc.html",
+  "History.dc.html",
+  "Settings.dc.html",
+  "Palette.dc.html",
+  "Takeover.dc.html",
+  "Phone.dc.html",
+  "Deploy.dc.html",
+  "SiteHome.dc.html"
+ ],
+ "notes": {
+  "t0": {
+   "x": 0,
+   "y": -300,
+   "text": "Editor",
+   "kind": "title1",
+   "maxW": 2400,
+   "page": "editor"
+  },
+  "t1": {
+   "x": 0,
+   "y": -300,
+   "text": "Worlds",
+   "kind": "title1",
+   "maxW": 2400,
+   "page": "worlds"
+  },
+  "t2": {
+   "x": 0,
+   "y": -300,
+   "text": "First run",
+   "kind": "title1",
+   "maxW": 2400,
+   "page": "setup"
+  },
+  "t3": {
+   "x": 0,
+   "y": -300,
+   "text": "Edit history",
+   "kind": "title1",
+   "maxW": 2400,
+   "page": "history"
+  },
+  "t4": {
+   "x": 0,
+   "y": -300,
+   "text": "Settings",
+   "kind": "title1",
+   "maxW": 2400,
+   "page": "settings"
+  },
+  "t5": {
+   "x": 0,
+   "y": -300,
+   "text": "Feedback",
+   "kind": "title1",
+   "maxW": 2400,
+   "page": "feedback"
+  },
+  "t6": {
+   "x": 0,
+   "y": -300,
+   "text": "Phone",
+   "kind": "title1",
+   "maxW": 2400,
+   "page": "mobile"
+  },
+  "t7": {
+   "x": 0,
+   "y": -300,
+   "text": "Deploy app",
+   "kind": "title1",
+   "maxW": 2400,
+   "page": "deploy"
+  },
+  "t8": {
+   "x": 0,
+   "y": -300,
+   "text": "Docs site",
+   "kind": "title1",
+   "maxW": 2400,
+   "page": "site"
+  },
+  "n_main": {
+   "x": 1520,
+   "y": 0,
+   "w": 420,
+   "text": "Editor workspace. Shows the panel layout: tab strip docked left with Close and Open every tab, map, Fill tool, floating Block palette group, floating toolbar, snackbar.\nTry: Tweaks dark, showFloat, showDrop, seed, motion; click tabs, tools, toolbar modes.\nIn the app: panels, map, the five tools, history, notes, language chips. Not in the app yet: Block palette group, toolbar modes, per-element appearance.",
+   "fill": "yellow",
+   "page": "editor"
+  },
+  "n_worlds": {
+   "x": 1520,
+   "y": 0,
+   "w": 420,
+   "text": "Worlds screen with every stage. Try: Tweak stage (list, loading, empty, upload, error, offline), dark, seed, motion.\nStands for: upload a world .zip to the web app or appliance, new flat world, download .zip, browse a folder in the desktop app.\nBeing built; nothing here is verified in the app until the handoff says so.",
+   "fill": "yellow",
+   "page": "worlds"
+  },
+  "n_firstrun": {
+   "x": 1360,
+   "y": 0,
+   "w": 420,
+   "text": "First-run wizard. Try: click steps, Back, Next, Skip, language cards; Tweaks dark, seed, motion.\nStands for the in-app onboarding wizard: language and voice, comfort modes, theme colour, open a world; progress saves and resumes.\nBeing built; the owner account already exists as the sign-up screen.",
+   "fill": "yellow",
+   "page": "setup"
+  },
+  "n_history": {
+   "x": 1520,
+   "y": 0,
+   "w": 420,
+   "text": "Edit history. Try: action filter chips, select a point; Tweaks dark, seed, motion.\nStands for the private Git history kept beside app data, append-only restore.\nIn the app: list, action filters with counts, roll back. Not yet: date range picker, Open as a copy, per-point chunk stats.",
+   "fill": "yellow",
+   "page": "history"
+  },
+  "n_settings": {
+   "x": 1520,
+   "y": 0,
+   "w": 420,
+   "text": "Settings. Try: section tabs, language buttons, switches, seed swatches; Tweaks dark, seed, motion.\nIn the app: language, both funny sliders, dark, reduce motion, theme colour with the colour picker. Not yet: comfort modes, sounds, schedules, locks, extensions, settings export.",
+   "fill": "yellow",
+   "page": "settings"
+  },
+  "n_palette": {
+   "x": 1520,
+   "y": 0,
+   "w": 420,
+   "text": "Command palette (Ctrl+Shift+F) with live setting rows, notification centre, Update coming soon, dim sum surprise. Tweaks dark, seed, motion.\nPalette and notification centre are being built; Update coming soon and dim sum are not built.",
+   "fill": "yellow",
+   "page": "feedback"
+  },
+  "n_takeover": {
+   "x": 3640,
+   "y": 0,
+   "w": 420,
+   "text": "Install success and failure takeovers for the deploy app. Try: Tweak state, seed, motion.\nIn the app: the success takeover. Not yet: the failure takeover with log and retry.",
+   "fill": "yellow",
+   "page": "feedback"
+  },
+  "n_phone": {
+   "x": 470,
+   "y": 0,
+   "w": 420,
+   "text": "Phone width: panels collapse to one group with chips; bottom destinations. Try: panel chips, destinations; Tweaks dark, seed, motion.\nNot in the app yet: it stacks panels instead of collapsing to one group.",
+   "fill": "yellow",
+   "page": "mobile"
+  },
+  "n_deploy": {
+   "x": 1520,
+   "y": 0,
+   "w": 420,
+   "text": "Deploy app. Try: target cards, Deploy and Instances views; Tweaks dark, seed, motion.\nIn the app: Docker, VirtualBox and USB flash targets (not run on real hosts), instance list. Not yet: VMware, Raspberry Pi, Docker over SSH, instance actions.",
+   "fill": "yellow",
+   "page": "deploy"
+  },
+  "n_sitehome": {
+   "x": 1520,
+   "y": 0,
+   "w": 420,
+   "text": "Docs site home on GitHub Pages. Tweaks dark, seed, motion.\nBuilt and deployed to match this board. Not yet: the animated hero demo, bundled fonts, phone PDF edition.",
+   "fill": "yellow",
+   "page": "site"
+  }
+ },
+ "designSystems": []
+}

@@ -173,7 +173,7 @@ export class World {
 }
 
 /** Create a minimal 1.21 world on disk. Used by tests and by "New world". */
-export async function createWorld(dir: string, name: string, dataVersion = 4189): Promise<void> {
+export async function createWorld(dir: string, name: string, dataVersion = 4189, spawnY = 64): Promise<void> {
   const { nbt } = await import('./nbt.js');
   await fs.mkdir(path.join(dir, 'region'), { recursive: true });
   const level: NamedTag = {
@@ -183,7 +183,7 @@ export async function createWorld(dir: string, name: string, dataVersion = 4189)
         LevelName: nbt.string(name),
         DataVersion: nbt.int(dataVersion),
         Version: nbt.compound({ Name: nbt.string('1.21.4'), Id: nbt.int(dataVersion) }),
-        SpawnX: nbt.int(0), SpawnY: nbt.int(64), SpawnZ: nbt.int(0),
+        SpawnX: nbt.int(0), SpawnY: nbt.int(spawnY), SpawnZ: nbt.int(0),
       }),
     }),
   };

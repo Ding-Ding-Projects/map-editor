@@ -3,6 +3,12 @@ import '@material/web/all.js';
 import { styles as typescaleStyles } from '@material/web/typography/md-typescale-styles.js';
 import { t as tr, type I18nState, type Key, type Lang } from './i18n.js';
 import { mountWorkspace } from './workspace.js';
+import { worldsView } from './worlds.js';
+import { openPalette, type Command } from './palette.js';
+import { onboarding } from './onboarding.js';
+
+/** Present only inside the desktop app (see src/desktop/preload.ts). */
+const desktopBridge = (window as unknown as { mapEditorDesktop?: { pickFolder: () => Promise<string | undefined> } }).mapEditorDesktop;
 import { colorPicker, applyRainbowSpeed } from './colorpicker.js';
 import { RAINBOW } from './color.js';
 import { argbFromHex, themeFromSourceColor, applyTheme as applyM3Theme } from '@material/material-color-utilities';
@@ -11,10 +17,10 @@ import { notesPanel as notesPanelImpl } from './notes.js';
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
 
 // ---------- state ----------
-interface Prefs extends I18nState { dark: boolean; reduceMotion: boolean; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number }
+interface Prefs extends I18nState { dark: boolean; reduceMotion: boolean; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
 const PREFS_KEY = 'map-editor.prefs.v1';
 const DEFAULT_SEED = '#4c8c4a';
-const defaults: Prefs = { lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3 };
+const defaults: Prefs = { lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
 function loadPrefs(): Prefs { try { return { ...defaults, ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') }; } catch { return { ...defaults }; } }
 let prefs = loadPrefs();
 function savePrefs() { try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch { /* storage blocked: keep in memory */ } }
@@ -26,7 +32,8 @@ interface Health { version: string; commit: string; builtAt: string | null }
 let health: Health | undefined;
 let user: { name: string } | null = null;
 let hasOwner = true;
-let world: { name: string; versionName?: string; path: string } | undefined;
+let world: { name: string; versionName?: string; path: string; dimensions?: string[]; spawn?: { x: number; y: number; z: number } } | undefined;
+let fitPending = false; // centre the map on the world's chunks the next time the editor draws
 
 const tx = (k: Key, v: Record<string, string | number> = {}) => tr(prefs, k, v);
 const esc = (s: unknown) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
@@ -55,6 +62,41 @@ function notify(text: string, error = false, action?: { label: string; run: () =
   const x = document.createElement('md-text-button'); x.textContent = tx('close'); x.addEventListener('click', () => el.remove()); el.append(x);
   host.prepend(el);
   if (!error) setTimeout(() => el.remove(), 6000);
+  const bell = document.querySelector('.bell-wrap');
+  if (bell) { bell.querySelector('.badge')?.remove(); bell.insertAdjacentHTML('beforeend', `<span class="badge">${notes.length}</span>`); }
+  if (document.querySelector('.note-centre')) { toggleNoteCentre(); toggleNoteCentre(); }
+}
+
+function toggleNoteCentre() {
+  const existing = document.querySelector('.note-centre');
+  if (existing) { existing.remove(); return; }
+  const panel = document.createElement('section');
+  panel.className = 'note-centre';
+  panel.setAttribute('aria-label', tx('notifications'));
+  panel.innerHTML = `<header><h2>${esc(tx('notifications'))}</h2><md-text-button id="nc-clear">${esc(tx('dismissAll'))}</md-text-button><md-text-button id="nc-close">${esc(tx('close'))}</md-text-button></header>
+    ${notes.length ? `<ol>${notes.map((n) => `<li class="${n.error ? 'error' : ''}"><span class="dot" aria-hidden="true"></span><span class="nc-text">${esc(n.text)}</span><time>${esc(n.at)}</time></li>`).join('')}</ol>` : `<p class="muted">${esc(tx('noNotifications'))}</p>`}`;
+  document.body.append(panel);
+  panel.querySelector('#nc-clear')!.addEventListener('click', () => { notes.length = 0; panel.remove(); document.querySelector('.bell-wrap .badge')?.remove(); });
+  panel.querySelector('#nc-close')!.addEventListener('click', () => panel.remove());
+}
+
+function paletteCommands(): Command[] {
+  const go = (t: string) => () => { prefs.closedTabs = prefs.closedTabs.filter((x) => x !== t); prefs.tab = t; savePrefs(); render(); };
+  const cmds: Command[] = [];
+  for (const t of TABS) cmds.push({ id: `go-${t}`, label: `${tx('open')}: ${tx(t as Key)}`, where: 'Tabs', run: go(t) });
+  if (world) for (const [o, k] of [['fill', 'F'], ['replace', 'R'], ['delete', 'D'], ['clone', 'C'], ['waterlog', 'W']] as const) cmds.push({ id: `tool-${o}`, label: tx(o), where: `${tx('editor')} › Tools`, keys: k, run: () => { go('editor')(); setTimeout(() => selectTool?.(o), 50); } });
+  if (world) cmds.push({ id: 'undo', label: tx('undo'), where: tx('history'), keys: 'Ctrl+Z', run: () => undoLast() });
+  cmds.push({ id: 'dark', label: tx('dark'), where: `${tx('settings')} › Appearance`, toggle: { get: () => prefs.dark, set: (v) => { prefs.dark = v; savePrefs(); applyTheme(); } } });
+  cmds.push({ id: 'motion', label: tx('reduceMotion'), where: `${tx('settings')} › Appearance`, toggle: { get: () => prefs.reduceMotion, set: (v) => { prefs.reduceMotion = v; savePrefs(); applyTheme(); } } });
+  for (const [l, label] of [['en', 'English'], ['yue', '粵語'], ['both', 'EN + 粵']] as const) cmds.push({ id: `lang-${l}`, label: `${tx('language')}: ${label}`, where: `${tx('settings')} › ${tx('language')}`, run: () => { prefs.lang = l; savePrefs(); render(); } });
+  cmds.push({ id: 'notes', label: tx('notifications'), where: 'Header', run: () => toggleNoteCentre() });
+  cmds.push({ id: 'welcome', label: tx('welcome'), where: `${tx('settings')}`, run: () => { prefs.onboarded = false; prefs.onboardStep = 0; savePrefs(); render(); } });
+  return cmds;
+}
+
+function showPalette() {
+  if (!user) return;
+  openPalette(paletteCommands, { title: tx('palette'), hint: tx('paletteHint'), none: tx('noMatches') });
 }
 
 // ---------- theme ----------
@@ -96,14 +138,15 @@ function shell() {
       <div class="brand"><div class="logo" aria-hidden="true"></div>
         <div><div class="md-typescale-headline-medium title">${esc(world?.name ?? tx('appName'))}</div>
         <div class="md-typescale-body-small muted" id="prov">${esc(provenance())}</div></div></div>
-      <div class="search"><md-outlined-text-field id="cmd" label="Ctrl+Shift+F" placeholder="${esc(tx('worlds'))}, ${esc(tx('fill'))}, ${esc(tx('settings'))}"></md-outlined-text-field></div>
+      <button class="search-pill" id="cmd" aria-keyshortcuts="Control+Shift+F"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>${esc(tx('paletteHint'))}</span><kbd>Ctrl Shift F</kbd></button>
       <md-chip-set aria-label="${esc(tx('language'))}">
         ${(['en', 'yue', 'both'] as Lang[]).map((l) => `<md-filter-chip data-lang="${l}" label="${l === 'en' ? 'English' : l === 'yue' ? '粵語' : 'EN + 粵'}" ${prefs.lang === l ? 'selected' : ''}></md-filter-chip>`).join('')}
       </md-chip-set>
+      ${user ? `<span class="bell-wrap"><md-icon-button id="bell" aria-label="${esc(tx('notifications'))}${notes.length ? `, ${notes.length}` : ''}"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21h4"/></svg></md-icon-button>${notes.length ? `<span class="badge">${notes.length}</span>` : ''}</span>` : ''}
       ${user ? `<md-outlined-button id="logout">${esc(user.name)}</md-outlined-button>` : ''}
     </header>
     <div class="body">
-      ${user ? `<nav class="tabs" aria-label="Tabs"><md-list role="tablist" aria-orientation="vertical">
+      ${user && prefs.onboarded ? `<nav class="tabs" aria-label="Tabs"><md-list role="tablist" aria-orientation="vertical">
         ${open.map((x) => `<md-list-item type="button" role="tab" aria-selected="${x === prefs.tab}" data-tab="${x}" class="${x === prefs.tab ? 'active' : ''}">${esc(tx(x as Key))}
           ${x === prefs.tab ? `<md-outlined-button slot="end" data-close="${x}">${esc(tx('close'))}</md-outlined-button>` : ''}</md-list-item>`).join('')}
         </md-list>
@@ -116,6 +159,8 @@ function shell() {
   app.querySelectorAll<HTMLElement>('[data-tab]').forEach((c) => c.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('[data-close]')) return; prefs.tab = c.dataset.tab!; savePrefs(); render(); }));
   app.querySelectorAll<HTMLElement>('[data-close]').forEach((c) => c.addEventListener('click', () => { prefs.closedTabs.push(c.dataset.close!); savePrefs(); render(); }));
   app.querySelector('#open-all')?.addEventListener('click', () => { prefs.closedTabs = []; savePrefs(); render(); });
+  app.querySelector('#cmd')?.addEventListener('click', () => showPalette());
+  app.querySelector('#bell')?.addEventListener('click', () => toggleNoteCentre());
   app.querySelector('#logout')?.addEventListener('click', async () => { await api('/api/auth/logout', { method: 'POST', body: {} }); user = null; render(); });
 }
 
@@ -124,8 +169,18 @@ async function render(): Promise<void> {
   shell();
   const view = document.getElementById('view')!;
   if (!user) return authView(view);
+  if (!prefs.onboarded) {
+    onboarding(view, {
+      tx, esc, prefs, step: prefs.onboardStep,
+      save: (step) => { prefs.onboardStep = step; savePrefs(); },
+      apply: () => { savePrefs(); applyTheme(); },
+      relabel: () => { savePrefs(); applyTheme(); shell(); return document.getElementById('view')!; },
+      done: () => { prefs.onboarded = true; prefs.tab = 'worlds'; savePrefs(); render(); },
+    });
+    return;
+  }
   switch (prefs.tab as Tab) {
-    case 'worlds': return worldsView(view);
+    case 'worlds': return worldsScreen(view);
     case 'editor': return editorView(view);
     case 'history': return historyView(view);
     case 'settings': return settingsView(view);
@@ -155,30 +210,41 @@ function authView(view: HTMLElement) {
   });
 }
 
-async function worldsView(view: HTMLElement) {
-  view.innerHTML = `<section class="card"><h1 class="md-typescale-display-small">${esc(tx('worlds'))}</h1><md-linear-progress indeterminate aria-label="Loading"></md-linear-progress></section>`;
-  try {
-    const { worlds, roots } = await api<{ worlds: Array<{ name: string; path: string; versionName?: string; dimensions: string[] }>; roots: string[] }>('/api/worlds');
-    view.innerHTML = `<section class="card"><h1 class="md-typescale-display-small">${esc(tx('worlds'))}</h1>
-      ${worlds.length ? `<div class="grid">${worlds.map((w, i) => `<button class="world" data-i="${i}"><span class="md-typescale-title-large">${esc(w.name)}</span><span class="muted">${esc(w.versionName ?? 'Java')} · ${esc(w.dimensions.join(', '))}</span></button>`).join('')}</div>`
-        : `<p class="md-typescale-body-large">${esc(tx('noWorlds', { roots: roots.join(', ') }))}</p>`}</section>`;
-    view.querySelectorAll<HTMLElement>('.world').forEach((b) => b.addEventListener('click', async () => {
-      const w = worlds[Number(b.dataset.i)];
-      try { const r = await api('/api/worlds/open', { method: 'POST', body: { path: w.path } }); world = { ...r.info }; prefs.tab = 'editor'; savePrefs(); render(); }
-      catch (err) { notify((err as Error).message, true); }
-    }));
-  } catch (err) { notify((err as Error).message, true); }
+function worldsScreen(view: HTMLElement) {
+  return worldsView(view, {
+    api, notify, tx, esc,
+    browse: desktopBridge?.pickFolder,
+    open: async (w) => {
+      const r = await api('/api/worlds/open', { method: 'POST', body: { path: w.path } });
+      world = { ...r.info }; dim = 'overworld'; fitPending = true;
+      const sp = world!.spawn ?? { x: 0, y: 64, z: 0 };
+      Object.assign(sel, { x1: sp.x - 8, y1: sp.y - 1, z1: sp.z - 8, x2: sp.x + 7, y2: sp.y - 1, z2: sp.z + 7 }); prefs.tab = 'editor'; savePrefs(); render(); },
+  });
 }
 
 // Map view: draws 16 px per chunk column region, pans with drag, selects with Shift+drag.
 let syncSel: (() => void) | undefined;
+let selectTool: ((op: string) => void) | undefined;
+
+async function undoLast() {
+  if (!world) return;
+  try {
+    const r = await api<{ undid: string }>('/api/history/undo', { method: 'POST', body: {} });
+    notify(tx('undone', { what: r.undid }));
+    document.dispatchEvent(new Event('history-changed'));
+    document.dispatchEvent(new Event('world-changed'));
+  } catch (e) { notify((e as Error).message, true); }
+}
 const sel = { x1: 0, y1: 60, z1: 0, x2: 15, y2: 70, z2: 15 };
 let dim = 'overworld';
 async function editorView(view: HTMLElement): Promise<void> {
   if (!world) { prefs.tab = 'worlds'; return render(); }
   const root = document.createElement('div');
   root.innerHTML = `<div class="editor">
-    <section class="map card flat"><canvas id="map" role="img" aria-label="Top-down map"></canvas>
+    <section class="map card flat"><div class="map-bar">
+        <md-chip-set aria-label="Dimension">${(world.dimensions?.length ? world.dimensions : ['overworld']).map((d) => `<md-filter-chip data-dim="${d}" label="${esc(tx(d as Key))}" ${d === dim ? 'selected' : ''}></md-filter-chip>`).join('')}</md-chip-set>
+        <span class="spacer"></span><md-filled-tonal-button id="undo" title="Ctrl+Z">${esc(tx('undo'))}</md-filled-tonal-button></div>
+      <canvas id="map" role="img" aria-label="Top-down map"></canvas>
       <div class="coords md-typescale-body-small" id="coords">x 0 · z 0</div></section>
     <aside class="card tool">
       <md-chip-set id="ops" role="radiogroup" aria-label="Tools">${(['fill', 'replace', 'delete', 'clone', 'waterlog'] as const).map((o, i) => `<md-filter-chip data-op="${o}" label="${esc(tx(o))}" ${i === 0 ? 'selected' : ''}></md-filter-chip>`).join('')}</md-chip-set>
@@ -187,20 +253,33 @@ async function editorView(view: HTMLElement): Promise<void> {
       <div class="muted" id="sel-size"></div>
       <md-filled-button id="run"></md-filled-button>
     </aside></div>`;
+  // dockview moves these panels out of root, so every later lookup goes through the panel itself
+  const mapEl = root.querySelector<HTMLElement>('.map')!;
+  const toolEl = root.querySelector<HTMLElement>('.tool')!;
   let op: 'fill' | 'replace' | 'delete' | 'clone' | 'waterlog' = 'fill';
   const fields = root.querySelector('#op-fields')!;
   const runBtn = root.querySelector('#run')!;
-  const size = () => { const n = (a: number, b: number) => Math.abs(b - a) + 1; root.querySelector('#sel-size')!.textContent = tx('selection', { n: (n(sel.x1, sel.x2) * n(sel.y1, sel.y2) * n(sel.z1, sel.z2)).toLocaleString('en') }); };
+  const size = () => { const n = (a: number, b: number) => Math.abs(b - a) + 1; toolEl.querySelector('#sel-size')!.textContent = tx('selection', { n: (n(sel.x1, sel.x2) * n(sel.y1, sel.y2) * n(sel.z1, sel.z2)).toLocaleString('en') }); };
+  const BLOCKS = ['minecraft:stone_bricks', 'minecraft:oak_planks', 'minecraft:glass', 'minecraft:water', 'minecraft:air', 'minecraft:grass_block', 'minecraft:sand', 'minecraft:deepslate', 'minecraft:cherry_leaves', 'minecraft:gold_block'];
+  const chips = (target: string) => `<md-chip-set class="block-chips" aria-label="${esc(tx('block'))}">${BLOCKS.map((b) => `<md-assist-chip data-for="${target}" data-block="${b}" label="${b.slice(10)}"></md-assist-chip>`).join('')}</md-chip-set>`;
   const setOp = (o: typeof op) => {
     op = o;
+    toolEl.querySelectorAll<HTMLElement & { selected: boolean }>('[data-op]').forEach((c) => { c.selected = c.dataset.op === o; });
     runBtn.textContent = tx('run', { op: tx(o) });
     fields.innerHTML = o === 'fill' ? `<md-outlined-text-field name="block" label="${esc(tx('block'))}" value="minecraft:stone_bricks"></md-outlined-text-field>`
       : o === 'replace' ? `<md-outlined-text-field name="from" label="${esc(tx('from'))}" value="minecraft:water"></md-outlined-text-field><md-outlined-text-field name="to" label="${esc(tx('to'))}" value="minecraft:air"></md-outlined-text-field>`
       : o === 'clone' ? `<md-outlined-text-field name="dest" label="${esc(tx('dest'))}" value="0, 64, 0"></md-outlined-text-field>` : '';
+    if (o === 'fill') fields.insertAdjacentHTML('beforeend', chips('block'));
+    if (o === 'replace') fields.insertAdjacentHTML('beforeend', chips('to'));
+    fields.querySelectorAll<HTMLElement>('[data-block]').forEach((c) => c.addEventListener('click', () => { (fields.querySelector(`[name=${c.dataset.for}]`) as HTMLInputElement).value = c.dataset.block!; }));
   };
+  selectTool = (o) => setOp(o as typeof op);
   setOp('fill'); size();
-  root.querySelectorAll<HTMLElement & { selected: boolean }>('[data-op]').forEach((chip, _i, all) => chip.addEventListener('click', () => { all.forEach((c) => { c.selected = c === chip; }); setOp(chip.dataset.op as typeof op); }));
-  root.querySelectorAll<HTMLInputElement>('.coords-grid md-outlined-text-field').forEach((f) => f.addEventListener('input', () => { (sel as Record<string, number>)[f.getAttribute('name')!] = Math.trunc(Number(f.value)); size(); drawSel(); }));
+  mapEl.querySelectorAll<HTMLElement>('[data-dim]').forEach((c) => c.addEventListener('click', () => { dim = c.dataset.dim!; mapEl.querySelectorAll<HTMLElement & { selected: boolean }>('[data-dim]').forEach((x) => { x.selected = x === c; }); fitToWorld().then(() => drawMap()); }));
+  mapEl.querySelector('#undo')!.addEventListener('click', () => undoLast());
+  document.addEventListener('world-changed', () => { if (canvas.isConnected) drawMap(); });
+  toolEl.querySelectorAll<HTMLElement & { selected: boolean }>('[data-op]').forEach((chip, _i, all) => chip.addEventListener('click', () => { all.forEach((c) => { c.selected = c === chip; }); setOp(chip.dataset.op as typeof op); }));
+  toolEl.querySelectorAll<HTMLInputElement>('.coords-grid md-outlined-text-field').forEach((f) => f.addEventListener('input', () => { (sel as Record<string, number>)[f.getAttribute('name')!] = Math.trunc(Number(f.value)); size(); drawSel(); }));
   runBtn.addEventListener('click', async () => {
     const v = (n: string) => (fields.querySelector(`[name=${n}]`) as HTMLInputElement | null)?.value ?? '';
     const body: Record<string, unknown> = { op, dimension: dim, box: { ...sel } };
@@ -220,6 +299,19 @@ async function editorView(view: HTMLElement): Promise<void> {
   const canvas = root.querySelector<HTMLCanvasElement>('#map')!;
   const ctx = canvas.getContext('2d')!;
   let originX = -64, originZ = -64, scale = 2; // block coordinate of the canvas's top-left, pixels per block
+  async function fitToWorld() {
+    try {
+      const { chunks } = await api<{ chunks: Array<[number, number]> }>(`/api/world?dim=${dim}`);
+      if (!chunks.length) return;
+      const xs = chunks.map((c) => c[0]), zs = chunks.map((c) => c[1]);
+      const [minX, maxX, minZ, maxZ] = [Math.min(...xs), Math.max(...xs) + 1, Math.min(...zs), Math.max(...zs) + 1];
+      const rect = canvas.getBoundingClientRect();
+      const spanX = (maxX - minX) * 16, spanZ = (maxZ - minZ) * 16;
+      scale = Math.max(0.5, Math.min(8, Math.floor(Math.min(rect.width / spanX, rect.height / spanZ) * 0.85 * 4) / 4 || 2));
+      originX = (minX * 16 + spanX / 2) - rect.width / scale / 2;
+      originZ = (minZ * 16 + spanZ / 2) - rect.height / scale / 2;
+    } catch { /* keep the current view */ }
+  }
   let image: ImageBitmap | undefined; let imgCx = 0, imgCz = 0;
   function drawSel() {
     ctx.imageSmoothingEnabled = false;
@@ -247,17 +339,15 @@ async function editorView(view: HTMLElement): Promise<void> {
   const toBlock = (e: PointerEvent) => { const r = canvas.getBoundingClientRect(); return { x: Math.floor((e.clientX - r.left) / scale + originX), z: Math.floor((e.clientY - r.top) / scale + originZ) }; };
   canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); const b = toBlock(e); drag = { x: e.clientX, y: e.clientY, ox: originX, oz: originZ, select: e.shiftKey }; if (e.shiftKey) { sel.x1 = sel.x2 = b.x; sel.z1 = sel.z2 = b.z; } });
   canvas.addEventListener('pointermove', (e) => {
-    const b = toBlock(e); document.getElementById('coords')!.textContent = `x ${b.x} · z ${b.z} · chunk ${Math.floor(b.x / 16)}, ${Math.floor(b.z / 16)}`;
+    const b = toBlock(e); mapEl.querySelector('#coords')!.textContent = `x ${b.x} · z ${b.z} · chunk ${Math.floor(b.x / 16)}, ${Math.floor(b.z / 16)}`;
     if (!drag) return;
     if (drag.select) { sel.x2 = b.x; sel.z2 = b.z; size(); drawSel(); }
     else { originX = drag.ox - (e.clientX - drag.x) / scale; originZ = drag.oz - (e.clientY - drag.y) / scale; drawSel(); }
   });
   canvas.addEventListener('pointerup', () => { const was = drag; drag = undefined; if (was && !was.select) drawMap(); else syncSel?.(); });
   canvas.addEventListener('wheel', (e) => { e.preventDefault(); scale = Math.max(0.5, Math.min(16, scale * (e.deltaY < 0 ? 1.25 : 0.8))); drawMap(); }, { passive: false });
-  syncSel = () => root.querySelectorAll<HTMLInputElement>('.coords-grid md-outlined-text-field').forEach((f) => { f.value = String((sel as Record<string, number>)[f.getAttribute('name')!]); });
-  new ResizeObserver(() => drawMap()).observe(canvas);
-  const mapEl = root.querySelector<HTMLElement>('.map')!;
-  const toolEl = root.querySelector<HTMLElement>('.tool')!;
+  syncSel = () => toolEl.querySelectorAll<HTMLInputElement>('.coords-grid md-outlined-text-field').forEach((f) => { f.value = String((sel as Record<string, number>)[f.getAttribute('name')!]); });
+  new ResizeObserver(async () => { if (fitPending && canvas.clientWidth > 0) { fitPending = false; await fitToWorld(); } drawMap(); }).observe(canvas);
   const histEl = document.createElement('div'); histEl.className = 'panel-scroll';
   const notesEl = document.createElement('div'); notesEl.className = 'panel-scroll';
   view.innerHTML = '<div id="dock" class="dock"></div>';
@@ -329,8 +419,16 @@ function notesPanel(el: HTMLElement) {
 }
 
 // ---------- keyboard ----------
+const typing = (e: KeyboardEvent) => e.composedPath().some((n) => n instanceof HTMLElement && (n.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(n.tagName)));
 document.addEventListener('keydown', (e) => {
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); (document.getElementById('cmd') as HTMLElement | null)?.focus(); }
+  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); showPalette(); return; }
+  if (typing(e) || document.querySelector('.palette-scrim, .onboarding')) return;
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && world) { e.preventDefault(); undoLast(); return; }
+  if (!e.ctrlKey && !e.metaKey && !e.altKey && prefs.tab === 'editor' && selectTool) {
+    const map: Record<string, string> = { f: 'fill', r: 'replace', d: 'delete', c: 'clone', w: 'waterlog' };
+    const op = map[e.key.toLowerCase()];
+    if (op) { e.preventDefault(); selectTool(op); }
+  }
 });
 
 // ---------- start ----------

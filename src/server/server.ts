@@ -9,6 +9,10 @@ import { Accounts } from './auth.js';
 import { EditSession, type OperationRequest } from '../core/session.js';
 import { discoverWorlds, isWorldFolder, type Dimension } from '../core/world.js';
 import { volume, MAX_OPERATION_BLOCKS, OPERATIONS } from '../core/ops.js';
+import { importWorldZip, exportWorldZip, createFlatWorld } from '../core/archive.js';
+import { createWriteStream } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
+import { randomBytes } from 'node:crypto';
 
 export interface ServerOptions {
   host: string;
@@ -81,7 +85,11 @@ export async function createServer(opts: ServerOptions) {
     if (p === '/api/health') return send(200, { ok: true, ...build });
 
     // Same-origin JSON only for state-changing calls (blocks cross-site form posts).
-    if (req.method !== 'GET' && !(req.headers['content-type'] ?? '').startsWith('application/json')) throw new HttpError(415, 'Send JSON');
+    const isUpload = p === '/api/worlds/upload' && req.method === 'POST';
+    // Same-origin JSON only for state-changing calls (blocks cross-site form posts). Uploads instead
+    // carry a custom header, which a cross-site form cannot send.
+    if (req.method !== 'GET' && !isUpload && !(req.headers['content-type'] ?? '').startsWith('application/json')) throw new HttpError(415, 'Send JSON');
+    if (isUpload && req.headers['x-map-editor'] !== '1') throw new HttpError(403, 'Uploads must come from the Map Editor page.');
 
     const token = cookie(req, 'me_session');
     const user = accounts.session(token);
@@ -109,6 +117,43 @@ export async function createServer(opts: ServerOptions) {
     if (!user) throw new HttpError(401, 'Sign in first.');
 
     if (p === '/api/worlds' && req.method === 'GET') return send(200, { roots: opts.worldRoots, worlds: await discoverWorlds(opts.worldRoots) });
+    if (p === '/api/worlds/upload' && req.method === 'POST') {
+      const root = opts.worldRoots[0];
+      if (!root) throw new HttpError(409, 'This server has no worlds folder to upload into.');
+      const limit = 4 * 1024 ** 3;
+      if (Number(req.headers['content-length'] ?? 0) > limit) throw new HttpError(413, 'That file is larger than 4 GiB.');
+      const tmpDir = path.join(opts.dataDir, 'uploads');
+      await fs.mkdir(tmpDir, { recursive: true });
+      const tmp = path.join(tmpDir, randomBytes(8).toString('hex') + '.zip');
+      let size = 0;
+      req.on('data', (c: Buffer) => { size += c.length; if (size > limit) req.destroy(new Error('too large')); });
+      try {
+        await pipeline(req, createWriteStream(tmp));
+        const name = decodeURIComponent(String(req.headers['x-file-name'] ?? 'Uploaded world'));
+        const dir = await importWorldZip(tmp, root, name);
+        return send(201, { path: dir, name: path.basename(dir) });
+      } catch (e) {
+        throw new HttpError(size > limit ? 413 : 400, size > limit ? 'That file is larger than 4 GiB.' : (e as Error).message);
+      } finally { await fs.rm(tmp, { force: true }); }
+    }
+    if (p === '/api/worlds/new' && req.method === 'POST') {
+      const root = opts.worldRoots[0];
+      if (!root) throw new HttpError(409, 'This server has no worlds folder to create a world in.');
+      const { name } = await body(req);
+      if (typeof name !== 'string' || !name.trim() || name.length > 80) throw new HttpError(400, 'Give the world a name of 1 to 80 characters.');
+      await fs.mkdir(root, { recursive: true });
+      const dir = await createFlatWorld(root, name);
+      return send(201, { path: dir, name: path.basename(dir) });
+    }
+    if (p === '/api/worlds/download' && req.method === 'GET') {
+      const wp = url.searchParams.get('path') ?? '';
+      if (!worldAllowed(wp) || !isWorldFolder(wp)) throw new HttpError(403, 'That world is not available for download.');
+      if (session && path.resolve(session.world.dir) === path.resolve(wp) && session.world.unsavedChunks) throw new HttpError(409, 'Save the world before downloading it.');
+      const file = encodeURIComponent(path.basename(wp)) + '.zip';
+      res.writeHead(200, { 'content-type': 'application/zip', 'content-disposition': `attachment; filename*=UTF-8''${file}`, 'cache-control': 'no-store' });
+      await exportWorldZip(wp, res);
+      return;
+    }
     if (p === '/api/worlds/open' && req.method === 'POST') {
       const { path: wp } = await body(req);
       if (typeof wp !== 'string' || !worldAllowed(wp)) throw new HttpError(403, 'That folder is outside the worlds folder this server was set up with.');
@@ -149,6 +194,11 @@ export async function createServer(opts: ServerOptions) {
         await fs.writeFile(file + '.tmp', html); await fs.rename(file + '.tmp', file);
         return send(200, { saved: true });
       }
+    }
+    if (p === '/api/history/undo' && req.method === 'POST') {
+      const entries = await session.history.list(2);
+      if (entries.length < 2) throw new HttpError(409, 'Nothing to undo yet.');
+      return send(200, { entry: await session.restore(entries[1].sha), undid: entries[0].message });
     }
     if (p === '/api/history' && req.method === 'GET') return send(200, { entries: await session.history.list() });
     if (p === '/api/history/restore' && req.method === 'POST') {

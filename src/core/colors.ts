@@ -14,6 +14,17 @@ const EXACT: Record<string, [number, number, number]> = {
   netherrack: [97, 38, 38], soul_sand: [81, 62, 50], basalt: [73, 72, 77], blackstone: [42, 35, 40],
   end_stone: [219, 222, 158], obsidian: [15, 10, 24], terracotta: [152, 94, 67], mycelium: [111, 99, 105],
   moss_block: [89, 109, 45], mud: [60, 57, 60], short_grass: [95, 144, 58], tall_grass: [95, 144, 58],
+  gold_block: [246, 208, 61], iron_block: [220, 220, 220], diamond_block: [98, 237, 228], emerald_block: [42, 203, 87],
+  redstone_block: [175, 24, 5], lapis_block: [30, 67, 140], coal_block: [16, 15, 15], copper_block: [192, 107, 79],
+  netherite_block: [66, 61, 63], quartz_block: [236, 230, 223], amethyst_block: [133, 97, 191], prismarine: [99, 156, 151],
+  sandstone: [216, 203, 155], red_sandstone: [186, 99, 29], smooth_stone: [158, 158, 158], polished_andesite: [132, 134, 133],
+  white_concrete: [207, 213, 214], black_concrete: [8, 10, 15], red_concrete: [142, 32, 32], blue_concrete: [44, 46, 143],
+  green_concrete: [73, 91, 36], yellow_concrete: [240, 175, 21], orange_concrete: [224, 97, 0], light_blue_concrete: [35, 137, 198],
+  white_wool: [233, 236, 236], black_wool: [20, 21, 25], red_wool: [160, 39, 34], blue_wool: [53, 57, 157],
+  dark_oak_planks: [66, 43, 20], birch_planks: [192, 175, 121], jungle_planks: [160, 115, 80], acacia_planks: [168, 90, 50],
+  cherry_planks: [226, 178, 172], mangrove_planks: [117, 54, 48], bamboo_planks: [193, 173, 80], hay_block: [166, 136, 38],
+  pumpkin: [198, 118, 24], melon: [111, 145, 30], cactus: [85, 127, 43], sugar_cane: [148, 192, 101], kelp: [88, 141, 50],
+  dirt_path: [148, 121, 65], farmland: [81, 44, 15], rooted_dirt: [144, 103, 76], calcite: [223, 224, 220], dripstone_block: [134, 107, 92],
 };
 
 const FALLBACKS: Array<[RegExp, [number, number, number]]> = [

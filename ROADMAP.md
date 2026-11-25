@@ -19,7 +19,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Squirrel.Windows installers for Map Editor and Map Editor Deploy built in CI, checked as NotSigned, published in release v0.1.0-build.12.
 - [ ] Installer run and app launched on a real Windows PC.
 - [ ] Auto-update from the release feed with a restart banner, and "Update coming soon".
-- [ ] Native folder picker for worlds outside `.minecraft/saves`.
+- [x] Native folder picker for worlds outside `.minecraft/saves` (Browse folder… in the desktop app; not yet run on Windows).
 
 ## Phase 3: Docker-hosted web app
 
@@ -35,7 +35,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [ ] Booted on real VirtualBox, VMware and a spare PC from USB.
 - [ ] Raspberry Pi arm64 image with a QEMU boot test before upload.
 - [ ] Separate data partition and an in-place updater for the OS and the app image together.
-- [ ] A way to add worlds to the appliance from the web UI (upload or network share).
+- [x] Worlds can be uploaded as a .zip, created as a flat world and downloaded as a .zip from the web UI (unpack checks every path and refuses archives without level.dat; idiots and a headless Chrome run).
 
 ## Phase 5: deploy app
 
@@ -50,16 +50,21 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 
 ## Phase 6: required interface features still open
 
+- [x] First-run wizard: language and both funny levels, comfort, theme colour, then the worlds screen; Back, Next, Skip; resumes after a reload (checked in headless Chrome).
+- [x] Editor: Nether and End chips for the dimensions a world has, Undo button and Ctrl+Z (adds a restore entry), block suggestions, tool hotkeys F R D C W, map fitted to the world on open, selection starting at spawn.
+
 - [x] dockview workspace for the editor (map, tools, history, notes; docking, tabbing, saved layout), checked in headless Chrome.
 - [ ] dockview for every other workspace, floating groups by default on wide screens, and the phone single-group layout.
 - [x] Rich text notes per world with self-hosted TinyMCE, autosaved; typing and saving checked in headless Chrome.
 - [ ] TinyMCE for every other rich text field.
-- [ ] Command palette with live setting controls (Ctrl+Shift+F focuses search today).
+- [x] Command palette on Ctrl+Shift+F: every tab, tool, undo, language and appearance setting, with settings as live switches in the result row; checked in headless Chrome.
+- [ ] Palette: regex builder, teleport to the exact element, remembered size.
 - [x] Infinite colour picker: continuous field, hue and opacity, any-notation translator (name, HEX, HEX8, RGB, HSL, HSV, HWB, LAB, LCH, OKLab, OKLCH, CMYK), gamut and contrast notes, copy, recent colours, animated rainbow marker with one global speed. Drives the theme seed live; checked in headless Chrome and unit tested.
 - [ ] Colour picker on every other colour control; per-element appearance editor; logo customization.
 - [ ] Regex builder on every search field.
 - [ ] ADHD modes, narration, school mode, scheduled settings, personal vocabulary upload.
-- [ ] Notification centre with search; install success and failure takeovers in the desktop app.
+- [x] Notification centre behind the bell with a count badge and Dismiss all.
+- [ ] Notification search; install success and failure takeovers in the desktop app.
 - [ ] Dim sum surprise using the public photo catalogue.
 - [ ] Exports in every format, bulk actions, changelog viewer, offline documentation.
 - [ ] Element locks, unlock ladder, authenticator.

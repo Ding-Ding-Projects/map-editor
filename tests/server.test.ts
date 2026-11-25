@@ -96,6 +96,33 @@ describe('server', () => {
     expect((await call('/api/op', { method: 'POST', body: { op: 'fill', dimension: 'overworld', box: { x1: 0, y1: 0, z1: 0, x2: 1, y2: 1, z2: 1 }, block: 'Not A Block' } })).status).toBe(400);
   });
 
+  it('creates, downloads, re-uploads a world and undoes an edit', async () => {
+    const made = await (await call('/api/worlds/new', { method: 'POST', body: { name: 'Flat One' } })).json();
+    expect(made.name).toBe('Flat One');
+    const dl = await call('/api/worlds/download?path=' + encodeURIComponent(made.path));
+    expect(dl.status).toBe(200);
+    expect(dl.headers.get('content-type')).toBe('application/zip');
+    const zip = Buffer.from(await dl.arrayBuffer());
+    expect(zip.subarray(0, 2).toString()).toBe('PK');
+
+    const noHeader = await fetch(base + '/api/worlds/upload', { method: 'POST', headers: { cookie, 'content-type': 'application/zip' }, body: zip });
+    expect(noHeader.status).toBe(403);
+    const up = await fetch(base + '/api/worlds/upload', { method: 'POST', headers: { cookie, 'content-type': 'application/zip', 'x-map-editor': '1', 'x-file-name': 'Flat%20One.zip' }, body: zip });
+    expect(up.status).toBe(201);
+    expect((await up.json()).name).toBe('Flat One (2)');
+    const bad = await fetch(base + '/api/worlds/upload', { method: 'POST', headers: { cookie, 'content-type': 'application/zip', 'x-map-editor': '1' }, body: Buffer.from('not a zip at all') });
+    expect(bad.status).toBe(400);
+    expect((await bad.json()).error).toMatch(/not a \.zip|damaged/);
+
+    expect((await call('/api/worlds/open', { method: 'POST', body: { path: made.path } })).status).toBe(200);
+    expect((await call('/api/history/undo', { method: 'POST', body: {} })).status).toBe(409);
+    await call('/api/op', { method: 'POST', body: { op: 'fill', dimension: 'overworld', box: { x1: 0, y1: -60, z1: 0, x2: 3, y2: -60, z2: 3 }, block: 'minecraft:gold_block' } });
+    const undo = await (await call('/api/history/undo', { method: 'POST', body: {} })).json();
+    expect(undo.undid).toMatch(/Fill/);
+    const { entries } = await (await call('/api/history')).json();
+    expect(entries.map((e: { action: string }) => e.action)).toEqual(['restored', 'filled', 'opened']);
+  });
+
   it('refuses non-JSON state-changing requests', async () => {
     const r = await fetch(base + '/api/auth/logout', { method: 'POST', headers: { 'content-type': 'text/plain' }, body: 'x' });
     expect(r.status).toBe(415);

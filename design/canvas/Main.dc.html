@@ -14,9 +14,17 @@
 body{margin:0}
 button{font:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #8FD88A;outline-offset:2px}
+@keyframes dc-rise{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+.moving section,.moving aside,.moving header,.moving main,.moving nav,.moving footer{animation:dc-rise .6s cubic-bezier(.2,0,0,1) both}
+.moving aside{animation-delay:.08s}.moving main{animation-delay:.05s}.moving footer{animation-delay:.14s}
+.moving button,.moving a{transition:border-radius .22s cubic-bezier(.2,0,0,1),background-color .2s,transform .2s,box-shadow .2s}
+.moving button:hover,.moving a:hover{transform:translateY(-1px)}
+.moving button:active{transform:scale(.97)}
+.still *{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </helmet>
-<div style="position: relative; min-height: 900px; display: flex; flex-direction: column; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif; font-size: 14px">
+<div class="{{motionClass}}" style="position: relative; min-height: 900px; display: flex; flex-direction: column; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif; font-size: 14px">
 
   <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px; background: {{t.surface}}">
     <div style="display: flex; align-items: center; gap: 12px; flex: 1 1 280px">
@@ -169,9 +177,10 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"showFloat":{"editor":"boolean","default":true},"showDrop":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"showFloat":{"editor":"boolean","default":true},"showDrop":{"editor":"boolean","default":false},"seed":{"editor":"color","default":"#4C8C4A"},"motion":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":900}}'>
 class Component extends DCLogic {
-  renderVals() {
+  renderVals() { const v = this.baseVals(); const s = this.props.seed ?? '#4C8C4A'; if (v.t && s.toLowerCase() !== '#4c8c4a') { v.t.primary = s; v.t.onPrimary = '#FFFFFF'; } v.motionClass = (this.props.motion ?? true) ? 'moving' : 'still'; return v; }
+  baseVals() {
     const dark = this.props.dark ?? true;
     const t = dark ? {
       primary:'#8FD88A', onPrimary:'#00390A', primaryContainer:'#1B5220', onPrimaryContainer:'#AAF5A4', inversePrimary:'#2E6B2C',

@@ -32,11 +32,12 @@ On Windows, `host.bat` does the same, with `host.bat --detached` to run in the b
 
 ## What it can do today
 
-- Open Java Edition 1.18+ worlds (Anvil regions, palette sections) in all three dimensions.
+- Open Java Edition 1.18+ worlds (Anvil regions, palette sections) in all three dimensions; upload a world as a .zip, download it again, or start a new flat world.
 - Top-down map with pan, zoom and Shift+drag selection.
 - Fill, replace, delete, clone and waterlog, ported from Amulet's stock operations, with a 16.7 million block safety limit.
 - Editor workspace built on dockview: map, tools, history and notes panels you can dock, tab together, float and rearrange; the layout is remembered.
-- History panel with action filters and roll back to any point.
+- History panel with action filters and roll back to any point; Undo and Ctrl+Z.
+- Command palette on Ctrl+Shift+F with live setting switches, a notification centre, and a first-run wizard.
 - Rich text notes per world (TinyMCE), saved automatically.
 - English, Hong Kong Cantonese and bilingual interface, with separate English and Cantonese funny-level sliders that change wording only.
 - Light and dark Material 3 themes generated from any theme colour, picked with a colour picker that reads names, HEX, RGB, HSL, HSV, HWB, LAB, LCH, OKLab, OKLCH and CMYK; reduced motion.

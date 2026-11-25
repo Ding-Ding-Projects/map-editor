@@ -30,7 +30,7 @@ for (const part of ['tinymce.min.js', 'license.md', 'themes', 'models', 'icons',
 await build({ ...common, entryPoints: [path.join(root, 'src/server/server.ts')], outfile: path.join(dist, 'server/server.mjs'), format: 'esm', platform: 'node', target: 'node22',
   banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" } });
 for (const app of ['desktop', 'deploy']) {
-  if (app === 'deploy') await build({ ...common, entryPoints: [path.join(root, 'src/deploy/preload.ts')], outfile: path.join(dist, 'deploy/preload.cjs'), format: 'cjs', platform: 'node', target: 'node22', external: ['electron'] });
+  await build({ ...common, entryPoints: [path.join(root, `src/${app}/preload.ts`)], outfile: path.join(dist, `${app}/preload.cjs`), format: 'cjs', platform: 'node', target: 'node22', external: ['electron'] });
   await build({ ...common, entryPoints: [path.join(root, `src/${app}/main.ts`)], outfile: path.join(dist, `${app}/main.cjs`), format: 'cjs', platform: 'node', target: 'node22', external: ['electron'] });
 }
 await build({ ...common, entryPoints: [path.join(root, 'src/deploy/ui.ts')], outfile: path.join(dist, 'deploy/ui.js'), format: 'esm', platform: 'browser', target: 'es2022', minify: true });

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map Editor worlds</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,400..1000&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes shimmer{from{background-position:-400px 0}to{background-position:400px 0}}
+@keyframes fillbar{from{width:8%}to{width:72%}}
+@keyframes bob{50%{transform:translateY(-8px) rotate(-4deg)}}
+.moving .rise{animation:rise .55s cubic-bezier(.2,0,0,1) both}
+.moving .rise:nth-child(2){animation-delay:.06s}.moving .rise:nth-child(3){animation-delay:.12s}.moving .rise:nth-child(4){animation-delay:.18s}.moving .rise:nth-child(5){animation-delay:.24s}
+.moving .shim{background-size:800px 100%!important;animation:shimmer 1.4s linear infinite}
+.moving .bar{animation:fillbar 2.4s cubic-bezier(.2,0,0,1) infinite alternate}
+.moving .bob{animation:bob 2.6s ease-in-out infinite}
+.moving .card{transition:border-radius .25s cubic-bezier(.2,0,0,1),transform .25s}
+.moving .card:hover{border-radius:14px;transform:translateY(-3px)}
+.still *{animation:none!important;transition:none!important}
+</style>
+</helmet>
+<div class="{{motionClass}}" style="min-height: 900px; padding: 24px; box-sizing: border-box; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif; font-size: 14px">
+  <div style="max-width: 1360px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px">
+    <header style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; color: {{t.onSurfaceVariant}}">v0.1.0 · updated 2026-11-25 01:40:12 UTC−05:00</span>
+        <h1 style="margin: 0; font-size: 57px; line-height: 60px; font-weight: 900; letter-spacing: -1.8px; font-variation-settings: 'wdth' 118">Worlds</h1>
+        <p style="margin: 0; font-size: 16px; color: {{t.onSurfaceVariant}}">From <code style="font-family: 'Roboto Mono', monospace">/worlds</code> · Java Edition 1.18 and newer</p>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <button style="height: 56px; padding: 0 24px; border-radius: 28px 28px 28px 8px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; font-size: 16px; font-weight: 800">Upload world .zip</button>
+        <button style="height: 56px; padding: 0 22px; border-radius: 28px; border: 0; background: {{t.secondaryContainer}}; color: {{t.onSecondaryContainer}}; font-size: 16px; font-weight: 700">New flat world</button>
+        <button style="height: 56px; padding: 0 22px; border-radius: 28px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-size: 16px; font-weight: 700">Browse folder…</button>
+      </div>
+    </header>
+
+    <sc-if value="{{isList}}" hint-placeholder-val="{{ true }}">
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px">
+        <sc-for list="{{worlds}}" as="w" hint-placeholder-count="4">
+          <div class="rise card" style="{{w.style}}">
+            <div aria-hidden="true" style="height: 120px; border-radius: 20px; overflow: hidden; display: grid; grid-template-columns: repeat(16, 1fr)">
+              <sc-for list="{{w.tiles}}" as="c" hint-placeholder-count="64"><span style="{{c}}"></span></sc-for>
+            </div>
+            <span style="font-size: 22px; font-weight: 850; letter-spacing: -.3px">{{w.name}}</span>
+            <span style="font-size: 13px; color: {{w.sub}}">{{w.meta}}</span>
+            <div style="display: flex; gap: 6px; margin-top: 4px">
+              <button style="flex: 1; height: 44px; border-radius: 22px; border: 0; background: {{w.btnBg}}; color: {{w.btnFg}}; font-weight: 800">Open</button>
+              <button style="height: 44px; padding: 0 16px; border-radius: 22px; border: 1px solid {{t.outline}}; background: transparent; color: inherit; font-weight: 600">Download .zip</button>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+      <div role="status" aria-label="Loading worlds" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px">
+        <sc-for list="{{skeletons}}" as="s" hint-placeholder-count="4">
+          <div style="display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 32px; background: {{t.surfaceContainerLow}}">
+            <span class="shim" style="{{s.tile}}"></span><span class="shim" style="{{s.line1}}"></span><span class="shim" style="{{s.line2}}"></span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+      <div class="rise" style="display: flex; flex-wrap: wrap; gap: 32px; align-items: center; padding: 48px; border-radius: 48px 48px 48px 12px; background: {{t.surfaceContainerLow}}">
+        <div class="bob" aria-hidden="true" style="width: 160px; height: 160px; border-radius: 40px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 18px; background: {{t.primaryContainer}}">
+          <sc-for list="{{emptyTiles}}" as="c" hint-placeholder-count="16"><span style="{{c}}"></span></sc-for>
+        </div>
+        <div style="flex: 1 1 360px; display: flex; flex-direction: column; gap: 12px">
+          <span style="font-size: 36px; line-height: 40px; font-weight: 900; letter-spacing: -1px">No worlds here yet</span>
+          <span style="font-size: 16px; line-height: 24px; color: {{t.onSurfaceVariant}}">Upload a world as a .zip from your .minecraft/saves folder, or start a new flat world to try the tools. Nothing you upload leaves this server.</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px"><button style="height: 48px; padding: 0 22px; border-radius: 24px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; font-weight: 800">Upload world .zip</button><button style="height: 48px; padding: 0 20px; border-radius: 24px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 700">New flat world</button></div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isUpload}}" hint-placeholder-val="{{ false }}">
+      <div class="rise" role="status" style="display: flex; flex-direction: column; gap: 16px; padding: 28px; border-radius: 32px; border: 2px dashed {{t.primary}}; background: {{t.surfaceContainerLow}}">
+        <span style="font-size: 24px; font-weight: 850">Uploading Survival Island.zip</span>
+        <div style="height: 12px; border-radius: 6px; background: {{t.surfaceContainerHighest}}; overflow: hidden"><div class="bar" style="width: 72%; height: 12px; border-radius: 6px; background: {{t.primary}}"></div></div>
+        <span style="font-size: 14px; color: {{t.onSurfaceVariant}}">38.4 of 53.1 MB · then the folder is checked for level.dat and unpacked into /worlds</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+      <div class="rise" role="alert" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; padding: 24px 28px; border-radius: 28px; background: {{t.errorContainer}}; color: {{t.onErrorContainer}}">
+        <span style="flex: 1 1 420px; display: flex; flex-direction: column; gap: 4px"><b style="font-size: 18px">That .zip has no Minecraft world in it</b><span style="font-size: 14px">No level.dat was found at the top or one folder down. Nothing was unpacked.</span></span>
+        <button style="height: 44px; padding: 0 20px; border-radius: 22px; border: 0; background: {{t.onErrorContainer}}; color: {{t.errorContainer}}; font-weight: 800">Choose another file</button>
+        <button style="height: 44px; padding: 0 16px; border-radius: 22px; border: 0; background: transparent; color: inherit; font-weight: 700">Dismiss</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isOffline}}" hint-placeholder-val="{{ false }}">
+      <div class="rise" role="alert" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; padding: 24px 28px; border-radius: 28px; background: {{t.tertiaryContainer}}; color: {{t.onTertiaryContainer}}">
+        <span style="flex: 1 1 420px; display: flex; flex-direction: column; gap: 4px"><b style="font-size: 18px">The server is not answering</b><span style="font-size: 14px">Last answer 01:39:58. Retrying every 5 seconds; your unsaved selection is kept.</span></span>
+        <button style="height: 44px; padding: 0 20px; border-radius: 22px; border: 0; background: {{t.onTertiaryContainer}}; color: {{t.tertiaryContainer}}; font-weight: 800">Retry now</button>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"stage":{"editor":"enum","options":["list","loading","empty","upload","error","offline"],"default":"list"},"dark":{"editor":"boolean","default":true},"seed":{"editor":"color","default":"#4C8C4A"},"motion":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? true;
+    const t = dark ? {
+      primary:'#8FD88A', onPrimary:'#00390A', primaryContainer:'#1B5220', onPrimaryContainer:'#AAF5A4', secondaryContainer:'#3B4B38', onSecondaryContainer:'#D6E8CF',
+      tertiaryContainer:'#1F4D53', onTertiaryContainer:'#BCEBF2', errorContainer:'#93000A', onErrorContainer:'#FFDAD6',
+      surface:'#10140F', surfaceContainerLow:'#181D17', surfaceContainerHigh:'#262B25', surfaceContainerHighest:'#31362F', onSurface:'#E0E4DA', onSurfaceVariant:'#C2C9BD', outline:'#8C9388'
+    } : {
+      primary:'#2E6B2C', onPrimary:'#FFFFFF', primaryContainer:'#AFF4A6', onPrimaryContainer:'#002204', secondaryContainer:'#D6E8CF', onSecondaryContainer:'#111F0F',
+      tertiaryContainer:'#BCEBF2', onTertiaryContainer:'#001F23', errorContainer:'#FFDAD6', onErrorContainer:'#410002',
+      surface:'#F7FBF1', surfaceContainerLow:'#F1F5EB', surfaceContainerHigh:'#E5EAE0', surfaceContainerHighest:'#E0E4DA', onSurface:'#181D17', onSurfaceVariant:'#42493F', outline:'#72796E'
+    };
+    const seed = (this.props.seed ?? '#4C8C4A');
+    if (seed.toLowerCase() !== '#4c8c4a') { t.primary = seed; t.onPrimary = '#FFFFFF'; }
+    const stage = this.props.stage ?? 'list';
+    const pal = ['#3e6b30','#4a7a38','#567f3f','#6f8a4a','#2c5a86','#356a9a','#6a6f72','#d8cfa3','#7c6a4a','#c9e4ea','#e7a9c3'];
+    const tiles = (k) => Array.from({ length: 64 }, (_, i) => { const x = i % 16, z = Math.floor(i / 16); const n = (x * 7 + z * 13 + k * 5) % 11; const d = Math.abs(x - (6 + k + Math.round(2 * Math.sin(z + k)))); return 'display:block; aspect-ratio:1; background:' + (d < 1 ? pal[4] : d === 1 ? pal[7] : pal[(n + k) % 4 + (k === 2 && n > 7 ? 7 : 0)]); });
+    const shapes = ['36px 36px 36px 10px', '36px', '10px 36px 36px 36px', '36px'];
+    const worlds = [
+      ['Survival Island', 'Java 1.21.4 · 1,204 chunks · edited 16:41', true],
+      ['Creative Flat', 'Java 1.21.4 · 81 chunks · edited yesterday', false],
+      ['Cherry Valley', 'Java 1.20.6 · 640 chunks · edited 3 days ago', false],
+      ['Server Backup 11-20', 'Java 1.21.1 · 3,912 chunks · never edited here', false]
+    ].map(([name, meta, open], i) => ({
+      name, meta, tiles: tiles(i),
+      style: 'display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: ' + shapes[i] + '; background: ' + (open ? t.secondaryContainer : t.surfaceContainerLow) + '; color: ' + (open ? t.onSecondaryContainer : t.onSurface),
+      sub: open ? t.onSecondaryContainer : t.onSurfaceVariant,
+      btnBg: open ? t.primary : t.surfaceContainerHighest, btnFg: open ? t.onPrimary : t.onSurface
+    }));
+    const shim = 'background: linear-gradient(90deg,' + t.surfaceContainerHigh + ' 0%,' + t.surfaceContainerHighest + ' 50%,' + t.surfaceContainerHigh + ' 100%)';
+    const skeletons = Array.from({ length: 4 }, () => ({ tile: 'display:block; height:120px; border-radius:20px; ' + shim, line1: 'display:block; height:22px; width:60%; border-radius:11px; ' + shim, line2: 'display:block; height:14px; width:80%; border-radius:7px; ' + shim }));
+    const emptyTiles = Array.from({ length: 16 }, (_, i) => 'display:block; border-radius:6px; background:' + [t.primary, t.onPrimaryContainer, pal[4], pal[7]][i % 4] + '; opacity:' + (0.35 + (i % 3) * 0.25));
+    return {
+      t, worlds, skeletons, emptyTiles, motionClass: (this.props.motion ?? true) ? 'moving' : 'still',
+      isList: stage === 'list' || stage === 'upload' || stage === 'error' || stage === 'offline', isLoading: stage === 'loading', isEmpty: stage === 'empty', isUpload: stage === 'upload', isError: stage === 'error', isOffline: stage === 'offline'
+    };
+  }
+}
+</script>
+</body>
+</html>

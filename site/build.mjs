@@ -48,7 +48,7 @@ const ways = [
 const bento = [
   ['editing', 'Fill, replace, clone, delete, waterlog', 'Amulet’s tools, with a safety limit and missing chunks skipped, never invented.', 'b-wide'],
   ['editing', 'Panels you arrange', 'Dock, tab and float the map, tools, history and notes.', 'b-sec'],
-  ['notes', 'Notes per world', 'Rich text that saves itself.', ''],
+  ['worlds', 'Worlds in, worlds out', 'Upload a .zip, download it again, or start a flat world.', ''],
   ['appearance', 'Any colour you can type', 'Names, HEX, OKLCH, CMYK and more. The whole theme follows.', 'b-ter'],
   ['languages', 'English, 粵語 or both', 'With two separate funny-level sliders.', ''],
   ['deploy-app', 'One-click deploy', 'Docker, VirtualBox and verified USB flashing, then the working link.', 'b-wide b-pri'],

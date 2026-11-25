@@ -1,5 +1,5 @@
 // Desktop app: runs the shared server on loopback and shows it in a window.
-import { app, BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, shell, dialog, ipcMain } from 'electron';
 import path from 'node:path';
 import os from 'node:os';
 import { createServer } from '../server/server.js';
@@ -20,8 +20,9 @@ app.whenReady().then(async () => {
   });
   const win = new BrowserWindow({
     width: 1440, height: 900, minWidth: 360, minHeight: 600, title: 'Map Editor', backgroundColor: '#10140F',
-    webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false },
+    webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false },
   });
+  ipcMain.handle('pick-folder', async () => (await dialog.showOpenDialog(win, { title: 'Open a Minecraft world folder', properties: ['openDirectory'] })).filePaths[0]);
   // Links to other sites open in the normal browser, never inside the app window.
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: 'deny' }; });
   win.webContents.on('will-navigate', (e, url) => { if (!url.startsWith(`http://127.0.0.1:${port}/`)) e.preventDefault(); });
