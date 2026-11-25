@@ -3,6 +3,9 @@
 import type { Key } from './i18n.js';
 import { showTakeover } from './takeover.js';
 
+/** A file size people can read: small files in kB, the rest in MB. */
+const sizeText = (n: number) => n < 1e5 ? `${Math.max(1, Math.round(n / 1e3))} kB` : `${(n / 1e6).toFixed(1)} MB`;
+
 export interface WorldSummary { name: string; path: string; versionName?: string; dimensions: string[]; edition?: string }
 export interface WorldsContext {
   api: <T = any>(path: string, init?: { method?: string; body?: unknown }) => Promise<T>;
@@ -111,7 +114,7 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
       if (xhr.status === 201) {
         c.notify(tx('uploaded', { name: j.name ?? file.name })); c.play?.('create'); load();
         if (c.takeovers?.()) showTakeover({ kind: 'ok', chip: tx('tkUploaded'), title: tx('tkReady'), lead: tx('tkUploadLead', { name: j.name ?? file.name }),
-          stats: [{ label: tx('tkFile'), value: file.name, code: true }, { label: tx('tkSize'), value: `${(file.size / 1e6).toFixed(1)} MB` }, { label: tx('tkTook'), value: `${Math.max(1, Math.round((Date.now() - t0) / 1000))} s` }],
+          stats: [{ label: tx('tkFile'), value: file.name, code: true }, { label: tx('tkSize'), value: sizeText(file.size) }, { label: tx('tkTook'), value: `${Math.max(1, Math.round((Date.now() - t0) / 1000))} s` }],
           actions: [{ label: tx('tkOpenWorld'), primary: true, run: (close) => { close(); if (j.path) void c.open({ name: j.name ?? file.name, path: j.path, dimensions: [] }); } }, { label: tx('tkClose'), run: (close) => close() }],
           autoClose: { seconds: 8, text: (n) => tx('tkCloses', { n }), held: tx('tkHeld') } });
       } else showError(j.error ?? `HTTP ${xhr.status}`, file);
@@ -122,7 +125,7 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
 
   function showError(message: string, file?: File) {
     if (file && c.takeovers?.()) {
-      const log = `${file.name} (${(file.size / 1e6).toFixed(1)} MB)\n${message}\n${new Date().toLocaleTimeString('en-GB')}`;
+      const log = `${file.name} (${sizeText(file.size)})\n${message}\n${new Date().toLocaleTimeString('en-GB')}`;
       showTakeover({ kind: 'fail', chip: tx('tkFailedChip'), title: tx('tkFailed'), lead: tx('tkUploadFailLead'), log, logLabel: tx('tkWhat'),
         actions: [{ label: tx('chooseAnother'), primary: true, run: (close) => { close(); fileInput.click(); } }, { label: tx('tkCopy'), outlined: true, run: () => { void navigator.clipboard?.writeText(log).then(() => c.notify(tx('copied'))); } }, { label: tx('tkDismiss'), run: (close) => close() }] });
     }
