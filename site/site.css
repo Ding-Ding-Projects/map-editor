@@ -159,3 +159,21 @@ article figure { margin: 16px 0 24px; } article figure img { width: 100%; height
 .dedge { fill: none; stroke: var(--p); stroke-width: 2.5; stroke-dasharray: 6 6; }
 @media (prefers-reduced-motion: no-preference) { .dedge { animation: dflow 1.6s linear infinite; } }
 @keyframes dflow { to { stroke-dashoffset: -24; } }
+
+/* Article workspace (dockview), themed to the site's colour roles. */
+.dock-bar { max-width: 1320px; margin: 0 auto 12px; padding: 0 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.dock-bar button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 20px; background: var(--sc); color: var(--on-sc); font: inherit; font-weight: 700; cursor: pointer; transition: border-radius .25s cubic-bezier(.2,0,0,1); }
+.dock-bar button:hover { border-radius: 12px; } .dock-bar button:focus-visible { outline: 3px solid var(--p); outline-offset: 2px; }
+.dock-bar button[aria-pressed="true"] { background: var(--p); color: var(--on-p); }
+.dock-hint { color: var(--on-sv); font-size: 14px; }
+.site-dock { max-width: 1320px; height: max(560px, calc(100dvh - 32px)); margin: 0 auto 48px; padding: 0 24px; }
+.dock-panel { height: 100%; overflow: auto; padding: 20px 24px; }
+.dock-panel article { max-width: 78ch; } .dock-toc .toc { position: static; background: transparent; padding: 0; } .dock-suggested .grid { grid-template-columns: 1fr; }
+.dockview-theme-site { --dv-group-view-background-color: var(--sc1); --dv-tabs-and-actions-container-background-color: var(--sc2); --dv-tabs-and-actions-container-height: 48px; --dv-tabs-and-actions-container-font-size: 14px;
+  --dv-activegroup-visiblepanel-tab-background-color: var(--sc); --dv-activegroup-visiblepanel-tab-color: var(--on-sc); --dv-activegroup-hiddenpanel-tab-background-color: transparent; --dv-activegroup-hiddenpanel-tab-color: var(--on-sv);
+  --dv-inactivegroup-visiblepanel-tab-background-color: var(--sc2); --dv-inactivegroup-visiblepanel-tab-color: var(--on-s); --dv-inactivegroup-hiddenpanel-tab-background-color: transparent; --dv-inactivegroup-hiddenpanel-tab-color: var(--on-sv);
+  --dv-separator-border: transparent; --dv-sash-color: transparent; --dv-active-sash-color: var(--p); --dv-drag-over-background-color: color-mix(in srgb, var(--p) 16%, transparent); --dv-drag-over-border-color: var(--p);
+  --dv-floating-box-shadow: 0 4px 8px 3px rgba(0,0,0,.18), 0 1px 3px rgba(0,0,0,.3); --dv-border-radius: 28px; --dv-tab-border-radius: 20px; --dv-tab-margin: 4px; color: var(--on-s); }
+@media (max-width: 899px) { .dock-bar { display: none; } }
+@media print { .dock-bar { display: none; } }
+.site-dock .dv-groupview { border-radius: 24px; overflow: hidden; }

@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { features } from './content.mjs';
+import { buildSync } from 'esbuild';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
@@ -35,7 +36,7 @@ function page(title, desc, main, active = 'guide') {
 <main>${main}</main>
 <footer><div><span>Map Editor ${esc(pkg.version)} · updated ${esc(stamp)} · <a href="${repo}/commit/${esc(commit)}">${esc(commit.slice(0, 7) || 'unavailable')}</a></span>
 <span>This site documents and downloads Map Editor; it is not the editor. Based on Amulet Map Editor, which needs its own licence. Minecraft is a trademark of Mojang Synergies AB; not affiliated with Mojang or Microsoft.</span></div></footer>
-<script src="${base}tour.js" defer></script>
+<script src="${base}tour.js" defer></script><script src="${base}dock.js" defer></script>
 </body></html>`;
 }
 
@@ -68,6 +69,8 @@ rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 copyFileSync(path.join(here, 'site.css'), path.join(out, 'site.css'));
 copyFileSync(path.join(here, 'tour.js'), path.join(out, 'tour.js'));
+// The article workspace: dockview bundled into one script (its styles come with it).
+buildSync({ entryPoints: [path.join(here, 'dock.entry.js')], bundle: true, minify: true, format: 'iife', target: 'es2020', outfile: path.join(out, 'dock.js'), logLevel: 'silent' });
 copyFileSync(path.join(here, 'favicon.svg'), path.join(out, 'favicon.svg'));
 copyFileSync(path.join(root, 'social-preview.png'), path.join(out, previewName)); // byte-identical to the file at the repository root
 mkdirSync(path.join(out, 'screenshots'), { recursive: true });
