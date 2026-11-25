@@ -31,6 +31,12 @@ ipcMain.handle('pick-file', async (_e, exts: string[]) => (await dialog.showOpen
 ipcMain.handle('deploy-docker', (_e, o) => track(targets.deployDocker(dataDir(), o, progress)));
 ipcMain.handle('deploy-virtualbox', (_e, o) => track(targets.deployVirtualBox(dataDir(), o, progress)));
 ipcMain.handle('deploy-vmware', (_e, o) => track(targets.deployVMware(dataDir(), o, progress)));
+ipcMain.handle('duplicate-suggest', async (_e, name: string) => {
+  const list = await targets.loadInstances(dataDir());
+  const i = list.find((x) => x.name === name);
+  return i ? targets.duplicateSuggestion(i, list) : undefined;
+});
+ipcMain.handle('duplicate', (_e, name: string, o: { name: string; port: number }) => track(targets.duplicateInstance(dataDir(), name, { name: String(o?.name ?? ''), port: Number(o?.port) }, progress)));
 ipcMain.handle('disks', async () => targets.flashableDisks(await targets.listDisks()));
 ipcMain.handle('flash', async (_e, image: string, diskId: string, typed: string) => {
   // Re-read the disk list here so the renderer can never hand us a disk we did not offer.
@@ -52,4 +58,4 @@ ipcMain.handle('logs-start', async (_e, name: string) => {
   return true;
 });
 ipcMain.handle('logs-stop', () => { stopLogs?.(); stopLogs = undefined; });
-ipcMain.handle('open', (_e, url: string) => { if (/^http:\/\/[\d.]+:\d+\/$/.test(url)) shell.openExternal(url); });
+ipcMain.handle('open', (_e, url: string) => { if (/^http:\/\/[A-Za-z0-9.-]+:\d+\/$/.test(url)) shell.openExternal(url); });

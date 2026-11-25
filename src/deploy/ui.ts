@@ -33,8 +33,8 @@ async function manage(main: Element, i: Instance) {
       <div class="about-stats manage-stats"><div><small>State</small><b id="st">…</b></div><div><small>Version</small><b>${esc(i.version)}</b></div><div class="wide"><small>Link</small><code>${esc(url)}</code></div></div>
       <div class="row-actions" role="group" aria-label="Instance actions">
         <md-filled-button id="a-open">Open</md-filled-button><md-filled-tonal-button id="a-toggle">…</md-filled-tonal-button>
-        <md-outlined-button id="a-restart">Restart</md-outlined-button><md-outlined-button id="a-update">Update</md-outlined-button><md-outlined-button id="a-remove" class="danger">Remove</md-outlined-button></div>
-      <p class="muted">Remove stops it and deletes its Compose file. Worlds and data are kept unless you also choose Delete data.</p></section>
+        <md-outlined-button id="a-restart">Restart</md-outlined-button><md-outlined-button id="a-update">Update</md-outlined-button><md-outlined-button id="a-dup">Duplicate</md-outlined-button><md-outlined-button id="a-remove" class="danger">Remove</md-outlined-button></div>
+      <p class="muted">Duplicate makes a second instance on the same computer with the same version and worlds folder, its own port and fresh accounts. Remove stops it and deletes its Compose file. Worlds and data are kept unless you also choose Delete data.</p></section>
     <section class="card log-card"><div class="log-head"><b>Live log</b><span class="spacer"></span><md-outlined-button id="pause">Pause</md-outlined-button><md-outlined-button id="copy">Copy</md-outlined-button></div>
       <pre id="log" class="log" aria-live="off"></pre></section></div>`;
   let state = 'unknown', paused = false;
@@ -60,6 +60,9 @@ async function manage(main: Element, i: Instance) {
   main.querySelector('#a-toggle')!.addEventListener('click', () => act(state === 'running' ? 'stop' : 'start'));
   main.querySelector('#a-restart')!.addEventListener('click', () => act('restart'));
   main.querySelector('#a-update')!.addEventListener('click', () => act('update'));
+  const dupBtn = main.querySelector<HTMLElement & { disabled: boolean }>('#a-dup')!;
+  if (i.target !== 'docker' && i.target !== 'docker-ssh') { dupBtn.disabled = true; dupBtn.title = 'Only Docker instances can be duplicated.'; }
+  dupBtn.addEventListener('click', () => duplicateDialog(i));
   main.querySelector('#pause')!.addEventListener('click', (e) => { paused = !paused; (e.target as HTMLElement).textContent = paused ? 'Resume' : 'Pause'; if (!paused) logEl.textContent = lines.join('\n'); });
   main.querySelector('#copy')!.addEventListener('click', () => navigator.clipboard?.writeText(lines.join('\n')).then(() => toast('Log copied.'), () => toast('Could not copy the log.', true)));
   main.querySelector('#a-remove')!.addEventListener('click', () => {
@@ -78,6 +81,39 @@ async function manage(main: Element, i: Instance) {
     });
   });
   refresh();
+}
+
+/** Duplicate dialog: suggests a free name and port, then deploys the copy with live steps. */
+async function duplicateDialog(i: Instance) {
+  const sug = (await d.duplicateSuggest(i.name)) ?? { name: `${i.name}-copy`, port: i.port + 1 };
+  const dlg = document.createElement('md-dialog');
+  dlg.innerHTML = `<div slot="headline">Duplicate ${esc(i.name)}</div>
+    <form slot="content" id="dup" method="dialog" class="stack">
+      <p>The copy runs ${esc(i.version)} on ${esc(i.sshHost ?? 'this computer')} with the same worlds folder. Accounts, history and notes start fresh.</p>
+      <md-outlined-text-field name="name" label="New instance name" value="${esc(sug.name)}" required supporting-text="Lower-case letters, digits and dashes"></md-outlined-text-field>
+      <md-outlined-text-field name="port" label="Port" type="number" min="1024" max="65535" value="${sug.port}" required></md-outlined-text-field>
+      <p id="dup-err" class="err" role="alert"></p><div id="dup-steps"></div></form>
+    <div slot="actions"><md-text-button id="dup-cancel">Cancel</md-text-button><md-filled-button id="dup-go">Duplicate</md-filled-button></div>`;
+  document.body.append(dlg);
+  const show = dlg as HTMLElement & { show: () => void; close: () => void };
+  show.show();
+  dlg.addEventListener('closed', () => dlg.remove());
+  dlg.querySelector('#dup-cancel')!.addEventListener('click', () => show.close());
+  let busy = false;
+  const go = dlg.querySelector<HTMLElement & { disabled: boolean }>('#dup-go')!;
+  go.addEventListener('click', async () => {
+    if (busy) return;
+    busy = true; go.disabled = true;
+    const val = (n: string) => (dlg.querySelector(`[name=${n}]`) as HTMLInputElement).value.trim();
+    const err = dlg.querySelector('#dup-err')!; err.textContent = '';
+    d.onProgress((steps: Step[]) => { const el = dlg.querySelector('#dup-steps'); if (el) el.innerHTML = stepsHtml(steps); });
+    const r = await d.duplicate(i.name, { name: val('name'), port: Number(val('port')) });
+    busy = false; go.disabled = false;
+    if (r.error) { err.textContent = r.error; (dlg.querySelector('[name=name]') as HTMLElement).focus(); return; }
+    show.close();
+    toast(`${r.instance.name} is running at ${r.url}`);
+    managing = r.instance.name; render();
+  });
 }
 
 function stepsHtml(steps: Step[]) {

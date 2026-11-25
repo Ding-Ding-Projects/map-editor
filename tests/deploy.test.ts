@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { mkdtemp, writeFile, readFile, chmod, mkdir } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { instanceAction, instanceState, saveInstances, loadInstances, flashableDisks, confirmPhrase, validateInstance, composeFile, deployDocker, deployVMware, validateSshHost, sshHostname, type Instance } from '../src/deploy/targets.js';
+import { instanceAction, instanceState, saveInstances, loadInstances, flashableDisks, confirmPhrase, validateInstance, composeFile, deployDocker, deployVMware, duplicateInstance, duplicateSuggestion, worldsFromCompose, validateSshHost, sshHostname, type Instance } from '../src/deploy/targets.js';
 import http from 'node:http';
 
 let data = '';
@@ -110,6 +110,42 @@ describe('deploy targets', () => {
       expect((await deployDocker(data, { name: 'remote-3', port, version: 'latest', worlds: '/srv', sshHost: '-oProxyCommand=evil' }, () => undefined)).error).toMatch(/user@host/);
     } finally { srv.close(); }
   });
+  it('duplicates a Docker instance with a new name and port on the same computer and worlds', async () => {
+    // Two stand-in web apps on neighbouring ports answer the health checks of the original and the copy.
+    const servers: http.Server[] = [];
+    let port = 0;
+    for (let tries = 0; tries < 20 && servers.length < 2; tries++) {
+      servers.splice(0).forEach((x) => x.close());
+      const a = http.createServer((_q, r) => { r.setHeader('content-type', 'application/json'); r.end('{"version":"0.1.30"}'); });
+      await new Promise<void>((ok) => a.listen(0, '127.0.0.1', ok));
+      port = (a.address() as { port: number }).port + 1;
+      const b = http.createServer((_q, r) => { r.setHeader('content-type', 'application/json'); r.end('{"version":"0.1.30"}'); });
+      const bound = await new Promise<boolean>((ok) => { b.once('error', () => ok(false)); b.listen(port, '127.0.0.1', () => ok(true)); });
+      servers.push(a); if (bound) servers.push(b); else a.close();
+    }
+    try {
+      await saveInstances(data, []);
+      const first = await deployDocker(data, { name: 'club', port: port - 1, version: '0.1.30', worlds: '/srv/minecraft/worlds', sshHost: 'tester@127.0.0.1' }, () => undefined);
+      expect(first.error).toBeUndefined();
+      const suggestion = duplicateSuggestion(first.instance!, await loadInstances(data));
+      expect(suggestion).toEqual({ name: 'club-copy', port });
+      const copy = await duplicateInstance(data, 'club', suggestion, () => undefined);
+      expect(copy.error).toBeUndefined();
+      expect(copy.instance).toMatchObject({ name: 'club-copy', port, version: '0.1.30', sshHost: 'tester@127.0.0.1', worlds: '/srv/minecraft/worlds' });
+      const compose = await readFile(path.join(data, 'instances', 'club-copy', 'compose.yaml'), 'utf8');
+      expect(compose).toContain('club-copy-data:/data');
+      expect(worldsFromCompose(compose)).toBe('/srv/minecraft/worlds');
+      expect(duplicateSuggestion(copy.instance!, await loadInstances(data)).name).toBe('club-copy-2');
+      expect((await duplicateInstance(data, 'club', { name: 'club-copy', port: port + 1 }, () => undefined)).error).toMatch(/already exists/);
+      expect((await duplicateInstance(data, 'nope', suggestion, () => undefined)).error).toMatch(/not in this app/);
+    } finally { servers.forEach((x) => x.close()); }
+  });
+
+  it('refuses to duplicate a virtual machine and explains what to do instead', async () => {
+    await saveInstances(data, [{ ...inst, name: 'vm-1', target: 'vmware' }]);
+    expect((await duplicateInstance(data, 'vm-1', { name: 'vm-2', port: 8500 }, () => undefined)).error).toMatch(/Only Docker instances/);
+  });
+
   it('imports, starts and manages a VMware VM with ovftool and vmrun', async () => {
     const bin = await mkdtemp(path.join(os.tmpdir(), 'me-vmw-'));
     const vlog = path.join(bin, 'vm.txt');

@@ -34,7 +34,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Build script (Alpine, pinned alpine-make-rootfs checked by SHA-256), service that loads the preloaded image, console banner with the link and owner notice, OVF for VirtualBox and VMware, QEMU boot test.
 - [x] x86_64 image built in CI (alpine-make-rootfs on a loop device, syslinux), booted under QEMU until the web app answered its health check, and published as `.img.xz` and `.ova` in release v0.1.0-build.12.
 - [ ] Booted on real VirtualBox, VMware and a spare PC from USB.
-- [ ] Raspberry Pi arm64 image with a QEMU boot test before upload.
+- [x] Raspberry Pi arm64 image with a QEMU boot test after each release (raspi4b, through to the web app's health check).
 - [ ] Separate data partition and an in-place updater for the OS and the app image together.
 - [x] Worlds can be uploaded as a .zip, created as a flat world and downloaded as a .zip from the web UI (unpack checks every path and refuses archives without level.dat; idiots and a headless Chrome run).
 
@@ -52,7 +52,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Raspberry Pi 4 and 5 image (`map-editor-appliance-rpi-arm64.img.xz`): Alpine arm64 with the Pi firmware, kernel, device trees and the arm64 Map Editor image, built in CI through qemu with Alpine's aarch64 signing keys, checked for its boot files and published with each release. Not boot-tested on a real Pi. The QEMU boot check found that releases up to v0.1.47 packed the amd64 container into this image, so the service could not run on a Pi; the image is now copied per platform with skopeo, every saved image tar is checked for its processor (`scripts/image-arch.mjs`), and the appliance refuses a wrong-processor image with a clear console message. The console also reports when the web app answers.
 - [x] Instance actions: start, stop, restart, update, remove (with an optional Delete data step and a confirm dialog), state dot and live log with Pause and Copy; unit tested with a stand-in `docker` and driven in headless Chrome.
 - [x] The Docker target defaults to the `latest` image (published from main) so Update pulls the newest release; the version field only accepts Docker tag characters, so it cannot change the generated Compose file (unit tested).
-- [ ] Instance duplicate.
+- [x] Instance duplicate: a Docker instance (local or over SSH) copied to a suggested free name and port with the same version and worlds folder and fresh accounts; virtual machines say to deploy the image again.
 
 ## Phase 6: required interface features still open
 
@@ -61,7 +61,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 
 - [x] dockview workspace for the editor (map, tools, history, notes; docking, tabbing, saved layout), checked in headless Chrome.
 - [x] Full screen sweep: every screen at 1440 and 390 px, light and dark, Cantonese and bilingual, checked in headless Chrome for page errors, sideways scrolling and clipped text (40 combinations, none left). It found and fixed an About screen error at phone width and the bilingual header wrapping on phones.
-- [x] Phone width (720 px and under): the editor workspace becomes one tabbed group with its own saved layout, the header compacts, and destinations move to a bottom bar; every screen checked at 390 px with no sideways scrolling.
+- [x] Phone width (720 px and under): the editor workspace becomes one tabbed group with its own saved layout, the header compacts, and destinations move to a bottom bar; every screen checked at 390 px with no sideways scrolling. A row of panel chips (a tab list with arrow keys, Home and End) sits above the group and replaces its tab strip, on the editor, History and About; checked in headless Chrome.
 - [x] dockview on History (Edits and Details panels: pick an edit to see its time, full commit id and position, Roll back or Copy commit id) and About (About and Changelog panels), each with its own saved layout and the phone single-group fallback; Reset panel layouts in Settings and the palette; several workspaces can now be on screen at once. Checked in headless Chrome.
 - [x] On wide screens (1600 px and over) the editor's Notes start as a floating group in the lower left of the map; checked in headless Chrome.
 - [x] A lock on every settings switch: a locked switch is disabled, its row says so, the palette refuses to change it, unlocking asks first; and Quiet hours silence sounds and reading aloud between two times. Both in settings history and export; checked in headless Chrome.

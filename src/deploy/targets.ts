@@ -17,6 +17,7 @@ export interface Instance {
   host: string; // LAN address the link uses
   sshHost?: string;
   vmPath?: string;
+  worlds?: string; // worlds folder (Docker targets)
   createdAt: string;
 }
 
@@ -241,9 +242,45 @@ export async function deployDocker(dataDir: string, opts: { name: string; port: 
   if (!h.ok) { step(3, 'failed', h.error); return { error: `Started, but ${url} did not answer its health check (${h.error}).` }; }
   step(3, 'done', `version ${h.version}`);
 
-  const instance: Instance = { id: `${Date.now()}`, name: opts.name, target: remote ? 'docker-ssh' : 'docker', version: opts.version, port: opts.port, host, ...(remote ? { sshHost: remote } : {}), createdAt: new Date().toISOString() };
+  const instance: Instance = { id: `${Date.now()}`, name: opts.name, target: remote ? 'docker-ssh' : 'docker', version: opts.version, port: opts.port, host, ...(remote ? { sshHost: remote } : {}), worlds: opts.worlds, createdAt: new Date().toISOString() };
   await saveInstances(dataDir, [...existing, instance]);
   return { instance, url };
+}
+
+/** Reads the worlds folder back from a Compose file this app wrote (instances made before it was recorded). */
+export function worldsFromCompose(yaml: string): string | undefined {
+  const m = /\n\s*source: (".*")\s*\n\s*target: \/worlds/.exec(yaml);
+  if (!m) return undefined;
+  try { return JSON.parse(m[1]) as string; } catch { return undefined; }
+}
+
+/** Suggests a free name and port for a copy of an instance. */
+export function duplicateSuggestion(source: Instance, existing: Instance[]): { name: string; port: number } {
+  const base = source.name.replace(/-copy(-\d+)?$/, '').slice(0, 30);
+  let name = `${base}-copy`;
+  for (let n = 2; existing.some((x) => x.name === name); n++) name = `${base}-copy-${n}`;
+  const used = new Set(existing.filter((x) => (x.sshHost ?? '') === (source.sshHost ?? '')).map((x) => x.port));
+  let port = source.port + 1;
+  while (used.has(port) && port < 65535) port++;
+  return { name, port };
+}
+
+/**
+ * Duplicate a Docker instance: a new instance with its own name, port and data volume, the same
+ * version, the same worlds folder and the same computer. Accounts and history start fresh; worlds are shared.
+ */
+export async function duplicateInstance(dataDir: string, sourceName: string, opts: { name: string; port: number }, progress: Progress): Promise<{ instance?: Instance; url?: string; error?: string }> {
+  const source = (await loadInstances(dataDir)).find((x) => x.name === sourceName);
+  if (!source) return { error: `${sourceName} is not in this app's instance list.` };
+  if (source.target !== 'docker' && source.target !== 'docker-ssh') {
+    return { error: 'Only Docker instances can be duplicated. For a virtual machine, deploy the appliance image again under a new name.' };
+  }
+  let worlds = source.worlds;
+  if (!worlds) {
+    try { worlds = worldsFromCompose(await fs.readFile(path.join(dataDir, 'instances', source.name, 'compose.yaml'), 'utf8')); } catch { /* handled below */ }
+  }
+  if (!worlds) return { error: `Could not find the worlds folder ${sourceName} uses. Deploy a new instance instead.` };
+  return deployDocker(dataDir, { name: opts.name, port: opts.port, version: source.version, worlds, sshHost: source.sshHost }, progress);
 }
 
 /** VirtualBox: import the appliance OVA with a bridged adapter, start headless, wait for health. */

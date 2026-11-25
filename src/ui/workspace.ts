@@ -9,6 +9,47 @@ export const PHONE = '(max-width: 720px)';
 export const WIDE = '(min-width: 1600px)';
 const live = new Map<HTMLElement, DockviewApi>();
 
+/**
+ * Phone panel chips: one chip per panel above the single tabbed group, so every panel is one tap
+ * away. A tab list with arrow-key movement; the chip of the panel on screen is selected.
+ */
+function panelChips(host: HTMLElement, api: DockviewApi, titles: Record<string, string>, order: string[]) {
+  host.previousElementSibling?.classList.contains('panel-chips') && host.previousElementSibling.remove();
+  const row = document.createElement('div');
+  row.className = 'panel-chips';
+  row.setAttribute('role', 'tablist');
+  row.setAttribute('aria-label', 'Panels');
+  const ids = order.filter((id) => api.getPanel(id));
+  const chips = ids.map((id) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'panel-chip'; b.setAttribute('role', 'tab'); b.dataset.panel = id;
+    b.textContent = titles[id] ?? id;
+    b.addEventListener('click', () => api.getPanel(id)?.api.setActive());
+    b.addEventListener('keydown', (e) => {
+      const i = chips.indexOf(b);
+      const next = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? chips.length - 1 : -2;
+      if (next === -2) return;
+      e.preventDefault();
+      const c = chips[(next + chips.length) % chips.length];
+      c.focus(); c.click();
+    });
+    row.append(b);
+    return b;
+  });
+  const sync = () => {
+    const active = api.activePanel?.id;
+    for (const c of chips) {
+      const on = c.dataset.panel === active;
+      c.setAttribute('aria-selected', String(on)); c.tabIndex = on ? 0 : -1;
+      // Scroll only the chip row sideways; scrollIntoView would also move the page.
+      if (on && (c.offsetLeft < row.scrollLeft || c.offsetLeft + c.offsetWidth > row.scrollLeft + row.clientWidth)) row.scrollLeft = c.offsetLeft - 8;
+    }
+  };
+  api.onDidActivePanelChange(sync);
+  host.before(row);
+  sync();
+}
+
 /** Default arrangement: each entry is [panel id, position relative to an earlier panel, size]. */
 export type Arrangement = Array<[string, { ref: string; dir: 'right' | 'below' | 'within' }?, number?]>;
 
@@ -57,6 +98,8 @@ export function mountWorkspace(host: HTMLElement, panels: Record<string, HTMLEle
   }
   for (const id of Object.keys(titles)) api.getPanel(id)?.api.setTitle(titles[id]);
   api.onDidLayoutChange(() => { try { localStorage.setItem(key, JSON.stringify(api.toJSON())); } catch { /* storage blocked */ } });
+  if (phone) panelChips(host, api, titles, screen ? screen.arrange.map(([id]) => id) : ['map', 'tool', 'history', 'notes']);
+  else if (host.previousElementSibling?.classList.contains('panel-chips')) host.previousElementSibling.remove();
   host.classList.toggle('layout-locked', locked);
   if (locked) for (const g of api.groups) g.locked = true;
   live.set(host, api);
