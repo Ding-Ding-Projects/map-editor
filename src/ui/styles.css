@@ -1078,3 +1078,13 @@ md-list-item .h-pick { inline-size: 18px; block-size: 18px; margin: 0; accent-co
 .ext-selbar { grid-column: 1 / -1; }
 
 .ext-export, .ext-bulk { inline-size: fit-content; align-self: flex-start; justify-self: start; }
+
+/* Rendered Markdown (release notes, change details) */
+.cl-entry { align-items: flex-start; } .cl-text { min-inline-size: 0; }
+.cl-more { margin-block-start: 6px; } .cl-more summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--md-sys-color-primary); inline-size: fit-content; border-radius: 8px; padding: 2px 6px; margin-inline-start: -6px; }
+.cl-more summary:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; }
+.md-body { font-size: 14px; line-height: 1.55; font-weight: 400; overflow-wrap: anywhere; }
+.md-body p { margin: 8px 0; } .md-body ul, .md-body ol { margin: 8px 0; padding-inline-start: 22px; } .md-body h3, .md-body h4, .md-body h5, .md-body h6 { margin: 12px 0 4px; font-size: 15px; }
+.md-body code { font-family: 'Roboto Mono Variable', ui-monospace, monospace; font-size: .92em; padding: 1px 5px; border-radius: 6px; background: var(--md-sys-color-surface-container-highest); }
+.md-body pre { overflow: auto; padding: 10px 12px; border-radius: 12px; background: var(--md-sys-color-surface-container-highest); } .md-body pre code { padding: 0; background: none; }
+.md-body blockquote { margin: 8px 0; padding-inline-start: 12px; border-inline-start: 3px solid var(--md-sys-color-outline-variant); } .md-body a { color: var(--md-sys-color-primary); }

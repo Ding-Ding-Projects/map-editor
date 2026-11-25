@@ -17,11 +17,12 @@ try {
 
 const dist = path.join(root, 'dist');
 mkdirSync(path.join(dist, 'ui'), { recursive: true });
-// Changelog from the real commit history (subject line only), newest first.
+// Changelog from the real commit history, newest first.
 let changelog = [];
 try {
-  const out = execFileSync('git', ['log', '-200', '--format=%H%x1f%cI%x1f%s'], { cwd: root }).toString().trim();
-  changelog = out ? out.split('\n').map((l) => { const [sha, date, subject] = l.split('\x1f'); return { sha, date, subject }; }) : [];
+  const out = execFileSync('git', ['log', '-200', '--format=%H%x1f%cI%x1f%s%x1f%b%x1e'], { cwd: root, maxBuffer: 16 * 1024 * 1024 }).toString();
+  // The body is kept (without trailers such as Co-Authored-By) so About can show the full note for each change.
+  changelog = out.split('\x1e').map((l) => l.replace(/^\n+/, '')).filter(Boolean).map((l) => { const [sha, date, subject, body = ''] = l.split('\x1f'); return { sha, date, subject, body: body.split('\n').filter((x) => !/^[A-Za-z-]+-[Bb]y: |^Claude-Session: /.test(x)).join('\n').trim().slice(0, 4000) }; });
 } catch { /* not a checkout: the About screen says the changelog is unavailable */ }
 // Updated-at comes from the source commit time, never the clock of whoever builds it.
 writeFileSync(path.join(dist, 'build-info.json'), JSON.stringify({ version: version, commit, builtAt, changelog }, null, 2));

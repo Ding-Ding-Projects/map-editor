@@ -427,6 +427,7 @@ const S = {
   dismissedN: { en: '{n} notifications dismissed', yue: '清走咗 {n} 個通知' },
   selectExportNote: { en: 'Export saves the ticked rows, or everything shown when none is ticked.', yue: '匯出會儲低剔咗嗰幾行；冇剔就儲低顯示緊嘅全部。' },
   selectExtNote: { en: 'Export and Switch off act on the ticked extensions, or on everything shown when none is ticked.', yue: '匯出同「熄」只會理剔咗嘅擴充功能；冇剔就理顯示緊嘅全部。' },
+  clDetails: { en: 'Details', yue: '詳情' },
   docsOnline: { en: 'Open this article on the website, with pictures', yue: '喺網站開呢篇文章（有圖）' },
   superTitle: { en: 'This cannot be taken back', yue: '呢樣嘢冇得返轉頭' },
   superKey1: { en: 'Turn the first key', yue: '扭第一條鎖匙' },

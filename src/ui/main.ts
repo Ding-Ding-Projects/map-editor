@@ -35,6 +35,7 @@ import { argbFromHex, themeFromSourceColor, applyTheme as applyM3Theme } from '@
 import { notesPanel as notesPanelImpl } from './notes.js';
 import { contextMenu, initMenus } from './menu.js';
 import { iconSvg, initButtonIcons } from './icons.js';
+import { renderMarkdown } from './markdown.js';
 import { pickItem } from './select.js';
 import { ARTICLES, docsView, docTitle, openDoc } from './docs.js';
 import { levelUp, otpauthParts, qrSvg, superConfirm, vocabHeadline } from './moments.js';
@@ -1758,7 +1759,7 @@ async function aboutView(view: HTMLElement): Promise<void> {
   view.querySelector('#upd-check')?.addEventListener('click', () => checkForUpdates());
   view.querySelector('#copy-ver')!.addEventListener('click', () => navigator.clipboard?.writeText(`Map Editor ${health?.version} ${health?.commit} ${health?.builtAt ?? ''}`).then(() => notify(tx('copied')), () => notify(tx('copyFailed'), true)));
   const listEl = view.querySelector<HTMLElement>('#cl')!;
-  type Entry = { sha: string; date: string; subject: string };
+  type Entry = { sha: string; date: string; subject: string; body?: string };
   let entries: Entry[] | null = null;
   try { entries = (await api<{ entries: Entry[] | null }>('/api/changelog')).entries; } catch (e) { notify((e as Error).message, true); }
   const kind = (s: string) => /^(add|new|build|introduc)/i.test(s) ? 'added' : /^(fix|repair|correct)/i.test(s) ? 'fixed' : 'changed';
@@ -1774,11 +1775,11 @@ async function aboutView(view: HTMLElement): Promise<void> {
     const my = ++clRun;
     const q = clq.query().trim();
     const all: Entry[] = entries;
-    const hits = await clq.filter(all.map((e) => `${e.subject} ${e.sha}`)) ?? all.map(() => false);
+    const hits = await clq.filter(all.map((e) => `${e.subject} ${e.sha} ${e.body ?? ''}`)) ?? all.map(() => false);
     if (my !== clRun) return; // a hidden panel (phone width) is still filled, ready when shown
     const shown = all.filter((_, i) => hits[i]); clShown = shown;
     listEl.innerHTML = shown.length ? shown.map((e, i) => `<li class="cl-entry${i === 0 && !q ? ' newest' : ''}" style="--i:${Math.min(i, 12)}"><span class="cl-kind ${kind(e.subject)}">${esc(tx(kind(e.subject) as Key))}</span>
-      <span class="cl-text"><b>${esc(e.subject)}</b><small>${esc(new Date(e.date).toLocaleString('en-GB'))} · <a class="cl-link" href="https://github.com/Ding-Ding-Projects/map-editor/commit/${esc(e.sha)}" target="_blank" rel="noopener noreferrer"><code>${esc(e.sha.slice(0, 7))}</code></a></small></span></li>`).join('') : `<li class="muted">${esc(tx('noMatches'))}</li>`;
+      <span class="cl-text"><b>${esc(e.subject)}</b><small>${esc(new Date(e.date).toLocaleString('en-GB'))} · <a class="cl-link" href="https://github.com/Ding-Ding-Projects/map-editor/commit/${esc(e.sha)}" target="_blank" rel="noopener noreferrer"><code>${esc(e.sha.slice(0, 7))}</code></a></small>${e.body ? `<details class="cl-more"><summary>${esc(tx('clDetails'))}</summary><div class="md-body">${renderMarkdown(e.body, { base: 'https://github.com/Ding-Ding-Projects/map-editor/blob/main/' })}</div></details>` : ''}</span></li>`).join('') : `<li class="muted">${esc(tx('noMatches'))}</li>`;
   };
   clq.onChange(draw);
   draw();
