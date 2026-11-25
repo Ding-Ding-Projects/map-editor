@@ -37,6 +37,20 @@ main { display: block; }
 .map i { display: block; aspect-ratio: 1; }
 .sel { position: absolute; left: 34%; top: 30%; width: 26%; height: 26%; border: 3px solid #fff; border-radius: 6px; transform: rotate(-3deg); }
 .chip { position: absolute; box-shadow: 0 12px 24px rgba(0,0,0,.22); }
+/* Hero demo, a 10 s loop: a selection is dragged, filled with stone bricks, then rolled back. */
+.sel { overflow: hidden; animation: hero-sel 10s cubic-bezier(.2,0,0,1) infinite; transform-origin: top left; }
+.wash { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, #9c9c9c 0 11px, #7d7d7d 11px 13px); transform-origin: left; animation: hero-wash 10s cubic-bezier(.2,0,0,1) infinite; }
+.cursor { position: absolute; width: 22px; height: 22px; border-radius: 50% 50% 50% 4px; background: var(--on-s); box-shadow: 0 0 0 3px var(--s); left: 34%; top: 30%; animation: hero-cursor 10s cubic-bezier(.2,0,0,1) infinite; }
+.c1 { animation: hero-c1 10s ease infinite; } .c2 { animation: hero-c2 10s ease infinite; }
+@keyframes hero-sel { 0%, 4% { width: 0; height: 0; opacity: 0; } 6% { opacity: 1; } 22%, 100% { width: 26%; height: 26%; opacity: 1; } }
+@keyframes hero-wash { 0%, 26% { transform: scaleX(0); opacity: 1; } 38%, 62% { transform: scaleX(1); opacity: 1; } 72%, 100% { transform: scaleX(1); opacity: 0; } }
+@keyframes hero-cursor { 0%, 4% { left: 34%; top: 30%; opacity: 0; } 6% { opacity: 1; } 22% { left: 60%; top: 56%; opacity: 1; } 30%, 100% { left: 60%; top: 56%; opacity: 0; } }
+@keyframes hero-c1 { 0%, 36% { opacity: 0; transform: translateY(8px); } 42%, 62% { opacity: 1; transform: none; } 68%, 100% { opacity: 0; transform: translateY(-8px); } }
+@keyframes hero-c2 { 0%, 66% { opacity: 0; transform: translateY(8px); } 72%, 94% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .sel, .wash, .cursor, .c1, .c2 { animation: none; }
+  .cursor, .wash { display: none; }
+}
 .chip small { display: block; font-size: 12px; font-weight: 700; opacity: .8; }
 .chip b { font-size: 20px; font-weight: 900; }
 .c1 { left: 0; top: 46px; padding: 14px 18px; border-radius: 22px 22px 22px 6px; background: var(--inv); color: var(--on-inv); }

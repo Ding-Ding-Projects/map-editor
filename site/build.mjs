@@ -77,7 +77,7 @@ writeFileSync(path.join(out, 'index.html'), page('Map Editor', 'A Minecraft worl
 <h1>Edit your world.<br><span>Undo anything.</span></h1>
 <p>A Minecraft world editor for your desk, your whole network, or a spare PC. Every fill, replace and clone is saved to its own history, so nothing is ever one click from gone.</p>
 <p class="actions"><a class="btn filled" href="${repo}/releases">Get Map Editor</a><a class="btn outlined" href="${base}web-app/">Run it with Docker</a></p></div>
-<div class="hero-art"><div class="map" role="img" aria-label="Top-down map of a river valley with a selected area">${mosaic(18, 12)}</div><div class="sel" aria-hidden="true"></div>
+<div class="hero-art"><div class="map" role="img" aria-label="Top-down map of a river valley with a selected area">${mosaic(18, 12)}</div><div class="sel" aria-hidden="true"><span class="wash"></span></div><div class="cursor" aria-hidden="true"></div>
 <div class="chip c1" aria-hidden="true"><small>Fill finished</small><b>53,248 blocks</b></div>
 <div class="chip c2" aria-hidden="true"><span class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 010 10h-3"/></svg></span><span><small>History</small><b>Rolled back to 16:38:52</b></span></div></div></section>
 <section class="band-wrap"><h2>Three ways to run it</h2><div class="ways">${ways.map((w) => `<a class="way ${w.cls}" href="${base}${w.slug}/"><small>${esc(w.k)}</small><strong>${esc(w.t)}</strong><span>${esc(w.b)}</span><code>${esc(w.c)}</code></a>`).join('')}</div></section>
