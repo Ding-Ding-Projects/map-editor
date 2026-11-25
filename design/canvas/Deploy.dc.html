@@ -42,7 +42,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
     <sc-if value="{{isDeploy}}" hint-placeholder-val="{{ true }}">
       <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start">
         <section aria-label="Targets" style="flex: 999 1 600px; min-width: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px">
-          <sc-for list="{{targets}}" as="x" hint-placeholder-count="5">
+          <sc-for list="{{targets}}" as="x" hint-placeholder-count="6">
             <button onClick="{{x.pick}}" aria-pressed="{{x.on}}" style="{{x.style}}">
               <span style="{{x.badge}}">{{x.initial}}</span>
               <span style="font-size: 24px; line-height: 30px; font-weight: 700">{{x.name}}</span>
@@ -151,13 +151,14 @@ class Component extends DCLogic {
     const sel = this.state.x ?? 0;
     const views = ['Deploy', 'Instances'].map((label) => ({ label, on: label === view, style: 'height: 48px; padding: 0 24px; border: 0; font-size: 16px; font-weight: 700; ' + (label === view ? 'border-radius: 14px; background: ' + t.onPrimaryContainer + '; color: ' + t.primaryContainer : 'border-radius: 24px; background: transparent; color: ' + t.onPrimaryContainer + '; box-shadow: inset 0 0 0 1px ' + t.onPrimaryContainer), pick: () => this.setState({ view: label }) }));
     const defs = [
-      ['Docker', 'This PC, or another machine over SSH. Pulls the published image and starts it with Compose.', 'Docker found', true, 'Pull ghcr.io/ding-ding-projects/map-editor:0.1.0', 'Start with docker compose up -d', '28px 28px 28px 8px'],
+      ['Docker', 'This PC. Pulls the published image and starts it with Compose.', 'Docker found', true, 'Pull ghcr.io/ding-ding-projects/map-editor:latest', 'Start with docker compose up -d', '28px 28px 28px 8px'],
+      ['Docker on another computer', 'A server, NAS or Raspberry Pi with Docker, reached with your own SSH key. No passwords stored.', 'ssh pi@192.168.1.50', true, 'Pull :latest there over SSH', 'Start with docker compose up -d there', '28px'],
       ['VirtualBox', 'Imports the appliance image as a VM with bridged networking so your LAN can reach it.', 'VirtualBox 7.1 found', true, 'Import map-editor-appliance.ova', 'Start the VM on a bridged adapter', '28px'],
       ['VMware', 'The same appliance image in VMware Workstation or Player.', 'VMware not found', false, 'Import map-editor-appliance.ova', 'Start it with vmrun', '8px 28px 28px 28px'],
       ['USB drive', 'Writes the appliance image to a USB stick. A spare PC boots straight into Map Editor.', '2 removable drives', true, '', '', '28px 8px 28px 28px'],
-      ['Raspberry Pi', 'Writes the arm64 image to an SD card or USB drive for a Pi 4 or 5.', 'Image not built yet', false, '', '', '28px 28px 8px 28px']
+      ['Raspberry Pi', 'A Pi 4 or 5 with Docker works through Docker on another computer. A flashable Pi image comes later.', 'Use Docker over SSH', false, '', '', '28px 28px 8px 28px']
     ];
-    const tones = [[t.secondaryContainer, t.onSecondaryContainer], [t.tertiaryContainer, t.onTertiaryContainer], [t.surfaceContainerHigh, t.onSurface], [t.secondaryContainer, t.onSecondaryContainer], [t.surfaceContainerHigh, t.onSurface]];
+    const tones = [[t.secondaryContainer, t.onSecondaryContainer], [t.primaryContainer ?? t.secondaryContainer, t.onPrimaryContainer ?? t.onSecondaryContainer], [t.tertiaryContainer, t.onTertiaryContainer], [t.surfaceContainerHigh, t.onSurface], [t.secondaryContainer, t.onSecondaryContainer], [t.surfaceContainerHigh, t.onSurface]];
     const targets = defs.map(([name, desc, status, ok, , , radius], i) => ({
       name, desc, status, on: i === sel, initial: name.slice(0, 1),
       style: 'min-height: 220px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; padding: 24px; border-radius: ' + radius + '; text-align: left; border: 0; background: ' + (i === sel ? t.primary : tones[i][0]) + '; color: ' + (i === sel ? t.onPrimary : tones[i][1]) + '; transition: border-radius .25s',

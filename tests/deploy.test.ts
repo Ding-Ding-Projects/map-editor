@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { mkdtemp, writeFile, readFile, chmod, mkdir } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { instanceAction, instanceState, saveInstances, loadInstances, flashableDisks, confirmPhrase, validateInstance, composeFile, type Instance } from '../src/deploy/targets.js';
+import { instanceAction, instanceState, saveInstances, loadInstances, flashableDisks, confirmPhrase, validateInstance, composeFile, deployDocker, validateSshHost, sshHostname, type Instance } from '../src/deploy/targets.js';
+import http from 'node:http';
 
 let data = '';
 let callLog = '';
@@ -13,7 +14,7 @@ beforeEach(async () => {
   const bin = await mkdtemp(path.join(os.tmpdir(), 'me-bin-'));
   callLog = path.join(bin, 'calls.txt');
   // A stand-in docker that records its arguments and reports a running container.
-  await writeFile(path.join(bin, 'docker'), `#!/bin/sh\necho "$@" >> "${callLog}"\ncase "$*" in *" ps "*) echo running;; esac\nexit 0\n`);
+  await writeFile(path.join(bin, 'docker'), `#!/bin/sh\n[ -n "$DOCKER_HOST" ] && echo "HOST $DOCKER_HOST" >> "${callLog}"\necho "$@" >> "${callLog}"\ncase "$*" in *" ps "*) echo running;; esac\nexit 0\n`);
   await chmod(path.join(bin, 'docker'), 0o755);
   process.env.PATH = `${bin}${path.delimiter}${process.env.PATH}`;
   await mkdir(path.join(data, 'instances', inst.name), { recursive: true });
@@ -72,5 +73,31 @@ describe('deploy targets', () => {
     expect(validateVersion('0.1.30\n    privileged: true')).toMatch(/image tag/);
     expect(validateVersion('')).toMatch(/image tag/);
     expect(validateVersion('-x')).toMatch(/image tag/);
+  });
+  it('accepts only user@host[:port] SSH logins', () => {
+    for (const ok of ['pi@192.168.1.50', 'me@nas.local:2222', 'server', 'a_b@host-1.example.com']) expect(validateSshHost(ok)).toBeUndefined();
+    for (const bad of ['-oProxyCommand=x', 'me@host;rm -rf /', 'me@', '@host', 'me@host:port', 'me @host']) expect(validateSshHost(bad)).toMatch(/user@host/);
+    expect(sshHostname('pi@192.168.1.50:2222')).toBe('192.168.1.50');
+  });
+
+  it('deploys to Docker on another computer through DOCKER_HOST=ssh and manages it there', async () => {
+    const srv = http.createServer((_q, r) => { r.setHeader('content-type', 'application/json'); r.end('{"version":"0.1.30"}'); });
+    await new Promise<void>((ok) => srv.listen(0, '127.0.0.1', ok));
+    const port = (srv.address() as { port: number }).port;
+    try {
+      await saveInstances(data, []);
+      const r = await deployDocker(data, { name: 'remote-1', port, version: 'latest', worlds: '/srv/worlds', sshHost: 'tester@127.0.0.1' }, () => undefined);
+      expect(r.error).toBeUndefined();
+      expect(r.url).toBe(`http://127.0.0.1:${port}/`);
+      expect(r.instance).toMatchObject({ target: 'docker-ssh', sshHost: 'tester@127.0.0.1', host: '127.0.0.1' });
+      const log = await readFile(callLog, 'utf8');
+      expect(log.match(/HOST ssh:\/\/tester@127\.0\.0\.1/g)!.length).toBeGreaterThanOrEqual(3);
+      expect(log).toContain('info --format');
+      expect(await readFile(path.join(data, 'instances', 'remote-1', 'compose.yaml'), 'utf8')).toContain('/srv/worlds');
+      await instanceAction(data, 'remote-1', 'stop');
+      expect((await readFile(callLog, 'utf8')).trim().split('\n').slice(-2)).toEqual(['HOST ssh://tester@127.0.0.1', expect.stringContaining('-p remote-1 stop')]);
+      expect((await deployDocker(data, { name: 'remote-2', port, version: 'latest', worlds: 'relative/path', sshHost: 'tester@127.0.0.1' }, () => undefined)).error).toMatch(/full path/);
+      expect((await deployDocker(data, { name: 'remote-3', port, version: 'latest', worlds: '/srv', sshHost: '-oProxyCommand=evil' }, () => undefined)).error).toMatch(/user@host/);
+    } finally { srv.close(); }
   });
 });

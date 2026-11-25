@@ -24,12 +24,12 @@ export const features = [
     ], related: ['deploy-app', 'web-app', 'roadmap'] },
   { slug: 'deploy-app', title: 'Map Editor Deploy', group: 'Ways to run it', summary: 'One click to put Map Editor on Docker, VirtualBox or a USB drive, then the working link.',
     body: [
-      ['Targets', 'Docker on this computer pulls the published image, starts it with Compose and waits for the health check. VirtualBox imports the appliance with a bridged adapter, starts it headless and reads its network address. USB drive writes the appliance image to a removable drive.'],
+      ['Targets', 'Docker on this computer pulls the published image, starts it with Compose and waits for the health check. Docker on another computer does the same on a server, NAS or Raspberry Pi 4 or 5 through SSH: enter user@host and the worlds folder on that computer. It uses your own SSH key (the login must work without a password prompt) and stores no passwords. VirtualBox imports the appliance with a bridged adapter, starts it headless and reads its network address. USB drive writes the appliance image to a removable drive.'],
       ['Flashing safely', 'Only removable drives are listed, the drive running your system is never offered, and nothing is selected for you. You type a confirmation that names the drive. After writing, the drive is read back and its SHA-256 compared with the image before success is shown.'],
       ['When it finishes', 'A full-screen card says It is live with the link, version and how long it took, and closes by itself after 8 seconds unless you are using it. If something fails, a red card stays until you dismiss it and shows each step, the exact error, Copy details and a retry; when the port is already taken it offers the next port.'],
       ['Instances', 'The Instances view lists only what this app created, with its current state and the verified link for each.'],
       ['Managing an instance', 'Manage opens one instance: a state dot, its version and link, and buttons for Open, Start or Stop, Restart and Update (pulls the newest image and restarts). The live log follows the container output; Pause holds it still and Copy puts it on the clipboard. Remove asks first, stops the instance and deletes its Compose file; worlds and data stay unless you also tick Delete data.'],
-      ['Not yet available', 'VMware, Raspberry Pi flashing and Docker over SSH are shown as unavailable and are on the roadmap.'],
+      ['Not yet available', 'VMware and a ready-to-flash Raspberry Pi image are on the roadmap.'],
     ], related: ['appliance', 'web-app', 'desktop-app'] },
   { slug: 'worlds', title: 'Getting worlds in and out', group: 'Using the editor', summary: 'Upload a world as a .zip, download it again, or start a new flat world.',
     body: [

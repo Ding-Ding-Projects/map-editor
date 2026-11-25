@@ -26,9 +26,9 @@ export type Progress = (steps: Step[]) => void;
 export interface RunResult { code: number; stdout: string; stderr: string }
 
 /** Run a command without a shell, so no argument is ever interpreted. */
-export function run(cmd: string, args: string[], opts: { input?: string; timeoutMs?: number } = {}): Promise<RunResult> {
+export function run(cmd: string, args: string[], opts: { input?: string; timeoutMs?: number; env?: NodeJS.ProcessEnv } = {}): Promise<RunResult> {
   return new Promise((resolve) => {
-    const p = spawn(cmd, args, { windowsHide: true });
+    const p = spawn(cmd, args, { windowsHide: true, env: opts.env ? { ...process.env, ...opts.env } : process.env });
     let stdout = '', stderr = '';
     const timer = setTimeout(() => p.kill(), opts.timeoutMs ?? 10 * 60_000);
     p.stdout.on('data', (d) => { stdout += d; });
@@ -53,6 +53,17 @@ export function validateInstance(name: string, port: number, existing: Instance[
 export function validateVersion(version: string): string | undefined {
   return /^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$/.test(version) ? undefined : 'Version must be an image tag such as latest or 0.1.30 (letters, digits, dots, dashes, underscores).';
 }
+
+/**
+ * Docker on another computer is reached with Docker's own SSH transport (DOCKER_HOST=ssh://...),
+ * so the app never handles passwords or keys: the user's SSH agent and known_hosts are used.
+ */
+export const SSH_RE = /^(?:[a-z_][a-z0-9_.-]{0,31}@)?(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*|\d{1,3}(?:\.\d{1,3}){3})(?::\d{1,5})?$/;
+export function validateSshHost(h: string): string | undefined {
+  return SSH_RE.test(h) ? undefined : 'Enter the other computer as user@host or user@host:port, for example pi@192.168.1.50.';
+}
+export function sshHostname(h: string): string { return h.replace(/^.*@/, '').replace(/:\d+$/, ''); }
+const dockerEnv = (i: { sshHost?: string }) => (i.sshHost ? { DOCKER_HOST: `ssh://${i.sshHost}` } : undefined);
 
 export function lanAddress(): string {
   for (const list of Object.values(os.networkInterfaces())) for (const a of list ?? []) if (a.family === 'IPv4' && !a.internal) return a.address;
@@ -184,20 +195,26 @@ export async function saveInstances(dataDir: string, list: Instance[]) {
 }
 
 /** Docker on this computer: write the instance's Compose file, pull, start, wait for health. */
-export async function deployDocker(dataDir: string, opts: { name: string; port: number; version: string; worlds: string }, progress: Progress): Promise<{ instance?: Instance; url?: string; error?: string }> {
+export async function deployDocker(dataDir: string, opts: { name: string; port: number; version: string; worlds: string; sshHost?: string }, progress: Progress): Promise<{ instance?: Instance; url?: string; error?: string }> {
+  const remote = opts.sshHost?.trim() || undefined;
+  const env = remote ? { DOCKER_HOST: `ssh://${remote}` } : undefined;
   const steps: Step[] = [
-    { label: 'Check Docker', state: 'waiting' }, { label: `Pull ${IMAGE}:${opts.version}`, state: 'waiting' },
+    { label: remote ? `Check Docker on ${remote} over SSH` : 'Check Docker', state: 'waiting' }, { label: `Pull ${IMAGE}:${opts.version}`, state: 'waiting' },
     { label: 'Start with Docker Compose', state: 'waiting' }, { label: 'Wait for health check', state: 'waiting' },
   ];
   const step = (i: number, state: Step['state'], detail?: string) => { steps[i] = { ...steps[i], state, detail }; progress([...steps]); };
   const existing = await loadInstances(dataDir);
-  const bad = validateInstance(opts.name, opts.port, existing) ?? validateVersion(opts.version);
+  const bad = validateInstance(opts.name, opts.port, existing) ?? validateVersion(opts.version) ?? (remote ? validateSshHost(remote) : undefined)
+    ?? (remote && !opts.worlds.startsWith('/') ? 'On the other computer, the worlds folder must be a full path such as /srv/minecraft/worlds.' : undefined);
   if (bad) return { error: bad };
-  if (!(await portFree(opts.port))) return { error: `Port ${opts.port} is already in use on this computer.` };
+  if (!remote && !(await portFree(opts.port))) return { error: `Port ${opts.port} is already in use on this computer.` };
 
   step(0, 'running');
-  const v = await run('docker', ['compose', 'version']);
+  // compose version only proves the local CLI; info reaches the daemon (over SSH when remote).
+  const v = await run('docker', ['compose', 'version'], { env });
+  const info = v.code === 0 ? await run('docker', ['info', '--format', '{{.ServerVersion}}'], { env, timeoutMs: 60_000 }) : v;
   if (v.code !== 0) { step(0, 'failed', v.stderr.trim()); return { error: 'Docker with Compose was not found. Install Docker Desktop, then try again.' }; }
+  if (info.code !== 0) { step(0, 'failed', info.stderr.trim()); return { error: remote ? `Could not reach Docker on ${remote} over SSH. Check that you can run "ssh ${remote}" without a password prompt and that your user there can run docker.` : 'Docker is installed but not running. Start Docker Desktop, then try again.' }; }
   step(0, 'done', v.stdout.trim());
 
   const dir = path.join(dataDir, 'instances', opts.name);
@@ -206,22 +223,22 @@ export async function deployDocker(dataDir: string, opts: { name: string; port: 
   await fs.writeFile(file, composeFile(opts));
 
   step(1, 'running');
-  const pull = await run('docker', ['compose', '-f', file, '-p', opts.name, 'pull']);
+  const pull = await run('docker', ['compose', '-f', file, '-p', opts.name, 'pull'], { env });
   if (pull.code !== 0) { step(1, 'failed', pull.stderr.trim()); return { error: `docker compose pull failed with exit code ${pull.code}.` }; }
   step(1, 'done');
   step(2, 'running');
-  const up = await run('docker', ['compose', '-f', file, '-p', opts.name, 'up', '-d']);
+  const up = await run('docker', ['compose', '-f', file, '-p', opts.name, 'up', '-d'], { env });
   if (up.code !== 0) { step(2, 'failed', up.stderr.trim()); return { error: `docker compose up failed with exit code ${up.code}.` }; }
   step(2, 'done');
 
-  const host = lanAddress();
+  const host = remote ? sshHostname(remote) : lanAddress();
   const url = `http://${host}:${opts.port}/`;
   step(3, 'running');
   const h = await waitHealthy(url);
   if (!h.ok) { step(3, 'failed', h.error); return { error: `Started, but ${url} did not answer its health check (${h.error}).` }; }
   step(3, 'done', `version ${h.version}`);
 
-  const instance: Instance = { id: `${Date.now()}`, name: opts.name, target: 'docker', version: opts.version, port: opts.port, host, createdAt: new Date().toISOString() };
+  const instance: Instance = { id: `${Date.now()}`, name: opts.name, target: remote ? 'docker-ssh' : 'docker', version: opts.version, port: opts.port, host, ...(remote ? { sshHost: remote } : {}), createdAt: new Date().toISOString() };
   await saveInstances(dataDir, [...existing, instance]);
   return { instance, url };
 }
@@ -275,8 +292,8 @@ const vboxManage = () => (process.platform === 'win32' ? 'C:\\Program Files\\Ora
 
 /** Current state of an instance this app created, read from Docker or VirtualBox, never assumed. */
 export async function instanceState(dataDir: string, i: Instance): Promise<'running' | 'stopped' | 'missing' | 'unknown'> {
-  if (i.target === 'docker') {
-    const r = await run('docker', [...composeArgs(dataDir, i.name), 'ps', '--all', '--format', '{{.State}}']);
+  if (i.target === 'docker' || i.target === 'docker-ssh') {
+    const r = await run('docker', [...composeArgs(dataDir, i.name), 'ps', '--all', '--format', '{{.State}}'], { env: dockerEnv(i), timeoutMs: 60_000 });
     if (r.code !== 0) return 'unknown';
     const s = r.stdout.trim();
     return !s ? 'missing' : /running/.test(s) ? 'running' : 'stopped';
@@ -295,15 +312,16 @@ export async function instanceAction(dataDir: string, name: string, action: Inst
   const i = list.find((x) => x.name === name);
   if (!i) return { ok: false, message: `${name} is not an instance this app created.` };
   let r: RunResult;
-  if (i.target === 'docker') {
+  if (i.target === 'docker' || i.target === 'docker-ssh') {
     const base = composeArgs(dataDir, name);
+    const env = dockerEnv(i);
     if (action === 'update') {
-      r = await run('docker', [...base, 'pull']);
-      if (r.code === 0) r = await run('docker', [...base, 'up', '-d']);
+      r = await run('docker', [...base, 'pull'], { env });
+      if (r.code === 0) r = await run('docker', [...base, 'up', '-d'], { env });
     } else if (action === 'remove') {
-      r = await run('docker', [...base, 'down', ...(deleteData ? ['--volumes'] : [])]);
+      r = await run('docker', [...base, 'down', ...(deleteData ? ['--volumes'] : [])], { env });
     } else {
-      r = await run('docker', [...base, action]);
+      r = await run('docker', [...base, action], { env });
     }
   } else if (i.target === 'virtualbox') {
     const vbm = vboxManage();
@@ -330,8 +348,9 @@ export async function instanceAction(dataDir: string, name: string, action: Inst
 
 /** Follow an instance's log. Returns a function that stops following. */
 export function followLogs(dataDir: string, i: Instance, onLine: (line: string) => void): () => void {
-  if (i.target !== 'docker') { onLine('Live logs are available for Docker instances. For a VM, open its console in VirtualBox.'); return () => undefined; }
-  const p = spawn('docker', [...composeArgs(dataDir, i.name), 'logs', '--follow', '--tail', '200', '--no-color'], { windowsHide: true });
+  if (i.target !== 'docker' && i.target !== 'docker-ssh') { onLine('Live logs are available for Docker instances. For a VM, open its console in VirtualBox.'); return () => undefined; }
+  const env = dockerEnv(i);
+  const p = spawn('docker', [...composeArgs(dataDir, i.name), 'logs', '--follow', '--tail', '200', '--no-color'], { windowsHide: true, env: env ? { ...process.env, ...env } : process.env });
   let buf = '';
   const feed = (d: Buffer) => { buf += d.toString(); const lines = buf.split(/\r?\n/); buf = lines.pop() ?? ''; for (const l of lines) onLine(l); };
   p.stdout.on('data', feed); p.stderr.on('data', feed);

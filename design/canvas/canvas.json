@@ -348,7 +348,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Deploy app. Try: target cards, Deploy and Instances views; Tweaks dark, seed, motion.\nIn the app: Docker, VirtualBox and USB flash targets (not run on real hosts), instance list. Not yet: VMware, Raspberry Pi, Docker over SSH, instance actions.",
+   "text": "Deploy app. Try: target cards, Deploy and Instances views; Tweaks dark, seed, motion.\nIn the app: Docker, Docker on another computer over SSH (DOCKER_HOST=ssh, own key, no passwords), VirtualBox and USB flash targets, Raspberry Pi pointing to the SSH route, instance list with Manage, success and failure takeovers. Unit tested with a stand-in docker; not run against real hosts. Not yet: VMware, a flashable Pi image, instance duplicate.",
    "fill": "yellow",
    "page": "deploy"
   },

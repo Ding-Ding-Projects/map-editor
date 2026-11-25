@@ -4,7 +4,7 @@ import { enableClearControls } from '../ui/clearable.js';
 
 interface Step { label: string; state: 'waiting' | 'running' | 'done' | 'failed'; detail?: string }
 interface Disk { id: string; name: string; sizeBytes: number }
-interface Instance { name: string; target: string; version: string; port: number; host: string }
+interface Instance { name: string; target: string; version: string; port: number; host: string; sshHost?: string }
 declare global { interface Window { deploy: any } }
 const d = window.deploy;
 const esc = (s: unknown) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
@@ -12,10 +12,11 @@ document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark
 
 const TARGETS = [
   { id: 'docker', name: 'Docker', desc: 'Pulls the published image and starts it with Compose on this computer.' },
+  { id: 'ssh', name: 'Docker on another computer', desc: 'Uses Docker on a server or spare PC through SSH, with your own SSH key. No passwords are stored.' },
   { id: 'virtualbox', name: 'VirtualBox', desc: 'Imports the appliance image with a bridged adapter so your network can reach it.' },
   { id: 'vmware', name: 'VMware', desc: 'Not available in this version yet. See the roadmap.' },
   { id: 'usb', name: 'USB drive', desc: 'Writes the appliance image to a USB drive so a spare PC boots straight into Map Editor.' },
-  { id: 'pi', name: 'Raspberry Pi', desc: 'Not available yet: the arm64 image is not built in this version.' },
+  { id: 'pi', name: 'Raspberry Pi', desc: 'A Pi 4 or 5 running Docker can use Docker on another computer: the image runs on arm64. A ready-to-flash Pi image is not built yet.' },
 ] as const;
 let target: typeof TARGETS[number]['id'] = 'docker';
 let view: 'deploy' | 'instances' = 'deploy';
@@ -122,7 +123,7 @@ async function render() {
     for (const i of list) d.state(i.name).then((st: string) => { const el = main.querySelector(`[data-state="${CSS.escape(i.name)}"]`); if (el) el.textContent = STATE_LABEL[st] ?? st; });
     return;
   }
-  main.innerHTML = `<div class="editor"><section class="grid" style="flex: 999 1 560px">${TARGETS.map((t) => `<button class="world" data-t="${t.id}" aria-pressed="${t.id === target}" style="${t.id === target ? 'background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary)' : ''}"><span class="md-typescale-title-large">${esc(t.name)}</span><span>${esc(t.desc)}</span></button>`).join('')}</section>
+  main.innerHTML = `<div class="editor"><section class="grid" style="flex: 999 1 560px; align-self: flex-start">${TARGETS.map((t) => `<button class="world" data-t="${t.id}" aria-pressed="${t.id === target}" style="${t.id === target ? 'background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary)' : ''}"><span class="md-typescale-title-large">${esc(t.name)}</span><span>${esc(t.desc)}</span></button>`).join('')}</section>
     <aside class="card tool" id="form"></aside></div>`;
   main.querySelectorAll<HTMLElement>('[data-t]').forEach((b) => b.addEventListener('click', () => { target = b.dataset.t as typeof target; render(); }));
   const form = main.querySelector('#form')!;
@@ -148,6 +149,29 @@ async function render() {
       failTakeover({ what: `Docker could not start ${val('#name')}.`, error: r.error, steps,
         retry: portBusy ? { label: `Try port ${port + 1}`, run: () => { (form.querySelector('#port') as HTMLInputElement).value = String(port + 1); void deployNow(); } }
           : { label: 'Try again', run: () => void deployNow() } });
+    };
+    form.querySelector('#go')!.addEventListener('click', () => void deployNow());
+  } else if (target === 'ssh') {
+    form.innerHTML = `<h2 class="md-typescale-headline-large">Docker on another computer</h2>
+      <p class="muted">The other computer needs Docker with Compose and an SSH login that works without a password prompt (an SSH key in your agent). Docker connects with <code>DOCKER_HOST=ssh://…</code>; this app never sees your password or key.</p>
+      <md-outlined-text-field id="ssh" label="SSH login (user@host or user@host:port)" placeholder="pi@192.168.1.50"></md-outlined-text-field>
+      <md-outlined-text-field id="name" label="Instance name" value="map-editor-1"></md-outlined-text-field>
+      <md-outlined-text-field id="port" label="Port on that computer" type="number" value="8420"></md-outlined-text-field>
+      <md-outlined-text-field id="version" label="Version" value="latest"></md-outlined-text-field>
+      <md-outlined-text-field id="rworlds" label="Worlds folder on that computer" placeholder="/srv/minecraft/worlds"></md-outlined-text-field>
+      <md-filled-button id="go">Deploy</md-filled-button><div id="steps"></div>`;
+    const val = (id: string) => (form.querySelector(id) as HTMLInputElement).value.trim();
+    const deployNow = async (): Promise<void> => {
+      if (!val('#ssh') || !val('#rworlds')) return toast('Enter the SSH login and the worlds folder on that computer.', true);
+      let steps: Step[] = [];
+      d.onProgress((st: Step[]) => { steps = st; form.querySelector('#steps')!.innerHTML = stepsHtml(st); });
+      const t0 = Date.now();
+      const port = Number(val('#port'));
+      const r = await d.docker({ name: val('#name'), port, version: val('#version'), worlds: val('#rworlds'), sshHost: val('#ssh') });
+      if (!r.error) { celebrate(r.url, r.instance, Date.now() - t0); return; }
+      const portBusy = /allocated|address already in use/i.test(r.error) && port < 65535;
+      failTakeover({ what: `Docker on ${val('#ssh')} could not start ${val('#name')}.`, error: r.error, steps,
+        retry: portBusy ? { label: `Try port ${port + 1}`, run: () => { (form.querySelector('#port') as HTMLInputElement).value = String(port + 1); void deployNow(); } } : { label: 'Try again', run: () => void deployNow() } });
     };
     form.querySelector('#go')!.addEventListener('click', () => void deployNow());
   } else if (target === 'virtualbox') {
@@ -198,7 +222,9 @@ async function render() {
       failTakeover({ what: 'The drive was not written correctly.', error: r.message, steps: [], retry: { label: 'Choose again', run: () => { typed.value = ''; refresh(); sel.focus(); } } });
     });
   } else {
-    form.innerHTML = `<h2 class="md-typescale-headline-large">${esc(TARGETS.find((t) => t.id === target)!.name)}</h2><p>${esc(TARGETS.find((t) => t.id === target)!.desc)}</p>`;
+    form.innerHTML = `<h2 class="md-typescale-headline-large">${esc(TARGETS.find((t) => t.id === target)!.name)}</h2><p>${esc(TARGETS.find((t) => t.id === target)!.desc)}</p>
+      ${target === 'pi' ? '<md-filled-tonal-button id="to-ssh">Use Docker on another computer</md-filled-tonal-button>' : ''}`;
+    form.querySelector('#to-ssh')?.addEventListener('click', () => { target = 'ssh'; render(); });
   }
 }
 
@@ -236,7 +262,7 @@ function takeover(kind: 'ok' | 'fail', html: string, opener: Element | null): { 
 function celebrate(url: string, inst: Instance, tookMs = 0) {
   const { el, close } = takeover('ok', `<span class="tk-chip">Installed</span>
     <h1 id="tk-title">It is live.</h1>
-    <p class="tk-lead">${esc(inst.name)} is running ${inst.target === 'docker' ? 'in Docker on this computer' : 'in VirtualBox'} and answered its health check.</p>
+    <p class="tk-lead">${esc(inst.name)} is running ${inst.target === 'docker' ? 'in Docker on this computer' : inst.target === 'docker-ssh' ? `in Docker on ${inst.sshHost ?? inst.host}` : 'in VirtualBox'} and answered its health check.</p>
     <div class="tk-stats"><div><small>Link</small><code>${esc(url.replace(/^https?:\/\//, '').replace(/\/$/, ''))}</code></div><div><small>Version</small><b>${esc(inst.version)}</b></div><div><small>Took</small><b>${Math.max(1, Math.round(tookMs / 1000))} s</b></div></div>
     <div class="tk-actions"><md-filled-button id="tk-open">Open Map Editor</md-filled-button><md-outlined-button id="tk-copy">Copy link</md-outlined-button><md-text-button id="tk-close">Close (Esc)</md-text-button></div>
     <small class="tk-note" id="tk-count">Closes by itself in 8 s.</small>`, document.activeElement);
