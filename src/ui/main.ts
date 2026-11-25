@@ -1197,6 +1197,12 @@ async function extensionsPanel(view: HTMLElement) {
   host.innerHTML = data.list.length ? data.list.map(card).join('') : `<p class="muted">${esc(tx('extNone'))}</p>`;
   const cards = Array.from(host.querySelectorAll<HTMLElement>('[data-ext]'));
   const none = document.createElement('p'); none.className = 'muted'; none.hidden = true; host.after(none);
+  view.querySelector('.ext-export')?.remove();
+  const ex = exportButton(tx('export'), exportNames(), (f) => downloadRows(
+    data.list.filter((_e, i) => !cards[i]?.hidden).map((e) => ({ id: e.id, name: e.name, version: e.version, builtIn: e.builtIn, enabled: e.enabled, permissions: e.permissions.join(' '), commands: e.commands.map((c) => c.title).join('; ') })),
+    ['id', 'name', 'version', 'builtIn', 'enabled', 'permissions', 'commands'], f, tx('secExtensions'), 'map-editor-extensions'));
+  ex.classList.add('ext-export');
+  q.el.after(ex);
   let run = 0;
   q.onChange(async () => {
     const my = ++run;

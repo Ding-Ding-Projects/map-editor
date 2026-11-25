@@ -3,6 +3,7 @@ import '@material/web/all.js';
 import { enableClearControls } from '../ui/clearable.js';
 import { startTour } from '../ui/tour.js';
 import { showTakeover } from '../ui/takeover.js';
+import { downloadRows, exportButton } from '../ui/exporter.js';
 
 interface Step { label: string; state: 'waiting' | 'running' | 'done' | 'failed'; detail?: string }
 interface Disk { id: string; name: string; sizeBytes: number }
@@ -188,6 +189,8 @@ async function render() {
       ol.innerHTML = events.length ? events.map((e) => `<li><span class="act-kind">${/failed/.test(e.message) ? 'Failed' : 'Done'}</span><span class="act-text"><b>${esc(e.message)}</b><small>${esc(e.who)} · ${esc(new Date(e.time * 1000).toLocaleString('en-GB'))}${e.sha ? ` · <code>${esc(e.sha.slice(0, 7))}</code>` : ''}</small></span></li>`).join('') : '<li>Nothing yet.</li>';
     }).catch(() => undefined);
     main.querySelectorAll<HTMLElement>('[data-manage]').forEach((b) => b.addEventListener('click', () => { managing = b.dataset.manage; render(); }));
+    if (list.length) main.querySelector('section.card h1')!.after(exportButton('Export…', { csv: 'CSV (spreadsheets)', json: 'JSON', md: 'Markdown', html: 'HTML table' }, (f) => downloadRows(
+      list.map((i) => ({ name: i.name, target: i.target, version: i.version, link: `http://${i.host}:${i.port}/`, sshHost: i.sshHost ?? '' })), ['name', 'target', 'version', 'link', 'sshHost'], f, 'Map Editor instances', 'map-editor-instances')));
     for (const i of list) d.state(i.name).then((st: string) => { const el = main.querySelector(`[data-state="${CSS.escape(i.name)}"]`); if (el) el.textContent = STATE_LABEL[st] ?? st; });
     return;
   }

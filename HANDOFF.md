@@ -81,5 +81,5 @@ above). These checks still need a person, a browser session or hardware:
   - a separate data partition on the appliance;
   - the remaining built-in tools (file converter, Ollama suite, server manager, virtual disk manager);
   - per-element appearance and logo customization, and TinyMCE in other fields;
-  - ADHD and school modes, exports of the remaining lists, the element unlock ladder, and an authenticator.
+  - ADHD and school modes, the element unlock ladder, and an authenticator.
 - Code-signed extension sources are not planned: this project does not sign code.
