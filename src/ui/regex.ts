@@ -2,12 +2,13 @@
 // regex on for this field only. Query, raw pattern, flags, validation and mode stay in sync in both
 // directions, nothing is saved, and every pattern runs in a worker that is replaced after 250 ms.
 import { FLAGS, LIMITS, plainHits, type RegexRequest, type RegexResult } from './regex-core.js';
+import { clearButton } from './clearable.js';
 
 export type RegexText = (k: RegexKey, v?: Record<string, string | number>) => string;
 export type RegexKey =
   | 'rxToggle' | 'rxBuilder' | 'rxPattern' | 'rxFlags' | 'rxSample' | 'rxEngine' | 'rxInvalid' | 'rxTimeout' | 'rxLimit'
   | 'rxMatches' | 'rxNoMatch' | 'rxTruncated' | 'rxCopy' | 'rxExport' | 'rxCopied' | 'rxGroups' | 'rxInsert' | 'rxLiteral'
-  | 'rxFlagI' | 'rxFlagM' | 'rxFlagS' | 'rxFlagU' | 'rxClose';
+  | 'rxFlagI' | 'rxFlagM' | 'rxFlagS' | 'rxFlagU' | 'rxClose' | 'clearField';
 
 // ---- worker-backed evaluation ----
 let worker: Worker | undefined;
@@ -82,14 +83,19 @@ export function searchBox(id: string, label: string, t: RegexText, opts: { compa
   const input = q<HTMLInputElement>('input[type=search]');
   const rxBtn = q<HTMLButtonElement>('.sb-rx'), openBtn = q<HTMLButtonElement>('.sb-open'), panel = q<HTMLElement>('.sb-panel');
   const raw = q<HTMLTextAreaElement>('.sb-raw'), sample = q<HTMLTextAreaElement>('.sb-sample'), state = q<HTMLElement>('.sb-state');
+  const clearIn = clearButton(input, t('clearField', { field: label }));
+  const clearRaw = clearButton(raw, t('clearField', { field: t('rxPattern') }));
+  clearButton(sample, t('clearField', { field: t('rxSample') }));
+  clearButton(q<HTMLInputElement>('.sb-lit-in'), t('clearField', { field: t('rxLiteral') }));
+  const mirrored = () => { clearIn.hidden = !input.value; clearRaw.hidden = !raw.value; };
   let regex = false;
   const listeners: Array<() => void> = [];
   const flags = () => Array.from(el.querySelectorAll<HTMLInputElement>('[data-flag]')).filter((c) => c.checked).map((c) => c.dataset.flag).join('');
   const changed = () => { listeners.forEach((cb) => cb()); if (!panel.hidden) preview(); };
   const setRegex = (on: boolean) => { regex = on; rxBtn.setAttribute('aria-pressed', String(on)); el.classList.toggle('rx-on', on); if (!on) { state.textContent = ''; el.classList.remove('rx-bad'); } changed(); };
   rxBtn.addEventListener('click', () => setRegex(!regex));
-  input.addEventListener('input', () => { raw.value = input.value; changed(); });
-  raw.addEventListener('input', () => { input.value = raw.value; if (!regex) setRegex(true); else changed(); });
+  input.addEventListener('input', () => { raw.value = input.value; mirrored(); changed(); });
+  raw.addEventListener('input', () => { input.value = raw.value; mirrored(); if (!regex) setRegex(true); else changed(); });
   el.querySelectorAll<HTMLInputElement>('[data-flag]').forEach((c) => c.addEventListener('change', () => { if (!regex) setRegex(true); else changed(); }));
   const insert = (text: string) => {
     const s = raw.selectionStart ?? raw.value.length, e = raw.selectionEnd ?? s;
@@ -99,7 +105,7 @@ export function searchBox(id: string, label: string, t: RegexText, opts: { compa
   };
   el.querySelectorAll<HTMLElement>('[data-tok]').forEach((b) => b.addEventListener('click', () => insert(b.dataset.tok!.replace('…', ''))));
   q<HTMLButtonElement>('.sb-lit-add').addEventListener('click', () => { const v = q<HTMLInputElement>('.sb-lit-in').value; if (v) insert(v.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')); });
-  const toggle = (open: boolean) => { panel.hidden = !open; openBtn.setAttribute('aria-expanded', String(open)); if (open) { raw.value = input.value; preview(); raw.focus(); } else openBtn.focus(); };
+  const toggle = (open: boolean) => { panel.hidden = !open; openBtn.setAttribute('aria-expanded', String(open)); if (open) { raw.value = input.value; mirrored(); preview(); raw.focus(); } else openBtn.focus(); };
   openBtn.addEventListener('click', () => toggle(panel.hidden));
   q<HTMLButtonElement>('.sb-close').addEventListener('click', () => toggle(false));
   panel.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); toggle(false); } });

@@ -1,5 +1,6 @@
 // Deploy wizard page. Matches the "Deploy wizard and instances" design board.
 import '@material/web/all.js';
+import { enableClearControls } from '../ui/clearable.js';
 
 interface Step { label: string; state: 'waiting' | 'running' | 'done' | 'failed'; detail?: string }
 interface Disk { id: string; name: string; sizeBytes: number }
@@ -192,4 +193,5 @@ function celebrate(url: string, inst: Instance) {
   setTimeout(close, 10_000);
 }
 
+enableClearControls((field) => `Clear ${field}`);
 render();

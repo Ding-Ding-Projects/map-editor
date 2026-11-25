@@ -308,7 +308,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Settings. Try: section tabs, language buttons, switches, seed swatches; Tweaks dark, seed, motion.\nIn the app: section tabs, settings search across sections, language, both funny sliders, dark, theme colour picker, reduce motion, large text, export, import, settings history with Restore. Not yet: sounds and narration, schedules, locks, extensions, dim sum surprise, emoji switch, regex builder on the search.",
+   "text": "Settings. Try: section tabs, language buttons, switches, seed swatches; Tweaks dark, seed, motion.\nIn the app: section tabs, settings search across sections, language, both funny sliders, dark, theme colour picker, reduce motion, large text, sound effects with volume and a test sound, export, import, settings history with Restore, Clear buttons on every text field. Not yet: narration, schedules, locks, extensions, dim sum surprise, emoji switch, regex builder on the search.",
    "fill": "yellow",
    "page": "settings"
   },

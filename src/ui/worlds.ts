@@ -6,6 +6,7 @@ export interface WorldSummary { name: string; path: string; versionName?: string
 export interface WorldsContext {
   api: <T = any>(path: string, init?: { method?: string; body?: unknown }) => Promise<T>;
   notify: (text: string, error?: boolean, action?: { label: string; run: () => void }) => void;
+  play?: (cue: 'create' | 'success') => void;
   tx: (k: Key, v?: Record<string, string | number>) => string;
   esc: (s: unknown) => string;
   open: (w: WorldSummary) => Promise<void>;
@@ -103,7 +104,7 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
       let j: { name?: string; error?: string } = {};
       try { j = JSON.parse(xhr.responseText); } catch { /* not JSON */ }
       status.innerHTML = '';
-      if (xhr.status === 201) { c.notify(tx('uploaded', { name: j.name ?? file.name })); load(); }
+      if (xhr.status === 201) { c.notify(tx('uploaded', { name: j.name ?? file.name })); c.play?.('create'); load(); }
       else showError(j.error ?? `HTTP ${xhr.status}`);
     };
     xhr.onerror = () => { status.innerHTML = ''; showError(tx('offlineBody')); };
@@ -130,7 +131,7 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
       const name = (dlg.querySelector('[name=name]') as HTMLInputElement).value.trim();
       dlg.remove();
       if (rv !== 'ok' || !name) return;
-      try { const r = await c.api<{ name: string }>('/api/worlds/new', { method: 'POST', body: { name } }); c.notify(tx('created', { name: r.name })); load(); }
+      try { const r = await c.api<{ name: string }>('/api/worlds/new', { method: 'POST', body: { name } }); c.notify(tx('created', { name: r.name })); c.play?.('create'); load(); }
       catch (e) { c.notify((e as Error).message, true); }
     });
   });

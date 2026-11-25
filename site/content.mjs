@@ -66,6 +66,8 @@ export const features = [
     ], related: ['editing', 'edit-history', 'languages'] },
   { slug: 'appearance', title: 'Theme colours and the colour picker', group: 'Settings', summary: 'Pick any colour and the whole Material 3 theme follows it.',
     body: [
+      ['Sounds', 'Settings › Sounds turns short sound effects on or off and sets their volume. They play after an edit, an undo or restore, a new or uploaded world, and when something goes wrong, always together with the on-screen message. Turning them off silences them straight away.'],
+      ['Clearing a field', 'Every text box shows a small × once it has text in it. It empties that box only and puts the cursor back in it.'],
       ['Settings sections', 'Settings is split into Language and voice, Appearance, Comfort and focus, Backup and history, and Coming later. The search box at the top finds a setting in any section. Comfort and focus has Reduce motion and Large text.'],
       ['Backup and history', 'Export settings saves a .json file; Import settings reads one back and ignores anything it does not recognise. Every change is listed in Settings history with the old and new value, and Restore puts the old value back as a new change.'],
       ['Theme colour', 'Settings, Theme colour regenerates every Material 3 colour role from the colour you pick, in light and dark. Reset returns to the default green.'],

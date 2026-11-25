@@ -371,3 +371,15 @@ md-list-item[hidden] { display: none; }
 .h-filters .search-box { flex: 1 1 260px; }
 .palette-search .search-box { flex: 1; } .palette-search .sb-field { border: 0; height: 48px; padding: 0 4px; } .palette-search .sb-label { position: absolute; left: -9999px; }
 .palette-search .sb-field input { font-size: 18px; }
+
+/* ---------- clear controls ---------- */
+.clear-btn { --md-icon-button-icon-size: 20px; }
+.clear-btn[hidden], .clear-plain[hidden] { display: none; }
+.clear-plain { flex: none; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 16px; background: transparent; color: var(--md-sys-color-on-surface-variant); cursor: pointer; }
+.clear-plain:hover { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent); }
+.clear-plain:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 1px; }
+.sb-field { flex-direction: row; align-items: center; gap: 4px; flex-wrap: wrap; align-content: center; }
+.sb-field .sb-label { flex: 1 0 100%; }
+.sb-field input { flex: 1; }
+.sb-sub { position: relative; } .sb-sub .clear-plain { position: absolute; right: 6px; top: 24px; }
+.sb-lit .clear-plain { margin-left: -38px; }
