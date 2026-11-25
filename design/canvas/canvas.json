@@ -310,7 +310,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Editor workspace. Shows the panel layout: tab strip docked left with Close and Open every tab, map, Fill tool, floating Block palette group, floating toolbar, snackbar.\nTry: Tweaks dark, showFloat, showDrop, seed, motion; click tabs, tools, toolbar modes.\nIn the app: panels, map, the five tools, history, notes, language chips. Not in the app yet: Block palette group, toolbar modes, per-element appearance.",
+   "text": "Editor workspace. Shows the panel layout: tab strip docked left with Close and Open every tab, map, Fill tool, floating Block palette group, floating toolbar, snackbar.\nTry: Tweaks dark, showFloat, showDrop, seed, motion; click tabs, tools, toolbar modes.\nIn the app: panels, map, the five tools, history, notes, language chips. Also: the Blocks panel and the floating map toolbar with Pan, Select, Pick block, Measure and Go to. Not in the app yet: per-element appearance.",
    "fill": "yellow",
    "page": "editor"
   },
@@ -414,7 +414,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Guided Take a tour: coach card beside the real control with a highlight ring, Step N of M, Back, Skip this step, Next, Close. Try: Back, Skip, Next, Close; Tweaks dark, seed, motion.\nIn the app: whole-app tour plus one per destination (Worlds, Editor, History, Settings, About), offered once after onboarding, reachable from the ? Help menu, Settings \u203a Comfort and the palette, resumes where it stopped, focus moves to the control, Esc and arrow keys, screen-reader announcement, reduced motion, English and Cantonese. Steps whose control is off screen say so and offer to reveal it. The deploy app and the docs site have their own tours with the same card. Not yet: tours for the appliance console.",
+   "text": "Guided Take a tour: coach card beside the real control with a highlight ring, Step N of M, Back, Skip this step, Next, Close. Try: Back, Skip, Next, Close; Tweaks dark, seed, motion.\nIn the app: whole-app tour plus one per destination (Worlds, Editor, History, Settings, About), offered once after onboarding, reachable from the ? Help menu, Settings \u203a Comfort and the palette, resumes where it stopped, focus moves to the control, Esc and arrow keys, screen-reader announcement, reduced motion, English and Cantonese. Steps whose control is off screen say so and offer to reveal it. The deploy app and the docs site have their own tours with the same card. Also: the appliance console shows a four-step text tour under its version and link (a console has no pointer to anchor a coach card).",
    "fill": "yellow",
    "page": "help"
   },

@@ -82,6 +82,9 @@ describe('server', () => {
     expect(op.history.action).toBe('filled');
 
     const after = new Uint8Array(await (await call('/api/render?dim=overworld&cx=0&cz=0&w=1&h=1')).arrayBuffer());
+    expect((await (await call('/api/top?dim=overworld&x=3&z=4')).json()).top).toEqual({ y: 63, block: 'minecraft:water' });
+    expect((await (await call('/api/top?dim=overworld&x=-500&z=-500')).json()).top).toBeNull();
+    expect((await call('/api/top?dim=overworld&x=a&z=0')).status).toBe(400);
     expect([...after.slice(0, 3)]).toEqual([63, 104, 201]); // water, top-down
 
     const { entries } = await (await call('/api/history')).json();

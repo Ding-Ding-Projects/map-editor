@@ -55,7 +55,7 @@ body { margin: 0; background: var(--md-sys-color-surface); color: var(--md-sys-c
 .editor { display: flex; flex-wrap: wrap; gap: 8px; }
 .map { flex: 999 1 520px; min-height: 560px; position: relative; background: var(--md-sys-color-surface-container-lowest); }
 .map canvas { width: 100%; height: 100%; min-height: 560px; display: block; cursor: grab; touch-action: none; }
-.coords { position: absolute; right: 16px; bottom: 16px; padding: 8px 16px; border-radius: 20px; background: var(--md-sys-color-surface-container-high); font-family: 'Roboto Mono', monospace; }
+.coords { position: absolute; right: 16px; top: 72px; padding: 8px 16px; border-radius: 20px; background: var(--md-sys-color-surface-container-high); font-family: 'Roboto Mono', monospace; }
 .tool { flex: 1 1 320px; max-width: 380px; display: flex; flex-direction: column; gap: 16px; }
 .coords-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .toasts { position: fixed; left: 24px; bottom: 24px; display: flex; flex-direction: column; gap: 8px; z-index: 10; max-width: min(560px, calc(100vw - 48px)); }
@@ -554,3 +554,31 @@ md-list-item.picked { background: var(--md-sys-color-secondary-container); borde
 .sb-presets button:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; }
 .ask-text { margin: 0; max-width: 52ch; line-height: 1.5; }
 md-filled-button.danger { --md-filled-button-container-color: var(--md-sys-color-error); --md-filled-button-label-text-color: var(--md-sys-color-on-error); }
+
+/* Floating map toolbar (vibrant): modes for what a drag or click on the map does. */
+.map-toolbar { position: absolute; left: 0; right: 0; margin: 0 auto; width: fit-content; bottom: 20px; display: flex; align-items: center; gap: 4px; padding: 6px; border-radius: 28px; max-width: calc(100% - 32px); flex-wrap: wrap; justify-content: center;
+  background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); box-shadow: 0 6px 20px rgb(0 0 0 / .22); z-index: 2; }
+.map-toolbar button { all: unset; box-sizing: border-box; height: 40px; white-space: nowrap; padding: 0 16px; border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer; transition: background-color 180ms, border-radius 220ms; }
+.map-toolbar button:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
+.map-toolbar button[aria-pressed="true"] { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); border-radius: 12px; }
+.map-toolbar button:focus-visible { outline: 3px solid var(--md-sys-color-on-primary-container); outline-offset: 2px; }
+.mt-status { position: absolute; left: 0; right: 0; margin: 0 auto; width: fit-content; bottom: 80px; z-index: 2; font-size: 13px; padding: 8px 14px; border-radius: 16px; max-width: calc(100% - 48px);
+  background: var(--md-sys-color-inverse-surface); color: var(--md-sys-color-inverse-on-surface); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mt-status:empty { display: none; }
+canvas#map[data-mode="pan"] { cursor: grab; } canvas#map[data-mode="select"], canvas#map[data-mode="measure"] { cursor: crosshair; }
+canvas#map[data-mode="pick"] { cursor: copy; } canvas#map[data-mode="goto"] { cursor: pointer; }
+.goto-form { position: absolute; right: 16px; top: 120px; display: flex; gap: 8px; align-items: center; padding: 12px; border-radius: 20px; background: var(--md-sys-color-surface-container-high); box-shadow: 0 4px 16px rgb(0 0 0 / .2); z-index: 3; }
+.goto-form[hidden] { display: none; }
+.goto-form md-outlined-text-field { width: 120px; }
+@media (max-width: 720px) { .map-toolbar button { padding: 0 10px; } }
+@media (prefers-reduced-motion: reduce) { .map-toolbar button { transition: none; } }
+
+/* Block palette panel */
+.block-palette { padding: 16px; box-sizing: border-box; }
+.bp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.bp-swatch { all: unset; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px; border-radius: 16px; cursor: pointer; background: var(--md-sys-color-surface-container); text-align: center; }
+.bp-swatch span { width: 44px; height: 44px; border-radius: 12px; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .18); }
+.bp-swatch small { font-size: 12px; line-height: 1.2; color: var(--md-sys-color-on-surface-variant); }
+.bp-swatch.picked { background: var(--md-sys-color-tertiary-container); }
+.bp-swatch:hover { background: var(--md-sys-color-surface-container-high); }
+.bp-swatch:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; }

@@ -67,6 +67,13 @@ export class EditSession {
     });
   }
 
+  /** The highest non-air block in one column, as the top-down map shows it. */
+  async topBlock(dim: Dimension, x: number, z: number): Promise<{ y: number; block: string } | undefined> {
+    const c = await this.world.chunk(dim, Math.floor(x / 16), Math.floor(z / 16));
+    const top = c?.top(((x % 16) + 16) % 16, ((z % 16) + 16) % 16);
+    return top ? { y: top.y, block: top.block.name } : undefined;
+  }
+
   /** RGBA pixels (16x16 per chunk) for a rectangle of chunks, top-down. */
   async renderChunks(dim: Dimension, cx0: number, cz0: number, w: number, h: number): Promise<Uint8Array> {
     if (w * h > 64 * 64) throw new Error('Render area too large');

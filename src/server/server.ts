@@ -249,6 +249,13 @@ export async function createServer(opts: ServerOptions) {
       if (!DIMS.includes(dim)) throw new HttpError(400, 'Unknown dimension');
       return send(200, { info: session.world.info, chunks: await session.world.listChunks(dim) });
     }
+    if (p === '/api/top' && req.method === 'GET') {
+      const dim = (url.searchParams.get('dim') ?? 'overworld') as Dimension;
+      if (!DIMS.includes(dim)) throw new HttpError(400, 'Unknown dimension');
+      const q = url.searchParams;
+      const top = await session.topBlock(dim, int(q.get('x'), 'x', -30_000_000, 30_000_000), int(q.get('z'), 'z', -30_000_000, 30_000_000));
+      return send(200, { top: top ?? null });
+    }
     if (p === '/api/render' && req.method === 'GET') {
       const dim = (url.searchParams.get('dim') ?? 'overworld') as Dimension;
       if (!DIMS.includes(dim)) throw new HttpError(400, 'Unknown dimension');

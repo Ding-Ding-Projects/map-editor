@@ -87,6 +87,8 @@ export function mountWorkspace(host: HTMLElement, panels: Record<string, HTMLEle
     api.clear();
     api.addPanel({ id: 'map', component: 'map', title: titles.map });
     api.addPanel({ id: 'tool', component: 'tool', title: titles.tool, position: phone ? { referencePanel: 'map', direction: 'within' } : { referencePanel: 'map', direction: 'right' }, initialWidth: phone ? undefined : 380 });
+    // Block palette sits under the tools on wider screens so a block is one click from Run.
+    if (panels.blocks) api.addPanel({ id: 'blocks', component: 'blocks', title: titles.blocks, position: { referencePanel: 'tool', direction: phone ? 'within' : 'below' }, initialHeight: phone ? undefined : 280 });
     api.addPanel({ id: 'history', component: 'history', title: titles.history, position: { referencePanel: 'tool', direction: 'within' } });
     api.addPanel({ id: 'notes', component: 'notes', title: titles.notes, position: { referencePanel: 'tool', direction: 'within' } });
     // Wide screens: notes start as a floating group in the lower left of the map, so the tools keep their full height.
@@ -98,7 +100,7 @@ export function mountWorkspace(host: HTMLElement, panels: Record<string, HTMLEle
   }
   for (const id of Object.keys(titles)) api.getPanel(id)?.api.setTitle(titles[id]);
   api.onDidLayoutChange(() => { try { localStorage.setItem(key, JSON.stringify(api.toJSON())); } catch { /* storage blocked */ } });
-  if (phone) panelChips(host, api, titles, screen ? screen.arrange.map(([id]) => id) : ['map', 'tool', 'history', 'notes']);
+  if (phone) panelChips(host, api, titles, screen ? screen.arrange.map(([id]) => id) : ['map', 'tool', 'blocks', 'history', 'notes']);
   else if (host.previousElementSibling?.classList.contains('panel-chips')) host.previousElementSibling.remove();
   host.classList.toggle('layout-locked', locked);
   if (locked) for (const g of api.groups) g.locked = true;

@@ -26,6 +26,7 @@ let updSoonHidden = false;
 let busy = 0; // edits in progress; a restart waits until they finish
 import { colorPicker, applyRainbowSpeed } from './colorpicker.js';
 import { RAINBOW } from './color.js';
+import { blockColor } from '../core/colors.js';
 import { argbFromHex, themeFromSourceColor, applyTheme as applyM3Theme } from '@material/material-color-utilities';
 import { notesPanel as notesPanelImpl } from './notes.js';
 
@@ -205,6 +206,7 @@ function paletteCommands(): Command[] {
   const cmds: Command[] = [];
   for (const t of TABS) cmds.push({ id: `go-${t}`, label: `${tx('open')}: ${tx(t as Key)}`, where: 'Tabs', run: go(t) });
   if (world) for (const [o, k] of [['fill', 'F'], ['replace', 'R'], ['delete', 'D'], ['clone', 'C'], ['waterlog', 'W']] as const) cmds.push({ id: `tool-${o}`, label: tx(o), where: `${tx('editor')} › Tools`, keys: k, run: () => { go('editor')(); setTimeout(() => selectTool?.(o), 50); } });
+  if (world) for (const m of MAP_MODES) cmds.push({ id: `map-${m}`, label: tx(`mode_${m}` as Key), where: `${tx('editor')} › ${tx('mapTools')}`, keys: MAP_MODE_KEYS[m], run: () => { go('editor')(); setTimeout(() => setMapMode?.(m), 50); } });
   if (world) cmds.push({ id: 'undo', label: tx('undo'), where: tx('history'), keys: 'Ctrl+Z', run: () => undoLast() });
   cmds.push({ id: 'dark', label: tx('dark'), where: `${tx('settings')} › Appearance`, toggle: { get: () => prefs.dark, set: (v) => { prefs.dark = v; savePrefs(); applyTheme(); } } });
   cmds.push({ id: 'large-text', label: tx('largeText'), where: `${tx('settings')} › ${tx('secComfort')}`, toggle: { get: () => prefs.largeText, set: (v) => { prefs.largeText = v; savePrefs(); applyTheme(); } } });
@@ -529,6 +531,7 @@ function worldsScreen(view: HTMLElement) {
 
 // Map view: draws 16 px per chunk column region, pans with drag, selects with Shift+drag.
 let syncSel: (() => void) | undefined;
+let setMapMode: ((m: MapMode) => void) | undefined;
 let selectTool: ((op: string) => void) | undefined;
 
 async function undoLast() {
@@ -543,6 +546,15 @@ async function undoLast() {
 }
 const sel = { x1: 0, y1: 60, z1: 0, x2: 15, y2: 70, z2: 15 };
 let dim = 'overworld';
+// Map toolbar modes: what a drag or click on the map does. Shift+drag always selects.
+const MAP_MODES = ['pan', 'select', 'pick', 'measure', 'goto'] as const;
+type MapMode = typeof MAP_MODES[number];
+const MAP_MODE_KEYS: Record<MapMode, string> = { pan: 'H', select: 'S', pick: 'I', measure: 'M', goto: 'G' };
+let mapMode: MapMode = 'pan';
+/** Blocks in the Block palette panel; picked blocks are added to the front. */
+const PALETTE_BLOCKS = ['minecraft:stone_bricks', 'minecraft:oak_planks', 'minecraft:grass_block', 'minecraft:water', 'minecraft:sand', 'minecraft:glass', 'minecraft:deepslate', 'minecraft:cherry_leaves',
+  'minecraft:stone', 'minecraft:dirt', 'minecraft:cobblestone', 'minecraft:gold_block', 'minecraft:lava', 'minecraft:snow_block', 'minecraft:spruce_planks', 'minecraft:air'];
+let pickedBlocks: string[] = [];
 async function editorView(view: HTMLElement): Promise<void> {
   if (!world) { prefs.tab = 'worlds'; return render(); }
   const root = document.createElement('div');
@@ -551,7 +563,12 @@ async function editorView(view: HTMLElement): Promise<void> {
         <md-chip-set aria-label="Dimension">${(world.dimensions?.length ? world.dimensions : ['overworld']).map((d) => `<md-filter-chip data-dim="${d}" label="${esc(tx(d as Key))}" ${d === dim ? 'selected' : ''}></md-filter-chip>`).join('')}</md-chip-set>
         <span class="spacer"></span><md-filled-tonal-button id="undo" title="Ctrl+Z">${esc(tx('undo'))}</md-filled-tonal-button></div>
       <canvas id="map" role="img" aria-label="Top-down map"></canvas>
-      <div class="coords md-typescale-body-small" id="coords">x 0 · z 0</div></section>
+      <div class="coords md-typescale-body-small" id="coords">x 0 · z 0</div>
+      <div class="map-toolbar" role="toolbar" aria-label="${esc(tx('mapTools'))}">
+        ${MAP_MODES.map((m) => `<button type="button" data-mode="${m}" aria-pressed="${m === mapMode}" title="${esc(tx(`mode_${m}` as Key))} (${MAP_MODE_KEYS[m]})">${esc(tx(`mode_${m}` as Key))}</button>`).join('')}
+      </div>
+      <div class="mt-status" id="mt-status" aria-live="polite"></div>
+      <form class="goto-form" id="goto" hidden><md-outlined-text-field name="gx" type="number" label="x"></md-outlined-text-field><md-outlined-text-field name="gz" type="number" label="z"></md-outlined-text-field><md-filled-button type="submit">${esc(tx('mode_goto'))}</md-filled-button><md-text-button type="button" id="goto-x">${esc(tx('close'))}</md-text-button></form></section>
     <aside class="card tool">
       <md-chip-set id="ops" role="radiogroup" aria-label="Tools">${(['fill', 'replace', 'delete', 'clone', 'waterlog'] as const).map((o, i) => `<md-filter-chip data-op="${o}" label="${esc(tx(o))}" ${i === 0 ? 'selected' : ''}></md-filter-chip>`).join('')}</md-chip-set>
       <div class="coords-grid">${(['x1', 'y1', 'z1', 'x2', 'y2', 'z2'] as const).map((k) => `<md-outlined-text-field type="number" label="${k}" name="${k}" value="${sel[k]}"></md-outlined-text-field>`).join('')}</div>
@@ -644,24 +661,106 @@ async function editorView(view: HTMLElement): Promise<void> {
     } catch (err) { notify((err as Error).message, true); }
     drawSel();
   }
-  let drag: { x: number; y: number; ox: number; oz: number; select: boolean } | undefined;
+  let drag: { x: number; y: number; ox: number; oz: number; kind: 'pan' | 'select' | 'measure'; bx: number; bz: number } | undefined;
+  let measure: { x1: number; z1: number; x2: number; z2: number } | undefined;
+  const status = mapEl.querySelector<HTMLElement>('#mt-status')!;
   const toBlock = (e: PointerEvent) => { const r = canvas.getBoundingClientRect(); return { x: Math.floor((e.clientX - r.left) / scale + originX), z: Math.floor((e.clientY - r.top) / scale + originZ) }; };
-  canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); const b = toBlock(e); drag = { x: e.clientX, y: e.clientY, ox: originX, oz: originZ, select: e.shiftKey }; if (e.shiftKey) { sel.x1 = sel.x2 = b.x; sel.z1 = sel.z2 = b.z; } });
+  const drawMeasure = () => {
+    if (!measure) return;
+    const p = (x: number, z: number) => [(x + 0.5 - originX) * scale, (z + 0.5 - originZ) * scale] as const;
+    const [ax, az] = p(measure.x1, measure.z1), [bx, bz] = p(measure.x2, measure.z2);
+    ctx.save(); ctx.setLineDash([6, 4]); ctx.lineWidth = 2;
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--md-sys-color-tertiary') || '#fff';
+    ctx.beginPath(); ctx.moveTo(ax, az); ctx.lineTo(bx, bz); ctx.stroke(); ctx.restore();
+  };
+  const measureText = () => {
+    if (!measure) return '';
+    const dx = Math.abs(measure.x2 - measure.x1), dz = Math.abs(measure.z2 - measure.z1);
+    return tx('measureResult', { dx, dz, d: Math.hypot(dx, dz).toFixed(1), area: ((dx + 1) * (dz + 1)).toLocaleString('en') });
+  };
+  canvas.addEventListener('pointerdown', (e) => {
+    canvas.setPointerCapture(e.pointerId);
+    const b = toBlock(e);
+    if (mapMode === 'pick' && !e.shiftKey) { void pickAt(b.x, b.z); return; }
+    if (mapMode === 'goto' && !e.shiftKey) { openGoto(b.x, b.z); return; }
+    const kind = e.shiftKey || mapMode === 'select' ? 'select' : mapMode === 'measure' ? 'measure' : 'pan';
+    drag = { x: e.clientX, y: e.clientY, ox: originX, oz: originZ, kind, bx: b.x, bz: b.z };
+    if (kind === 'select') { sel.x1 = sel.x2 = b.x; sel.z1 = sel.z2 = b.z; }
+    if (kind === 'measure') { measure = { x1: b.x, z1: b.z, x2: b.x, z2: b.z }; status.textContent = measureText(); }
+  });
   canvas.addEventListener('pointermove', (e) => {
     const b = toBlock(e); mapEl.querySelector('#coords')!.textContent = `x ${b.x} · z ${b.z} · chunk ${Math.floor(b.x / 16)}, ${Math.floor(b.z / 16)}`;
     if (!drag) return;
-    if (drag.select) { sel.x2 = b.x; sel.z2 = b.z; size(); drawSel(); }
-    else { originX = drag.ox - (e.clientX - drag.x) / scale; originZ = drag.oz - (e.clientY - drag.y) / scale; drawSel(); }
+    if (drag.kind === 'select') { sel.x2 = b.x; sel.z2 = b.z; size(); drawSel(); }
+    else if (drag.kind === 'measure') { measure = { ...measure!, x2: b.x, z2: b.z }; drawSel(); drawMeasure(); status.textContent = measureText(); }
+    else { originX = drag.ox - (e.clientX - drag.x) / scale; originZ = drag.oz - (e.clientY - drag.y) / scale; drawSel(); drawMeasure(); }
   });
-  canvas.addEventListener('pointerup', () => { const was = drag; drag = undefined; if (was && !was.select) drawMap(); else syncSel?.(); });
+  canvas.addEventListener('pointerup', () => { const was = drag; drag = undefined; if (was?.kind === 'pan') drawMap(); else if (was?.kind === 'select') syncSel?.(); });
+  async function pickAt(x: number, z: number) {
+    try {
+      const { top } = await api<{ top: { y: number; block: string } | null }>(`/api/top?dim=${dim}&x=${x}&z=${z}`);
+      if (!top) { status.textContent = tx('pickNone', { x, z }); return; }
+      useBlock(top.block);
+      pickedBlocks = [top.block, ...pickedBlocks.filter((b) => b !== top.block)].slice(0, 8);
+      drawPalette();
+      status.textContent = tx('picked', { block: top.block, x, y: top.y, z });
+      play('create');
+    } catch (err) { notify((err as Error).message, true); }
+  }
+  /** Put a block into the current tool: Fill's block, or Replace's "to". Other tools switch to Fill. */
+  function useBlock(block: string) {
+    if (op !== 'fill' && op !== 'replace') { setOp('fill'); toolEl.querySelectorAll<HTMLElement & { selected: boolean }>('[data-op]').forEach((c) => { c.selected = c.dataset.op === 'fill'; }); }
+    const f = fields.querySelector<HTMLInputElement>(op === 'replace' ? '[name=to]' : '[name=block]');
+    if (f) f.value = block;
+  }
+  const gotoForm = mapEl.querySelector<HTMLFormElement>('#goto')!;
+  function openGoto(x?: number, z?: number) {
+    gotoForm.hidden = false;
+    const gx = gotoForm.querySelector<HTMLInputElement>('[name=gx]')!, gz = gotoForm.querySelector<HTMLInputElement>('[name=gz]')!;
+    if (x !== undefined) gx.value = String(x);
+    if (z !== undefined) gz.value = String(z);
+    gx.focus();
+  }
+  gotoForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const x = Number(gotoForm.querySelector<HTMLInputElement>('[name=gx]')!.value), z = Number(gotoForm.querySelector<HTMLInputElement>('[name=gz]')!.value);
+    if (!Number.isFinite(x) || !Number.isFinite(z) || Math.abs(x) > 30_000_000 || Math.abs(z) > 30_000_000) { status.textContent = tx('gotoBad'); return; }
+    const rect = canvas.getBoundingClientRect();
+    originX = x - rect.width / scale / 2; originZ = z - rect.height / scale / 2;
+    status.textContent = tx('gotoDone', { x: Math.trunc(x), z: Math.trunc(z) });
+    gotoForm.hidden = true; void drawMap();
+  });
+  gotoForm.querySelector('#goto-x')!.addEventListener('click', () => { gotoForm.hidden = true; });
+  gotoForm.querySelector('md-filled-button')!.addEventListener('click', () => gotoForm.requestSubmit());
+  const setMode = (m: MapMode) => {
+    mapMode = m;
+    mapEl.querySelectorAll<HTMLElement>('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+    canvas.dataset.mode = m;
+    if (m !== 'measure') { measure = undefined; drawSel(); }
+    status.textContent = tx(`modeHint_${m}` as Key);
+    if (m === 'goto') openGoto(); else gotoForm.hidden = true;
+  };
+  mapEl.querySelectorAll<HTMLElement>('[data-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode as MapMode)));
+  setMapMode = setMode;
+  canvas.dataset.mode = mapMode;
   canvas.addEventListener('wheel', (e) => { e.preventDefault(); scale = Math.max(0.5, Math.min(16, scale * (e.deltaY < 0 ? 1.25 : 0.8))); drawMap(); }, { passive: false });
   syncSel = () => toolEl.querySelectorAll<HTMLInputElement>('.coords-grid md-outlined-text-field').forEach((f) => { f.value = String((sel as Record<string, number>)[f.getAttribute('name')!]); });
   new ResizeObserver(async () => { if (fitPending && canvas.clientWidth > 0) { fitPending = false; await fitToWorld(); } drawMap(); }).observe(canvas);
   const histEl = document.createElement('div'); histEl.className = 'panel-scroll';
   const notesEl = document.createElement('div'); notesEl.className = 'panel-scroll';
+  const blocksEl = document.createElement('section'); blocksEl.className = 'panel-scroll block-palette';
+  function drawPalette() {
+    const list = [...pickedBlocks, ...PALETTE_BLOCKS.filter((b) => !pickedBlocks.includes(b))];
+    blocksEl.innerHTML = `<p class="muted">${esc(tx('paletteNote'))}</p><div class="bp-grid" role="list">${list.map((b) => {
+      const [r, g, bl] = blockColor(b);
+      return `<button type="button" role="listitem" class="bp-swatch${pickedBlocks.includes(b) ? ' picked' : ''}" data-pb="${esc(b)}" title="${esc(b)}" aria-label="${esc(b.slice(10))}"><span style="background: rgb(${r} ${g} ${bl})"></span><small>${esc(b.slice(10).replace(/_/g, ' '))}</small></button>`;
+    }).join('')}</div>`;
+    blocksEl.querySelectorAll<HTMLElement>('[data-pb]').forEach((sw) => sw.addEventListener('click', () => { useBlock(sw.dataset.pb!); status.textContent = tx('blockSet', { block: sw.dataset.pb! }); }));
+  }
+  drawPalette();
   view.innerHTML = '<div id="dock" class="dock"></div>';
-  mountWorkspace(view.querySelector<HTMLElement>('#dock')!, { map: mapEl, tool: toolEl, history: histEl, notes: notesEl }, {
-    map: tx('editor'), tool: tx('fill'), history: tx('history'), notes: tx('notes'),
+  mountWorkspace(view.querySelector<HTMLElement>('#dock')!, { map: mapEl, tool: toolEl, blocks: blocksEl, history: histEl, notes: notesEl }, {
+    map: tx('editor'), tool: tx('fill'), blocks: tx('blockPalette'), history: tx('history'), notes: tx('notes'),
   }, prefs.dark, undefined, prefs.layoutLocked);
   historyView(histEl, true);
   document.addEventListener('history-changed', () => { if (histEl.isConnected) historyView(histEl, true); });
@@ -1095,7 +1194,9 @@ document.addEventListener('keydown', (e) => {
   if (!e.ctrlKey && !e.metaKey && !e.altKey && prefs.tab === 'editor' && selectTool) {
     const map: Record<string, string> = { f: 'fill', r: 'replace', d: 'delete', c: 'clone', w: 'waterlog' };
     const op = map[e.key.toLowerCase()];
-    if (op) { e.preventDefault(); selectTool(op); }
+    if (op) { e.preventDefault(); selectTool(op); return; }
+    const mode = MAP_MODES.find((m) => MAP_MODE_KEYS[m].toLowerCase() === e.key.toLowerCase());
+    if (mode && setMapMode) { e.preventDefault(); setMapMode(mode); }
   }
 });
 

@@ -58,6 +58,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 ## Phase 6: required interface features still open
 
 - [x] First-run wizard: language and both funny levels, comfort, theme colour, then the worlds screen; Back, Next, Skip; resumes after a reload (checked in headless Chrome).
+- [x] Map toolbar floating over the map with Pan, Select, Pick block, Measure and Go to (keys H S I M G, also in the palette), and a Blocks panel of colour swatches that feeds Fill and Replace, with picked blocks first; server test for the top-block lookup, checked in headless Chrome.
 - [x] Editor: Nether and End chips for the dimensions a world has, Undo button and Ctrl+Z (adds a restore entry), block suggestions, tool hotkeys F R D C W, map fitted to the world on open, selection starting at spawn.
 
 - [x] dockview workspace for the editor (map, tools, history, notes; docking, tabbing, saved layout), checked in headless Chrome.

@@ -66,6 +66,8 @@ export const features = [
   { slug: 'editing', title: 'Editing worlds', group: 'Using the editor', summary: 'Top-down map, selections, and the fill, replace, delete, clone and waterlog tools.',
     body: [
       ['The map', 'The Map panel shows each column from above, shaded by height. Drag to pan, scroll to zoom, and hold Shift while dragging to draw a selection. The coordinates under the pointer are shown in the corner.'],
+      ['Map toolbar', 'The toolbar floating over the map sets what a drag or click does: Pan (H) moves the map, Select (S) draws the selection, Pick block (I) uses the block on top of the column you click in Fill (or as Replace’s new block), Measure (M) shows the distance between two points and the area between them, and Go to (G) centres the map on an x and z you type or click. Shift+drag always selects. The line above the toolbar says what happened.'],
+      ['Block palette', 'The Blocks panel shows colour swatches for common blocks; choose one to use it in Fill, or as the new block in Replace. Blocks you pick from the map come first.'],
       ['Tools', 'Fill sets every block in the selection. Replace swaps one block for another. Delete blocks sets air. Clone copies the selection to a destination corner and is safe when source and destination overlap. Waterlog sets waterlogged on blocks that support it.'],
       ['Limits', 'One operation can change up to 16,777,216 blocks so a typo cannot hang the editor. Blocks in chunks that do not exist yet are skipped and reported, never invented.'],
       ['Dimensions and undo', 'Chips at the top of the map switch between the dimensions the world has. Undo, or Ctrl+Z, rolls back the last edit.'],
