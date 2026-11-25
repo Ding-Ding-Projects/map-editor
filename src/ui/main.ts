@@ -158,6 +158,7 @@ function paletteCommands(): Command[] {
   cmds.push({ id: 'large-text', label: tx('largeText'), where: `${tx('settings')} › ${tx('secComfort')}`, toggle: { get: () => prefs.largeText, set: (v) => { prefs.largeText = v; savePrefs(); applyTheme(); } } });
   cmds.push({ id: 'sounds', label: tx('soundEffects'), where: `${tx('settings')} › ${tx('secSounds')}`, toggle: { get: () => prefs.sounds, set: (v) => { prefs.sounds = v; savePrefs(); applyTheme(); } } });
   cmds.push({ id: 'check-updates', label: tx('updCheck'), where: `${tx('about')}`, run: () => { void checkForUpdates(); } });
+  for (const e of extCache) if (e.enabled) for (const c of e.commands) cmds.push({ id: `ext-${e.id}-${c.id}`, label: c.title, where: `${tx('secExtensions')} › ${e.name}`, run: () => { void runExtension(e.id, c.id); } });
   cmds.push({ id: 'dim-sum', label: tx('dimSumNow'), where: `${tx('settings')} › ${tx('secAppearance')}`, run: () => { void dimSumSurprise(true); } });
   cmds.push({ id: 'dim-sum-toggle', label: tx('dimSum'), where: `${tx('settings')} › ${tx('secAppearance')}`, toggle: { get: () => prefs.dimSum, set: (v) => { prefs.dimSum = v; savePrefs(); } } });
   cmds.push({ id: 'motion', label: tx('reduceMotion'), where: `${tx('settings')} › Appearance`, toggle: { get: () => prefs.reduceMotion, set: (v) => { prefs.reduceMotion = v; savePrefs(); applyTheme(); } } });
@@ -215,6 +216,24 @@ const TAB_ICON: Record<Tab, string> = {
 
 // Dim sum surprise: a 1 in 10 chance per start once setup is done, never during setup or an error.
 // Non-blocking corner card that closes itself after 9 s (held while hovered or focused).
+// Extension commands appear in the palette once their extension is switched on.
+type ExtInfo = { id: string; name: string; version: string; description?: string; builtIn: boolean; enabled: boolean; needsConsent: boolean; error?: string; permissions: string[]; permissionKey?: string; commands: Array<{ id: string; title: string }> };
+let extCache: ExtInfo[] = [];
+async function loadExtensions(): Promise<{ list: ExtInfo[]; perms: Record<string, string> }> {
+  const r = await api<{ extensions: ExtInfo[]; permissions: Record<string, string> }>('/api/extensions');
+  extCache = r.extensions;
+  return { list: r.extensions, perms: r.permissions };
+}
+async function runExtension(id: string, command: string) {
+  if (!world) { notify(tx('extNeedsWorld'), true); return; }
+  try {
+    const r = await api<{ message: string; applied: number; changed: number }>('/api/extensions/run', { method: 'POST', body: { id, command, selection: { dimension: dim, box: { ...sel } } } });
+    if (r.applied) { play('success'); document.dispatchEvent(new Event('history-changed')); }
+    notify(r.applied ? tx('extApplied', { message: r.message, n: r.changed.toLocaleString('en') }) : r.message || tx('extDone'), false, r.applied ? { label: tx('history'), run: () => { prefs.tab = 'history'; render(); } } : undefined);
+    if (r.applied && prefs.tab === 'editor') render();
+  } catch (e) { notify((e as Error).message, true); }
+}
+
 let surprised = false;
 async function dimSumSurprise(force = false) {
   if (!force && (surprised || !prefs.dimSum || !user || !prefs.onboarded || Math.random() >= 0.1)) return;
@@ -356,6 +375,7 @@ function authView(view: HTMLElement) {
     const val = (n: string) => (f.querySelector(`[name=${n}]`) as HTMLInputElement).value;
     try {
       user = await api(owner ? '/api/auth/register' : '/api/auth/login', { method: 'POST', body: { name: val('name'), password: val('password') } });
+      loadExtensions().catch(() => undefined);
       hasOwner = true; render();
     } catch (err) { notify((err as Error).message, true); if (/owner/.test((err as Error).message)) { hasOwner = true; render(); } }
   });
@@ -557,7 +577,54 @@ async function historyView(view: HTMLElement): Promise<void> {
   } catch (err) { notify((err as Error).message, true); }
 }
 
-const SECTIONS = [['language', 'secLanguage'], ['appearance', 'secAppearance'], ['comfort', 'secComfort'], ['sounds', 'secSounds'], ['backup', 'secBackup'], ['later', 'secLater']] as const;
+const SECTIONS = [['language', 'secLanguage'], ['appearance', 'secAppearance'], ['comfort', 'secComfort'], ['sounds', 'secSounds'], ['extensions', 'secExtensions'], ['backup', 'secBackup'], ['later', 'secLater']] as const;
+
+async function extensionsPanel(view: HTMLElement) {
+  const host = view.querySelector<HTMLElement>('#ext-list');
+  if (!host) return;
+  let data: { list: ExtInfo[]; perms: Record<string, string> };
+  try { data = await loadExtensions(); } catch (e) { host.innerHTML = `<p class="muted">${esc((e as Error).message)}</p>`; return; }
+  const q = searchBox('extension-search', tx('searchExtensions'), rx, { compact: true });
+  view.querySelector('#ext-q')?.replaceWith(q.el);
+  const card = (e: ExtInfo) => `<article class="ext-card${e.error ? ' broken' : ''}" data-ext="${esc(e.id)}">
+      <header><span class="ext-icon" aria-hidden="true">${esc(e.name.slice(0, 1).toUpperCase())}</span><span class="ext-title"><b>${esc(e.name)}</b><small>${esc(e.version)} · ${esc(e.builtIn ? tx('extBuiltIn') : tx('extYours'))}${e.needsConsent && !e.error ? ` · ${esc(tx('extNeedsConsent'))}` : ''}</small></span>
+      ${e.error ? '' : `<md-switch data-ext-toggle="${esc(e.id)}" ${e.enabled ? 'selected' : ''} aria-label="${esc(e.name)}"></md-switch>`}</header>
+      ${e.error ? `<p class="ext-error" role="alert">${esc(e.error)}</p>` : `<p>${esc(e.description ?? '')}</p>
+      <ul class="ext-perms">${e.permissions.map((p) => `<li>${esc(data.perms[p] ?? p)}</li>`).join('')}</ul>
+      <div class="ext-cmds">${e.commands.map((c) => `<md-assist-chip data-ext-run="${esc(e.id)}" data-cmd="${esc(c.id)}" label="${esc(c.title)}" ${e.enabled ? '' : 'disabled'}></md-assist-chip>`).join('')}</div>`}
+    </article>`;
+  host.innerHTML = data.list.length ? data.list.map(card).join('') : `<p class="muted">${esc(tx('extNone'))}</p>`;
+  const cards = Array.from(host.querySelectorAll<HTMLElement>('[data-ext]'));
+  const none = document.createElement('p'); none.className = 'muted'; none.hidden = true; host.after(none);
+  let run = 0;
+  q.onChange(async () => {
+    const my = ++run;
+    const hits = await q.filter(data.list.map((e) => `${e.name} ${e.description ?? ''} ${e.commands.map((c) => c.title).join(' ')} ${e.permissions.join(' ')}`)) ?? data.list.map(() => false);
+    if (my !== run) return;
+    cards.forEach((c, i) => { c.hidden = !hits[i]; });
+    none.hidden = hits.some(Boolean); none.textContent = tx('noMatches');
+  });
+  host.querySelectorAll<HTMLElement & { selected: boolean }>('[data-ext-toggle]').forEach((sw) => sw.addEventListener('change', async () => {
+    const e = data.list.find((x) => x.id === sw.dataset.extToggle)!;
+    if (!sw.selected) { await api('/api/extensions/enable', { method: 'POST', body: { id: e.id, enabled: false } }).catch((err) => notify((err as Error).message, true)); void extensionsPanel(view); return; }
+    sw.selected = false; // only switched on after the user allows the permissions
+    const dlg = document.createElement('md-dialog') as HTMLElement & { show: () => void; close: () => void; returnValue: string };
+    dlg.innerHTML = `<div slot="headline">${esc(tx('extAllowTitle', { name: e.name }))}</div>
+      <form slot="content" id="ext-consent" method="dialog"><p>${esc(tx('extAllowBody'))}</p><ul class="ext-perms">${e.permissions.map((p) => `<li>${esc(data.perms[p] ?? p)}</li>`).join('') || `<li>${esc(tx('extNoPerms'))}</li>`}</ul></form>
+      <div slot="actions"><md-text-button form="ext-consent" value="cancel">${esc(tx('cancel'))}</md-text-button><md-filled-button form="ext-consent" value="allow">${esc(tx('extAllow'))}</md-filled-button></div>`;
+    document.body.append(dlg);
+    dlg.addEventListener('closed', async () => {
+      const ok = dlg.returnValue === 'allow';
+      dlg.remove();
+      if (!ok) { sw.focus(); return; }
+      try { await api('/api/extensions/enable', { method: 'POST', body: { id: e.id, enabled: true, permissionKey: e.permissionKey } }); notify(tx('extOn', { name: e.name })); }
+      catch (err) { notify((err as Error).message, true); }
+      void extensionsPanel(view);
+    });
+    dlg.show();
+  }));
+  host.querySelectorAll<HTMLElement>('[data-ext-run]').forEach((c) => c.addEventListener('click', () => { void runExtension(c.dataset.extRun!, c.dataset.cmd!); }));
+}
 
 function settingsView(view: HTMLElement) {
   const sec = SECTIONS.some(([id]) => id === prefs.settingsSection) ? prefs.settingsSection : 'language';
@@ -578,6 +645,7 @@ function settingsView(view: HTMLElement) {
     sounds: `${sw('snd', 'soundEffects', 'soundEffectsNote', prefs.sounds)}
       <label class="set-slider" data-find="${esc(tx('soundVolume'))}"><span><b>${esc(tx('soundVolume'))}</b><em id="vol-n">${prefs.soundVolume}%</em></span><md-slider id="vol" min="0" max="100" step="10" labeled value="${prefs.soundVolume}" aria-label="${esc(tx('soundVolume'))}"></md-slider></label>
       <div class="row-actions" data-find="${esc(tx('soundTry'))}"><md-outlined-button id="snd-try">${esc(tx('soundTry'))}</md-outlined-button></div>`,
+    extensions: `<p data-find="${esc(tx('extIntro'))}">${esc(tx('extIntro'))}</p><div id="ext-q"></div><div class="ext-list" id="ext-list" aria-live="polite"><md-linear-progress indeterminate></md-linear-progress></div>`,
     later: `<p data-find="${esc(tx('laterList'))}">${esc(tx('laterList'))}</p>`,
   };
   view.innerHTML = `<div class="settings">
@@ -611,6 +679,7 @@ function settingsView(view: HTMLElement) {
     });
     const none = view.querySelector<HTMLElement>('#ss-none')!; none.hidden = !q || count > 0; none.textContent = tx('noSettingMatch', { q });
   });
+  if (sec === 'extensions' || ss.query()) void extensionsPanel(view);
   view.querySelectorAll<HTMLElement>('[data-set-lang]').forEach((b) => b.addEventListener('click', () => { prefs.lang = b.dataset.setLang as Prefs['lang']; savePrefs(); applyTheme(); render(); }));
   const num = (id: string) => Number((view.querySelector(id) as HTMLInputElement).value);
   const sel = (e: Event) => (e.target as HTMLElement & { selected: boolean }).selected;
@@ -724,4 +793,5 @@ document.addEventListener('keydown', (e) => {
   try { const s = await api<{ hasOwner: boolean; user: { name: string } | null }>('/api/auth/state'); hasOwner = s.hasOwner; user = s.user; } catch (e) { notify((e as Error).message, true); }
   render();
   setTimeout(() => { void dimSumSurprise(); }, 2500);
+  if (user) loadExtensions().catch(() => undefined);
 })();

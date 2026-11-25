@@ -19,6 +19,7 @@ LABEL org.opencontainers.image.title="Map Editor" \
 WORKDIR /app
 COPY --from=build /src/dist/server ./server
 COPY --from=build /src/dist/ui ./ui
+COPY --from=build /src/dist/extensions ./extensions
 COPY --from=build /src/dist/build-info.json ./build-info.json
 RUN mkdir -p /data /worlds && chown node:node /data
 USER node

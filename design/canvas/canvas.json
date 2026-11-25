@@ -111,6 +111,16 @@
    "page": "settings",
    "is_interactive": true
   },
+  "Extensions.dc.html": {
+   "x": 3120,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Extensions manager and permission consent",
+   "expand": "fill",
+   "page": "settings",
+   "is_interactive": true
+  },
   "Palette.dc.html": {
    "x": 0,
    "y": 0,
@@ -183,6 +193,7 @@
   "History.dc.html",
   "Settings.dc.html",
   "RegexBuilder.dc.html",
+  "Extensions.dc.html",
   "Palette.dc.html",
   "Takeover.dc.html",
   "Phone.dc.html",
@@ -317,6 +328,14 @@
    "y": 0,
    "w": 420,
    "text": "Every search field in the app: plain text by default, .* turns regex on for that field only, the builder sits beside it. Try: .* switch, builder button, presets (Invalid and Too slow show the error states), insert tokens, flags; Tweaks dark, seed, motion.\nIn the app: settings, history, changelog and palette searches; worker-isolated ECMAScript engine with 250 ms stop; raw pattern and field synced both ways; flags i m s u; sample with highlights and capture groups; copy and export; nothing saved. Not yet: the board's preset chips (the app has a free-text literal insert instead), tab close-by-text actions.",
+   "fill": "yellow",
+   "page": "settings"
+  },
+  "n_extensions": {
+   "x": 4640,
+   "y": 0,
+   "w": 420,
+   "text": "Extensions manager in Settings. Try: switch Spawn platform on to see the consent dialog, Cancel or Allow; Tweaks dark, seed, motion.\nIn the app: manifest.json v1 per folder, out-of-process JSON-lines protocol, permissions world-info, selection, edit-world with consent tied to the exact set (changes ask again), 10 s and 1 MiB limits, clean environment with no secrets or paths, edits through the recorded history path, searchable manager with its own regex builder, palette commands, two built-in extensions, author article with Node and Python samples. Not yet: installing from a file or link, extension updates.",
    "fill": "yellow",
    "page": "settings"
   },

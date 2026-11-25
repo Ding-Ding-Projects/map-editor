@@ -1,0 +1,10 @@
+{
+  "manifestVersion": 1,
+  "id": "selection-report",
+  "name": "Selection report",
+  "version": "1.0.0",
+  "description": "Measures the current selection: size, volume and how it sits against the world height.",
+  "run": ["node", "main.mjs"],
+  "permissions": ["world-info", "selection"],
+  "commands": [{ "id": "measure", "title": "Measure the selection" }]
+}

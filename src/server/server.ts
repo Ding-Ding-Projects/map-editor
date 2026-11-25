@@ -1,6 +1,7 @@
 // HTTP server shared by every form: the desktop app runs it on 127.0.0.1, the Docker
 // image and the appliance run it on the LAN. Same API, same UI.
 import { DimSum } from './dimsum.js';
+import { Extensions, PERMISSIONS, permissionKey } from './extensions.js';
 import http from 'node:http';
 import { promises as fs, existsSync } from 'node:fs';
 import path from 'node:path';
@@ -19,6 +20,8 @@ export interface ServerOptions {
   host: string;
   port: number;
   dataDir: string;
+  /** Folder with the built-in extensions (defaults to dist/extensions). */
+  extensionsDir?: string;
   /** For tests: replaces fetch for the dim sum catalog. */
   fetchImpl?: typeof fetch;
   /** Folders whose sub-folders are offered as worlds. */
@@ -73,6 +76,7 @@ export function lanAddresses(): string[] {
 export async function createServer(opts: ServerOptions) {
   const accounts = new Accounts(path.join(opts.dataDir, 'accounts'));
   const dimsum = new DimSum(opts.dataDir, opts.fetchImpl);
+  const extensions = new Extensions(opts.extensionsDir ?? path.join(here, '..', 'extensions'), opts.dataDir);
   const build = await readBuildInfo();
   let session: EditSession | undefined;
   const staticDir = opts.staticDir ?? path.join(here, '..', 'ui');
@@ -170,7 +174,29 @@ export async function createServer(opts: ServerOptions) {
       session = await EditSession.open(opts.dataDir, wp);
       return send(200, { info: session.world.info });
     }
+    if (p === '/api/extensions' && req.method === 'GET') {
+      // Folder paths stay on the server; the page gets what the manager shows.
+      const list = await extensions.list();
+      return send(200, { permissions: PERMISSIONS, extensions: list.map((e) => ({ ...e.manifest, run: undefined, builtIn: e.builtIn, enabled: e.enabled, needsConsent: e.needsConsent, error: e.error, permissionKey: e.error ? undefined : permissionKey(e.manifest) })) });
+    }
+    if (p === '/api/extensions/enable' && req.method === 'POST') {
+      const { id, enabled, permissionKey: key } = await body(req);
+      try { await extensions.setEnabled(String(id ?? ''), enabled === true, typeof key === 'string' ? key : undefined); } catch (e) { throw new HttpError(409, (e as Error).message); }
+      return send(200, { ok: true });
+    }
     if (!session) throw new HttpError(409, 'Open a world first.');
+    if (p === '/api/extensions/run' && req.method === 'POST') {
+      const { id, command, selection } = await body(req);
+      const info = session.world.info;
+      const sel = selection && DIMS.includes(selection.dimension) && ['x1', 'y1', 'z1', 'x2', 'y2', 'z2'].every((k) => Number.isInteger(selection.box?.[k])) ? { dimension: selection.dimension, box: selection.box } : undefined;
+      let result;
+      try {
+        result = await extensions.run(String(id ?? ''), String(command ?? ''), { world: { name: info.name, version: info.versionName, dataVersion: info.dataVersion, spawn: info.spawn, dimensions: info.dimensions ?? ['overworld'] }, selection: sel });
+      } catch (e) { throw new HttpError(422, (e as Error).message); }
+      const applied = [];
+      for (const op of result.ops) applied.push(await session.run(op)); // each one is a normal, recorded edit
+      return send(200, { message: result.message, applied: applied.length, changed: applied.reduce((n, a) => n + (a as { changed: number }).changed, 0) });
+    }
 
     if (p === '/api/world' && req.method === 'GET') {
       const dim = (url.searchParams.get('dim') ?? 'overworld') as Dimension;

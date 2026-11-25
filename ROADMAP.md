@@ -82,6 +82,8 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] About screen with version, build commit, licence note, Copy version details and a searchable changelog built from the commit log (Added, Fixed, Changed); checked in headless Chrome.
 - [ ] Exports in every format, bulk actions, offline documentation.
 - [ ] Element locks, unlock ladder, authenticator.
+- [x] Extensions: a versioned manifest per folder, a language-neutral out-of-process protocol (one JSON line in, one out), permissions world-info, selection and edit-world with consent tied to the exact set (a change asks again), 10 s and 1 MiB limits, an empty environment (no secrets or paths), proposed edits validated and applied through the recorded history path, a searchable manager in Settings with its own regex builder, commands in the palette, two built-in extensions, an author article and runnable Node and Python samples that the tests run. Checked end to end in headless Chrome (consent, palette command, the edit in History).
+- [ ] Installing an extension from a file or link, and extension updates.
 - [ ] Built-in tools: file converter, Base64, quicktype, Ollama suite, Minecraft server manager and world generator, virtual disk manager on Windows.
 - [x] Documentation site generated from `site/content.mjs`: landing page and one article per feature, each ending in suggested articles, version and commit in the footer; checked at 320 px wide with no sideways scrolling.
 - [ ] Site: every required feature, bundled fonts, phone PDF edition, interactive diagrams, real screenshots, install buttons tied to verified releases.

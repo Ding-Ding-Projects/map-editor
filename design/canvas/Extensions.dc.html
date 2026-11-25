@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map Editor extensions manager</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,100..125,400..800&amp;family=Roboto+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid #8FD88A;outline-offset:2px}
+@keyframes dc-rise{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+.moving section,.moving aside,.moving header,.moving main,.moving nav,.moving footer,.moving article{animation:dc-rise .6s cubic-bezier(.2,0,0,1) both}
+.moving button,.moving a{transition:border-radius .22s cubic-bezier(.2,0,0,1),background-color .2s,transform .2s,box-shadow .2s}
+.moving button:hover{transform:translateY(-1px)}
+.moving button:active{transform:scale(.97)}
+.still *{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div class="{{motionClass}}" style="position: relative; min-height: 900px; padding: 24px; box-sizing: border-box; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif; font-size: 14px">
+  <main style="max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding: 28px; border-radius: 32px; background: {{t.surfaceContainerLow}}">
+    <h1 style="margin: 0; font-size: 32px; line-height: 40px; font-weight: 800; letter-spacing: -0.5px">Extensions</h1>
+    <p style="margin: 0; max-width: 820px; color: {{t.onSurfaceVariant}}">Extensions add commands to the palette. Each runs as its own small program, only with the permissions you allow, and every world change it makes is recorded in History.</p>
+    <div style="display: flex; gap: 4px"><div style="flex: 1; height: 56px; padding: 0 16px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; border: 1px solid {{t.outline}}; border-radius: 16px 4px 4px 16px"><span style="font-size: 12px; color: {{t.onSurfaceVariant}}">Search extensions</span></div><button aria-label="Use regular expression" style="width: 56px; border-radius: 4px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurfaceVariant}}; font-family: 'Roboto Mono', monospace; font-weight: 700">.*</button><button aria-label="Regex builder" style="width: 56px; border-radius: 4px 16px 16px 4px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurfaceVariant}}">⚙</button></div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+      <sc-for list="{{cards}}" as="c" hint-placeholder-count="3">
+        <article style="{{c.style}}">
+          <header style="display: flex; align-items: center; gap: 12px">
+            <span style="display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: {{t.primaryContainer}}; color: {{t.onPrimaryContainer}}; font-weight: 900; font-size: 20px">{{c.letter}}</span>
+            <span style="flex: 1; display: flex; flex-direction: column"><b style="font-size: 16px">{{c.name}}</b><small style="color: {{t.onSurfaceVariant}}">{{c.meta}}</small></span>
+            <sc-if value="{{c.ok}}" hint-placeholder-val="{{ true }}"><button role="switch" aria-checked="{{c.on}}" aria-label="{{c.name}}" onClick="{{c.flip}}" style="{{c.track}}"><span style="{{c.thumb}}"></span></button></sc-if>
+          </header>
+          <p style="margin: 0">{{c.desc}}</p>
+          <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: {{c.sub}}"><sc-for list="{{c.perms}}" as="p" hint-placeholder-count="2"><li>{{p}}</li></sc-for></ul>
+          <sc-if value="{{c.ok}}" hint-placeholder-val="{{ true }}"><span style="{{c.chip}}">{{c.cmd}}</span></sc-if>
+        </article>
+      </sc-for>
+    </div>
+  </main>
+  <sc-if value="{{asking}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.4)">
+      <section role="dialog" aria-label="Allow extension" style="width: 520px; padding: 24px; border-radius: 28px; background: {{t.surfaceContainerHigh}}; display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 24px; font-weight: 500">Allow {{askName}}?</h2>
+        <p style="margin: 0">It will be able to:</p>
+        <ul style="margin: 0; padding-left: 20px"><sc-for list="{{askPerms}}" as="p" hint-placeholder-count="2"><li>{{p}}</li></sc-for></ul>
+        <div style="display: flex; justify-content: flex-end; gap: 8px"><button onClick="{{cancel}}" style="height: 40px; padding: 0 20px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 600">Cancel</button><button onClick="{{allow}}" style="height: 40px; padding: 0 20px; border-radius: 20px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; font-weight: 600">Allow and turn on</button></div>
+      </section>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"seed":{"editor":"color","default":"#4C8C4A"},"motion":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { const v = this.baseVals(); const s = this.props.seed ?? '#4C8C4A'; if (v.t && s.toLowerCase() !== '#4c8c4a') { v.t.primary = s; v.t.onPrimary = '#FFFFFF'; } v.motionClass = (this.props.motion ?? true) ? 'moving' : 'still'; return v; }
+  baseVals() {
+    const dark = this.props.dark ?? true;
+    const t = dark ? {
+      primary:'#8FD88A', onPrimary:'#00390A', primaryContainer:'#1B5220', onPrimaryContainer:'#AAF5A4', secondaryContainer:'#3B4B38', onSecondaryContainer:'#D6E8CF',
+      errorContainer:'#93000A', onErrorContainer:'#FFDAD6',
+      surface:'#10140F', surfaceContainerLow:'#181D17', surfaceContainerHigh:'#262B25', surfaceContainerHighest:'#31362F',
+      onSurface:'#E0E4DA', onSurfaceVariant:'#C2C9BD', outline:'#8C9388', outlineVariant:'#42493F'
+    } : {
+      primary:'#2E6B2C', onPrimary:'#FFFFFF', primaryContainer:'#AFF4A6', onPrimaryContainer:'#002204', secondaryContainer:'#D6E8CF', onSecondaryContainer:'#111F0F',
+      errorContainer:'#FFDAD6', onErrorContainer:'#410002',
+      surface:'#F7FBF1', surfaceContainerLow:'#F1F5EB', surfaceContainerHigh:'#E5EAE0', surfaceContainerHighest:'#E0E4DA',
+      onSurface:'#181D17', onSurfaceVariant:'#42493F', outline:'#72796E', outlineVariant:'#C2C9BD'
+    };
+    const P = { info: 'Read the open world’s name, version, spawn point and dimensions', sel: 'Read the current selection box', edit: 'Change blocks in the open world (recorded in History, can be undone)' };
+    const defs = [
+      { id: 'report', name: 'Selection report', meta: '1.0.0 · built in', desc: 'Measures the current selection: size, volume and build height.', perms: [P.info, P.sel], cmd: 'Measure the selection' },
+      { id: 'spawn', name: 'Spawn platform', meta: '1.0.0 · built in', desc: 'Builds a 9 by 9 stone brick platform just under the world spawn point.', perms: [P.info, P.edit], cmd: 'Build a stone platform at spawn' },
+      { id: 'broken', name: 'my-tool', meta: 'added by you', desc: 'manifest.json: permissions may only contain world-info, selection, edit-world', perms: [], cmd: '', broken: true }
+    ];
+    const on = this.state.on ?? { report: true, spawn: false };
+    const ask = this.state.ask;
+    const cards = defs.map((d) => ({
+      name: d.name, letter: d.name[0].toUpperCase(), meta: d.meta + (!d.broken && !on[d.id] ? ' · needs your permission' : ''), desc: d.desc, perms: d.perms, cmd: d.cmd, ok: !d.broken, on: !!on[d.id],
+      sub: d.broken ? t.onErrorContainer : t.onSurfaceVariant,
+      style: 'display: flex; flex-direction: column; gap: 8px; padding: 20px; border-radius: 28px; ' + (d.broken ? 'background: ' + t.errorContainer + '; color: ' + t.onErrorContainer : 'background: ' + t.surfaceContainerHigh),
+      chip: 'align-self: flex-start; height: 32px; padding: 0 14px; border-radius: 8px; line-height: 32px; font-size: 13px; ' + (on[d.id] ? 'border: 1px solid ' + t.outline : 'border: 1px solid ' + t.outlineVariant + '; opacity: .5'),
+      track: 'flex: none; width: 52px; height: 32px; padding: 0; border-radius: 16px; position: relative; ' + (on[d.id] ? 'border: 0; background: ' + t.primary : 'border: 2px solid ' + t.outline + '; background: ' + t.surfaceContainerHighest),
+      thumb: 'position: absolute; top: 50%; transform: translateY(-50%); border-radius: 50%; ' + (on[d.id] ? 'left: 24px; width: 24px; height: 24px; background: ' + t.onPrimary : 'left: 6px; width: 16px; height: 16px; background: ' + t.outline),
+      flip: () => on[d.id] ? this.setState({ on: { ...on, [d.id]: false } }) : this.setState({ ask: d.id })
+    }));
+    const a = defs.find((d) => d.id === ask);
+    return { t, cards, asking: !!a, askName: a ? a.name : '', askPerms: a ? a.perms : [],
+      cancel: () => this.setState({ ask: undefined }), allow: () => this.setState({ ask: undefined, on: { ...on, [ask]: true } }) };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "manifestVersion": 1,
+  "id": "hello-node",
+  "name": "Hello from Node",
+  "version": "1.0.0",
+  "description": "Sample extension in JavaScript that only reads the world name. No world changes.",
+  "run": ["node", "main.mjs"],
+  "permissions": ["world-info"],
+  "commands": [{ "id": "hello", "title": "Say hello (Node sample)" }]
+}

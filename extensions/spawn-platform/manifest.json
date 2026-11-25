@@ -1,0 +1,10 @@
+{
+  "manifestVersion": 1,
+  "id": "spawn-platform",
+  "name": "Spawn platform",
+  "version": "1.0.0",
+  "description": "Builds a 9 by 9 stone brick platform just under the world spawn point.",
+  "run": ["node", "main.mjs"],
+  "permissions": ["world-info", "edit-world"],
+  "commands": [{ "id": "build", "title": "Build a stone platform at spawn" }]
+}

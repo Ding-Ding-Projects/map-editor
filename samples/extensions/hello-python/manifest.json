@@ -1,0 +1,13 @@
+{
+  "manifestVersion": 1,
+  "id": "hello-python",
+  "name": "Hello from Python",
+  "version": "1.0.0",
+  "description": "Sample extension in Python: greets the world and fills the selection's bottom layer with glass.",
+  "run": ["python3", "main.py"],
+  "permissions": ["world-info", "selection", "edit-world"],
+  "commands": [
+    { "id": "hello", "title": "Say hello (Python sample)" },
+    { "id": "glass-floor", "title": "Glass floor under the selection (Python sample)" }
+  ]
+}

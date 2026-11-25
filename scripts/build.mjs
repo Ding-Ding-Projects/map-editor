@@ -35,6 +35,8 @@ copyFileSync(path.join(root, 'src/ui/styles.css'), path.join(dist, 'ui/app.css')
 for (const part of ['tinymce.min.js', 'license.md', 'themes', 'models', 'icons', 'skins', 'plugins/lists', 'plugins/link', 'plugins/table', 'plugins/autolink']) {
   cpSync(path.join(root, 'node_modules/tinymce', part), path.join(dist, 'ui/tinymce', part), { recursive: true });
 }
+// Built-in extensions ship next to the server as plain folders, exactly like user extensions.
+cpSync(path.join(root, 'extensions'), path.join(dist, 'extensions'), { recursive: true });
 await build({ ...common, entryPoints: [path.join(root, 'src/server/server.ts')], outfile: path.join(dist, 'server/server.mjs'), format: 'esm', platform: 'node', target: 'node22',
   banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" } });
 for (const app of ['desktop', 'deploy']) {
