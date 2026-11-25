@@ -36,7 +36,7 @@ const S = {
   vocabCleared: { en: 'Using the built-in words again.', yue: '已經用返內置用字。' },
   vocabLoaded: { en: 'Using {n} of your own words; {s} entries were not recognised and left out.', yue: '用緊你 {n} 個用字；有 {s} 項認唔到，冇用。' },
   vocabBad: { en: 'That file could not be used: {e}', yue: '用唔到呢個檔：{e}' },
-  vocabTooBig: { en: 'Vocabulary files are limited to 512 KiB.', yue: '用字檔上限係 512 KiB。' },
+  vocabTooBig: { en: 'Vocabulary files are limited to 256 KiB.', yue: '用字檔上限係 256 KiB。' },
   focusMode: { en: 'Focus mode', yue: '專注模式' },
   focusModeNote: { en: 'Fewer interruptions: routine messages wait in the bell, no dim sum surprises, motion reduced and the panel you are in stands out. Problems still show.', yue: '少啲打擾：普通訊息留喺鈴入面，冇點心驚喜，減少動畫，正在用嘅面板會突出啲。有問題照樣彈出。' },
   schoolMode: { en: 'School mode', yue: '學校模式' },
@@ -407,6 +407,8 @@ const S = {
   aboutSource: { en: 'Source code', yue: '原始碼' },
   aboutReleases: { en: 'All releases', yue: '全部版本' },
   aboutReport: { en: 'Report a problem', yue: '回報問題' },
+  restoreAsk: { en: 'Roll the world back to this point? Every later edit is undone in the world files. The roll back is recorded, so it can be undone too.', yue: '將個世界還原到呢一刻？之後所有改動都會喺世界檔案度還原。還原本身都有記錄，所以都可以再還原。' },
+  dropNotVocab: { en: '{name} is not a vocabulary file. Drop a .json file to change the wording, or use Upload on the Worlds page for a world.', yue: '{name} 唔係用字檔。要改用字就放 .json 檔；要上載世界就去「世界」頁用上載。' },
   superTitle: { en: 'This cannot be taken back', yue: '呢樣嘢冇得返轉頭' },
   superKey1: { en: 'Turn the first key', yue: '扭第一條鎖匙' },
   superKey2: { en: 'Turn the second key', yue: '扭第二條鎖匙' },
@@ -627,7 +629,7 @@ export function setVocabulary(v: Record<string, { en?: string; yue?: string }>) 
 export function parseVocabulary(raw: unknown): { ok: Record<string, { en?: string; yue?: string }>; skipped: string[] } {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('A vocabulary file is a JSON object of string ids.');
   const ok: Record<string, { en?: string; yue?: string }> = {}, skipped: string[] = [];
-  const good = (v: unknown) => typeof v === 'string' && v.trim().length > 0 && v.length <= 400;
+  const good = (v: unknown) => typeof v === 'string' && v.trim().length > 0 && v.length <= 1000;
   for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
     if (!(k in S)) { skipped.push(k); continue; }
     if (good(v)) { ok[k] = { en: v as string, yue: v as string }; continue; }

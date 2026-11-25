@@ -142,11 +142,11 @@ window.addEventListener('drop', (e) => {
   document.documentElement.classList.remove('vocab-dropping');
   const f = e.dataTransfer?.files?.[0];
   if (!f || (e.target as HTMLElement | null)?.closest?.('input[type=file], .tool-card, #upload-label')) return; // other drop targets keep their own files
-  if (!/\.json$/i.test(f.name) && f.type !== 'application/json') return;
+  if (!/\.json$/i.test(f.name) && f.type !== 'application/json') { e.preventDefault(); play('invalid'); notify(tx('dropNotVocab', { name: f.name.slice(0, 60) }), true); return; }
   e.preventDefault();
   void (async () => {
     try {
-      if (f.size > 512 * 1024) throw new Error(tx('vocabTooBig'));
+      if (f.size > 256 * 1024) throw new Error(tx('vocabTooBig'));
       const raw = JSON.parse(await f.text());
       const { ok } = parseVocabulary(raw);
       if (!Object.keys(ok).length) throw new Error(tx('vocabNone'));
@@ -167,8 +167,10 @@ async function api<T = any>(path: string, init?: { method?: string; body?: unkno
 }
 
 // ---------- notifications (non-blocking; errors stay until dismissed) ----------
-const notes: Array<{ id: number; text: string; error: boolean; at: string }> = [];
-let noteId = 0;
+const NOTES_KEY = 'map-editor.notes.v1';
+const notes: Array<{ id: number; text: string; error: boolean; at: string }> = (() => { try { const v = JSON.parse(localStorage.getItem(NOTES_KEY) ?? '[]'); return Array.isArray(v) ? v.filter((n) => n && typeof n.text === 'string' && typeof n.at === 'string').slice(0, 50).map((n, i) => ({ id: i + 1, text: String(n.text).slice(0, 500), error: Boolean(n.error), at: String(n.at).slice(0, 20) })) : []; } catch { return []; } })();
+let noteId = notes.length;
+const keepNotes = () => { try { localStorage.setItem(NOTES_KEY, JSON.stringify(notes.slice(0, 50))); } catch { /* storage full or blocked */ } };
 // Narration: reads every message aloud with the device's own speech voices (nothing is sent anywhere).
 function narrate(text: string, force = false) {
   if ((!prefs.narrate && !force) || (!force && quiet()) || !('speechSynthesis' in window)) return;
@@ -193,7 +195,7 @@ setInterval(() => { const d = scheduledDark(); if ((d !== undefined && d !== (do
 
 function notify(text: string, error = false, action?: { label: string; run: () => void }) {
   const at = new Date().toLocaleTimeString('en-GB');
-  notes.unshift({ id: ++noteId, text, error, at });
+  notes.unshift({ id: ++noteId, text, error, at }); keepNotes();
   if (error) play('error');
   narrate(text);
   const host = document.getElementById('toasts')!;
@@ -237,7 +239,7 @@ function toggleNoteCentre() {
       none.hidden = shown > 0; none.textContent = tx('noMatches');
     });
   }
-  panel.querySelector('#nc-clear')!.addEventListener('click', () => { notes.length = 0; panel.remove(); document.querySelector('.bell-wrap .badge')?.remove(); });
+  panel.querySelector('#nc-clear')!.addEventListener('click', () => { notes.length = 0; keepNotes(); panel.remove(); document.querySelector('.bell-wrap .badge')?.remove(); });
   panel.querySelector('#nc-close')!.addEventListener('click', () => panel.remove());
 }
 
@@ -1256,6 +1258,7 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
     filter();
     view.querySelectorAll<HTMLElement>('[data-sha]').forEach((b) => b.addEventListener('click', async () => {
       if (prefs.editLock) { notify(tx('editLocked'), true); return; }
+      if (!await askConfirm(tx('restoreAsk'), tx('restore'), true)) return;
       try { await api('/api/history/restore', { method: 'POST', body: { sha: b.dataset.sha } }); notify(tx('restored')); play('undo'); historyView(outer, embedded); }
       catch (err) { notify((err as Error).message, true); }
     }));
@@ -1575,7 +1578,7 @@ function settingsView(view: HTMLElement) {
   vf.addEventListener('change', async () => {
     const f = vf.files?.[0]; vf.value = ''; if (!f) return;
     try {
-      if (f.size > 512 * 1024) throw new Error(tx('vocabTooBig'));
+      if (f.size > 256 * 1024) throw new Error(tx('vocabTooBig'));
       const { ok, skipped } = parseVocabulary(JSON.parse(await f.text()));
       saveVocab(ok);
       notify(tx('vocabLoaded', { n: Object.keys(ok).length, s: skipped.length }), skipped.length > 0 && !Object.keys(ok).length);
