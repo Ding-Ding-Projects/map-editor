@@ -25,7 +25,10 @@ try {
   changelog = out.split('\x1e').map((l) => l.replace(/^\n+/, '')).filter(Boolean).map((l) => { const [sha, date, subject, body = ''] = l.split('\x1f'); return { sha, date, subject, body: body.split('\n').filter((x) => !/^[A-Za-z-]+-[Bb]y: |^Claude-Session: /.test(x)).join('\n').trim().slice(0, 4000) }; });
 } catch { /* not a checkout: the About screen says the changelog is unavailable */ }
 // Updated-at comes from the source commit time, never the clock of whoever builds it.
-writeFileSync(path.join(dist, 'build-info.json'), JSON.stringify({ version: version, commit, builtAt, changelog }, null, 2));
+// Release code name: a dish from the public dim sum catalogue, by version. Left out when the catalogue cannot be reached.
+const { codeName: pickCodeName } = await import('./code-name.mjs');
+const codeName = process.env.NO_CODE_NAME ? null : await pickCodeName(version);
+writeFileSync(path.join(dist, 'build-info.json'), JSON.stringify({ version: version, commit, builtAt, codeName, changelog }, null, 2));
 
 const common = { bundle: true, sourcemap: true, logLevel: 'info', legalComments: 'linked' };
 // The documentation site's tour script is committed so the site builds without installing anything.

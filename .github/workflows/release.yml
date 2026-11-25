@@ -200,6 +200,8 @@ jobs:
             echo "Jobs: docker=${{ needs.docker.result }}, appliance=${{ needs.appliance.result }}, raspberry-pi=${{ needs.appliance-pi.result }}, desktop=${{ needs.desktop.result }}. Assets are attached only for jobs that succeeded."
             echo "The Raspberry Pi image (Pi 4 and 5) is checked for its firmware, kernel, device trees and an arm64 container here, and after publishing it is booted on QEMU's Raspberry Pi 4 machine until the web app answers (the Real-world checks workflow). It has not been tested on a physical Pi."
             echo
+            node scripts/code-name.mjs "${{ needs.meta.outputs.version }}" || echo "Code name: unavailable"
+            echo
             echo "Docker image: ${{ env.IMAGE }}:${{ needs.meta.outputs.version }} (digest in image-digest.txt)."
             echo "The Windows installers are not code-signed, so Windows SmartScreen may warn before running them."
             echo

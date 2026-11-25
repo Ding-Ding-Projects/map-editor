@@ -435,6 +435,7 @@ const S = {
   outsideFailed: { en: 'Could not open in {name}: {e}', yue: '用 {name} 開唔到：{e}' },
   outsideDesktopOnly: { en: 'Opening the world folder in another program works in the desktop app only.', yue: '用其他程式開世界資料夾，只有桌面程式先做到。' },
   outsideNoWorld: { en: 'Open a world first.', yue: '請先開一個世界。' },
+  codeNameLabel: { en: 'Code name of this release', yue: '呢個版本嘅代號' },
   docsOnline: { en: 'Open this article on the website, with pictures', yue: '喺網站開呢篇文章（有圖）' },
   superTitle: { en: 'This cannot be taken back', yue: '呢樣嘢冇得返轉頭' },
   superKey1: { en: 'Turn the first key', yue: '扭第一條鎖匙' },

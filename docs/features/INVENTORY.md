@@ -6,7 +6,7 @@ lands; anything not rechecked keeps its last audited status.
 
 Re-audited on 2026-11-25 after the changes of that day.
 
-Counts (126 features): built 14 / partial 83 / unbuilt 15 / not applicable 14
+Counts (126 features): built 14 / partial 84 / unbuilt 14 / not applicable 14
 
 
 ## Language, voice, and personalization
@@ -144,7 +144,7 @@ Counts (126 features): built 14 / partial 83 / unbuilt 15 / not applicable 14
 `release-timing` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: release.yml writes Workflow started/completed/duration | MISSING: duration as HH:mm:ss (it prints seconds); start taken from the first job's recorded startedAt (it uses a step clock)
 `release-line-counts` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: release.yml inline loop over file extensions | MISSING: committed counter script with the command recorded; source/tests/styles split; total and non-blank lines; stated exclusions and generated files; git-blame attribution; totals; README copy naming its release
 `release-dim-sum-photo` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: no photos tracked or attached to releases | MISSING: release notes referencing a catalogue dish and photo link, or the explicit "version only" statement when none resolves
-`dim-sum-code-names` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: none | MISSING: code name per release from the public catalogue; recorded release-to-dish mapping; display in release notes, changelog, site and About
+`dim-sum-code-names` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: scripts/code-name.mjs (dish chosen from the public catalogue by version number, nothing stored), scripts/build.mjs puts it in build-info.json, `/api/health`, About card, release notes line in release.yml, tests/code-name.test.ts | MISSING: the site, the deploy wizard and the changelog do not show it; no release has been published with it yet
 `ci-bootstrap` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: verify.yml uploads the Raspberry Pi serial log under `if: always()` | MISSING: per-job dependency inventory beside the workflows and check-before-install; hand-written job list test; the other artifact uploads are not under `if: always()`; `continue-on-error` and `if-no-files-found: warn` (the one safe upload uses `ignore`)
 `runner-selection` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: release.yml/verify.yml/pages.yml use pinned GitHub-hosted images (`ubuntu-24.04`, `windows-2022`); no pull_request triggers | MISSING: recorded runner inventory check before dispatch
 `encrypted-public-builder` | APPLIES: no | STATUS: N-A | EVIDENCE: repository is public | MISSING: -

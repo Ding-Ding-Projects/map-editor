@@ -114,7 +114,7 @@ function importSettings(raw: unknown): number {
 const TABS = ['worlds', 'editor', 'history', 'tools', 'docs', 'settings', 'about'] as const;
 type Tab = typeof TABS[number];
 
-interface Health { version: string; commit: string; builtAt: string | null }
+interface Health { version: string; commit: string; builtAt: string | null; codeName?: { id: string; en: string; yue: string; jyutping: string } | null }
 let health: Health | undefined;
 let user: { name: string } | null = null;
 let hasOwner = true;
@@ -1765,11 +1765,20 @@ function settingsView(view: HTMLElement) {
   }));
 }
 
+/** The release code name card for About: the dish in the chosen language, with its Cantonese name and romanisation. */
+function codeNameHtml(): string {
+  const c = health?.codeName; if (!c) return '';
+  const main = prefs.lang === 'yue' ? c.yue : prefs.lang === 'both' ? `${c.en} · ${c.yue}` : c.en;
+  const sub = prefs.lang === 'en' ? [c.yue, c.jyutping].filter(Boolean).join(' · ') : c.jyutping;
+  return `<p class="code-name"><small>${esc(tx('codeNameLabel'))}</small><b>${esc(main)}</b>${sub ? `<span lang="yue">${esc(sub)}</span>` : ''}</p>`;
+}
+
 async function aboutView(view: HTMLElement): Promise<void> {
   view.innerHTML = `<div class="about">
     <section class="about-card"><div class="about-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
       <h1>${esc(appName())}</h1>
       <div class="about-stats"><div><small>${esc(tx('versionLabel'))}</small><b>${esc(health?.version ?? 'unavailable')}</b></div><div><small>${esc(tx('buildLabel'))}</small><code>${esc((health?.commit ?? 'unavailable').slice(0, 7))}</code></div></div>
+      ${codeNameHtml()}
       <p>${esc(provenance())}</p>
       <p class="fine">${esc(tx('aboutLegal'))}</p>
       <div class="row-actions"><md-filled-button id="copy-ver">${esc(tx('copyDetails'))}</md-filled-button></div>
@@ -1779,7 +1788,7 @@ async function aboutView(view: HTMLElement): Promise<void> {
       <div id="cl-q-host"></div></div>
       <ol id="cl" aria-live="polite"><li class="muted">${esc(tx('loading'))}</li></ol></section></div>`;
   view.querySelector('#upd-check')?.addEventListener('click', () => checkForUpdates());
-  view.querySelector('#copy-ver')!.addEventListener('click', () => navigator.clipboard?.writeText(`Map Editor ${health?.version} ${health?.commit} ${health?.builtAt ?? ''}`).then(() => notify(tx('copied')), () => notify(tx('copyFailed'), true)));
+  view.querySelector('#copy-ver')!.addEventListener('click', () => navigator.clipboard?.writeText(`Map Editor ${health?.version} ${health?.commit} ${health?.builtAt ?? ''}${health?.codeName ? ` (${health.codeName.en})` : ''}`).then(() => notify(tx('copied')), () => notify(tx('copyFailed'), true)));
   const listEl = view.querySelector<HTMLElement>('#cl')!;
   type Entry = { sha: string; date: string; subject: string; body?: string };
   let entries: Entry[] | null = null;

@@ -36,7 +36,7 @@ export interface ServerOptions {
   staticDir?: string;
 }
 
-export interface BuildInfo { version: string; commit: string; builtAt: string | null; changelog?: Array<{ sha: string; date: string; subject: string }> }
+export interface BuildInfo { version: string; commit: string; builtAt: string | null; codeName?: { id: string; en: string; yue: string; jyutping: string } | null; changelog?: Array<{ sha: string; date: string; subject: string; body?: string }> }
 
 // Works both as the ESM server bundle and inside the CommonJS desktop bundle.
 const here = typeof __dirname === 'string' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
@@ -104,7 +104,7 @@ export async function createServer(opts: ServerOptions) {
   async function api(req: http.IncomingMessage, res: http.ServerResponse, url: URL) {
     const send = (status: number, data: unknown) => { res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' }); res.end(JSON.stringify(data)); };
     const p = url.pathname;
-    if (p === '/api/health') return send(200, { ok: true, version: build.version, commit: build.commit, builtAt: build.builtAt });
+    if (p === '/api/health') return send(200, { ok: true, version: build.version, commit: build.commit, builtAt: build.builtAt, codeName: build.codeName ?? null });
     if (p === '/api/changelog') return send(200, { entries: build.changelog ?? null });
 
     // Same-origin JSON only for state-changing calls (blocks cross-site form posts).
