@@ -81,13 +81,31 @@ function stepsHtml(steps: Step[]) {
   return `<ol class="stack" aria-live="polite">${steps.map((s) => `<li><strong>${esc(s.label)}</strong> · ${esc(s.state)}${s.detail ? ` <span class="muted">${esc(s.detail)}</span>` : ''}</li>`).join('')}</ol>`;
 }
 
+// Update ready banner: same wording and behaviour as the editor's; restart is never automatic.
+let upd: { state: string; version?: string; notes?: string } | undefined;
+let updLater = false;
+function showUpdate() {
+  const el = document.getElementById('update-banner');
+  if (!el) return;
+  if (upd?.state !== 'ready' || updLater) { el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  el.innerHTML = `<span class="ub-icon" aria-hidden="true">↻</span><span class="ub-text"><b>Map Editor Deploy ${esc(upd.version ?? '')} is ready to install</b><small>This update is not code-signed. It replaces this copy when you restart.</small></span>
+    <a href="${esc(upd.notes ?? '')}" target="_blank" rel="noopener">Release notes</a><md-text-button id="ub-later">Later</md-text-button><md-filled-button id="ub-restart">Restart to install update</md-filled-button>`;
+  el.querySelector('#ub-later')!.addEventListener('click', () => { updLater = true; showUpdate(); });
+  el.querySelector('#ub-restart')!.addEventListener('click', () => d.updateRestart?.());
+}
+d.onUpdate?.((u: typeof upd) => { if (u?.state === 'ready') updLater = false; upd = u; showUpdate(); });
+d.updateState?.().then((u: typeof upd) => { upd = u; showUpdate(); }).catch(() => undefined);
+
 async function render() {
   const app = document.getElementById('app')!;
   app.innerHTML = `<header class="top"><div class="brand"><div class="logo" aria-hidden="true"></div><div>
       <div class="md-typescale-headline-medium title">Put Map Editor on your network</div>
       <div class="muted" id="prov"></div></div></div>
     <md-chip-set><md-filter-chip id="v-deploy" label="Deploy" ${view === 'deploy' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-inst" label="Instances" ${view === 'instances' ? 'selected' : ''}></md-filter-chip></md-chip-set></header>
+    <div id="update-banner" class="update-banner" role="region" aria-label="Update" hidden></div>
     <div class="body"><main class="view" id="main"></main></div><div id="toasts" class="toasts"></div>`;
+  showUpdate();
   app.querySelector('#v-deploy')!.addEventListener('click', () => { view = 'deploy'; render(); });
   app.querySelector('#v-inst')!.addEventListener('click', () => { view = 'instances'; render(); });
   const main = app.querySelector('#main')!;
@@ -112,7 +130,7 @@ async function render() {
     form.innerHTML = `<h2 class="md-typescale-headline-large">Docker</h2>
       <md-outlined-text-field id="name" label="Instance name" value="map-editor-1"></md-outlined-text-field>
       <md-outlined-text-field id="port" label="Port" type="number" value="8420"></md-outlined-text-field>
-      <md-outlined-text-field id="version" label="Version" value="0.1.0"></md-outlined-text-field>
+      <md-outlined-text-field id="version" label="Version" value="latest" supporting-text="latest follows every release; Update pulls it again"></md-outlined-text-field>
       <md-outlined-button id="worlds">Choose worlds folder</md-outlined-button><span class="muted" id="wpath">No folder chosen</span>
       <md-filled-button id="go">Deploy</md-filled-button><div id="steps"></div>`;
     let worlds = '';

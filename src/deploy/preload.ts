@@ -15,5 +15,9 @@ contextBridge.exposeInMainWorld('deploy', {
   logsStop: () => ipcRenderer.invoke('logs-stop'),
   onLog: (fn: (line: string) => void) => ipcRenderer.on('log-line', (_e, l) => fn(l)),
   onProgress: (fn: (steps: unknown) => void) => ipcRenderer.on('progress', (_e, s) => fn(s)),
+  updateState: () => ipcRenderer.invoke('update-state'),
+  updateCheck: () => ipcRenderer.invoke('update-check'),
+  updateRestart: () => ipcRenderer.invoke('update-restart'),
+  onUpdate: (fn: (s: unknown) => void) => ipcRenderer.on('update-state', (_e, s) => fn(s)),
   onFlash: (fn: (w: number, t: number) => void) => ipcRenderer.on('flash-progress', (_e, w, t) => fn(w, t)),
 });

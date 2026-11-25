@@ -7,7 +7,8 @@ RUN npm ci --ignore-scripts --no-audit --no-fund
 COPY . .
 ARG SOURCE_COMMIT=unavailable
 ARG SOURCE_DATE=
-RUN SOURCE_COMMIT="$SOURCE_COMMIT" SOURCE_DATE="$SOURCE_DATE" node scripts/build.mjs
+ARG APP_VERSION=
+RUN APP_VERSION="$APP_VERSION" SOURCE_COMMIT="$SOURCE_COMMIT" SOURCE_DATE="$SOURCE_DATE" node scripts/build.mjs
 
 FROM node:22-alpine
 ARG SOURCE_COMMIT=unavailable

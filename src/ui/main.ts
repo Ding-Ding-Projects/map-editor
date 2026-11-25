@@ -11,7 +11,15 @@ import { openPalette, type Command } from './palette.js';
 import { onboarding } from './onboarding.js';
 
 /** Present only inside the desktop app (see src/desktop/preload.ts). */
-const desktopBridge = (window as unknown as { mapEditorDesktop?: { pickFolder: () => Promise<string | undefined> } }).mapEditorDesktop;
+type UpdState = { state: 'disabled'; reason: string } | { state: 'idle' | 'checking' | 'none' | 'downloading'; at?: string } | { state: 'ready'; version: string; notes: string } | { state: 'error'; message: string };
+interface DesktopBridge {
+  pickFolder: () => Promise<string | undefined>;
+  updates?: { state: () => Promise<UpdState>; check: () => Promise<UpdState>; restart: () => Promise<boolean>; onState: (fn: (s: UpdState) => void) => void };
+}
+const desktopBridge = (window as unknown as { mapEditorDesktop?: DesktopBridge }).mapEditorDesktop;
+let upd: UpdState | undefined;
+let updLater = false;
+let busy = 0; // edits in progress; a restart waits until they finish
 import { colorPicker, applyRainbowSpeed } from './colorpicker.js';
 import { RAINBOW } from './color.js';
 import { argbFromHex, themeFromSourceColor, applyTheme as applyM3Theme } from '@material/material-color-utilities';
@@ -133,6 +141,7 @@ function paletteCommands(): Command[] {
   cmds.push({ id: 'dark', label: tx('dark'), where: `${tx('settings')} › Appearance`, toggle: { get: () => prefs.dark, set: (v) => { prefs.dark = v; savePrefs(); applyTheme(); } } });
   cmds.push({ id: 'large-text', label: tx('largeText'), where: `${tx('settings')} › ${tx('secComfort')}`, toggle: { get: () => prefs.largeText, set: (v) => { prefs.largeText = v; savePrefs(); applyTheme(); } } });
   cmds.push({ id: 'sounds', label: tx('soundEffects'), where: `${tx('settings')} › ${tx('secSounds')}`, toggle: { get: () => prefs.sounds, set: (v) => { prefs.sounds = v; savePrefs(); applyTheme(); } } });
+  cmds.push({ id: 'check-updates', label: tx('updCheck'), where: `${tx('about')}`, run: () => { void checkForUpdates(); } });
   cmds.push({ id: 'motion', label: tx('reduceMotion'), where: `${tx('settings')} › Appearance`, toggle: { get: () => prefs.reduceMotion, set: (v) => { prefs.reduceMotion = v; savePrefs(); applyTheme(); } } });
   for (const [l, label] of [['en', 'English'], ['yue', '粵語'], ['both', 'EN + 粵']] as const) cmds.push({ id: `lang-${l}`, label: `${tx('language')}: ${label}`, where: `${tx('settings')} › ${tx('language')}`, run: () => { prefs.lang = l; savePrefs(); render(); } });
   cmds.push({ id: 'notes', label: tx('notifications'), where: 'Header', run: () => toggleNoteCentre() });
@@ -186,6 +195,42 @@ const TAB_ICON: Record<Tab, string> = {
   about: ico('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>'),
 };
 
+function updateText(u: UpdState | undefined): string {
+  if (!desktopBridge?.updates) return tx('updWeb');
+  if (!u) return tx('updIdle');
+  switch (u.state) {
+    case 'disabled': return u.reason;
+    case 'checking': return tx('updChecking');
+    case 'downloading': return tx('updDownloading');
+    case 'none': return tx('updNone');
+    case 'ready': return tx('updReady', { v: u.version });
+    case 'error': return tx('updError', { e: u.message });
+    default: return tx('updIdle');
+  }
+}
+function updateBanner() {
+  const el = document.getElementById('update-banner');
+  if (!el) return;
+  if (!upd || upd.state !== 'ready' || updLater) { el.hidden = true; el.innerHTML = ''; return; }
+  const u = upd;
+  el.hidden = false;
+  el.innerHTML = `<span class="ub-icon" aria-hidden="true">↻</span><span class="ub-text"><b>${esc(tx('updReady', { v: u.version }))}</b><small>${esc(tx('updUnsigned'))}</small></span>
+    <a href="${esc(u.notes)}" target="_blank" rel="noopener">${esc(tx('updNotes'))}</a>
+    <md-text-button id="ub-later">${esc(tx('updLater'))}</md-text-button><md-filled-button id="ub-restart">${esc(tx('updRestart'))}</md-filled-button>`;
+  el.querySelector('#ub-later')!.addEventListener('click', () => { updLater = true; updateBanner(); document.getElementById('cmd')?.focus(); });
+  el.querySelector('#ub-restart')!.addEventListener('click', async () => {
+    if (busy) { notify(tx('updBusy'), true); return; }
+    if (!await desktopBridge!.updates!.restart()) notify(tx('updError', { e: tx('updNotReady') }), true);
+  });
+}
+async function checkForUpdates() {
+  if (!desktopBridge?.updates) { notify(tx('updWeb')); return; }
+  updLater = false;
+  upd = await desktopBridge.updates.check();
+  notify(updateText(upd), upd.state === 'error');
+  if (prefs.tab === 'about') render(); else updateBanner();
+}
+
 function shell() {
   const app = document.getElementById('app')!;
   const open = TABS.filter((x) => !prefs.closedTabs.includes(x));
@@ -202,6 +247,7 @@ function shell() {
       ${user ? `<span class="bell-wrap"><md-icon-button id="bell" aria-label="${esc(tx('notifications'))}${notes.length ? `, ${notes.length}` : ''}"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21h4"/></svg></md-icon-button>${notes.length ? `<span class="badge">${notes.length}</span>` : ''}</span>` : ''}
       ${user ? `<md-outlined-button id="logout">${esc(user.name)}</md-outlined-button>` : ''}
     </header>
+    <div id="update-banner" class="update-banner" role="region" aria-label="${esc(tx('updateRegion'))}" hidden></div>
     <div class="body">
       ${user && prefs.onboarded ? `<nav class="tabs" aria-label="Tabs"><md-list role="tablist" aria-orientation="vertical">
         ${open.map((x) => `<md-list-item type="button" role="tab" aria-selected="${x === prefs.tab}" data-tab="${x}" class="${x === prefs.tab ? 'active' : ''}">${esc(tx(x as Key))}
@@ -219,6 +265,7 @@ function shell() {
   app.querySelector('#open-all')?.addEventListener('click', () => { prefs.closedTabs = []; savePrefs(); render(); });
   app.querySelector('#cmd')?.addEventListener('click', () => showPalette());
   app.querySelector('#bell')?.addEventListener('click', () => toggleNoteCentre());
+  updateBanner();
   app.querySelector('#logout')?.addEventListener('click', async () => { await api('/api/auth/logout', { method: 'POST', body: {} }); user = null; render(); });
 }
 
@@ -345,6 +392,7 @@ async function editorView(view: HTMLElement): Promise<void> {
     if (op === 'replace') { body.from = v('from'); body.to = v('to'); }
     if (op === 'clone') { const [x, y, z] = v('dest').split(',').map((s) => Math.trunc(Number(s.trim()))); body.dest = { x, y, z }; }
     runBtn.setAttribute('disabled', '');
+    busy++;
     try {
       const r = await api<{ changed: number; skipped: number; ms: number }>('/api/op', { method: 'POST', body });
       play('success');
@@ -352,7 +400,7 @@ async function editorView(view: HTMLElement): Promise<void> {
       document.dispatchEvent(new Event('history-changed'));
       if (r.skipped) notify(tx('opSkipped', { n: r.skipped.toLocaleString('en') }), true);
       await drawMap();
-    } catch (err) { notify((err as Error).message, true); } finally { runBtn.removeAttribute('disabled'); }
+    } catch (err) { notify((err as Error).message, true); } finally { busy--; runBtn.removeAttribute('disabled'); }
   });
 
   const canvas = root.querySelector<HTMLCanvasElement>('#map')!;
@@ -566,10 +614,12 @@ async function aboutView(view: HTMLElement): Promise<void> {
       <div class="about-stats"><div><small>${esc(tx('versionLabel'))}</small><b>${esc(health?.version ?? 'unavailable')}</b></div><div><small>${esc(tx('buildLabel'))}</small><code>${esc((health?.commit ?? 'unavailable').slice(0, 7))}</code></div></div>
       <p>${esc(provenance())}</p>
       <p class="fine">${esc(tx('aboutLegal'))}</p>
-      <div class="row-actions"><md-filled-button id="copy-ver">${esc(tx('copyDetails'))}</md-filled-button></div></section>
+      <div class="row-actions"><md-filled-button id="copy-ver">${esc(tx('copyDetails'))}</md-filled-button></div>
+      <div class="about-update"><b>${esc(tx('updTitle'))}</b><p id="upd-text" aria-live="polite">${esc(updateText(upd))}</p>${desktopBridge?.updates ? `<md-outlined-button id="upd-check">${esc(tx('updCheck'))}</md-outlined-button>` : ''}</div></section>
     <section class="changelog"><div class="cl-head"><h2>${esc(tx('changelog'))}</h2>
       <div id="cl-q-host"></div></div>
       <ol id="cl" aria-live="polite"><li class="muted">${esc(tx('loading'))}</li></ol></section></div>`;
+  view.querySelector('#upd-check')?.addEventListener('click', () => checkForUpdates());
   view.querySelector('#copy-ver')!.addEventListener('click', () => navigator.clipboard?.writeText(`Map Editor ${health?.version} ${health?.commit} ${health?.builtAt ?? ''}`).then(() => notify(tx('copied')), () => notify(tx('copyFailed'), true)));
   const listEl = view.querySelector<HTMLElement>('#cl')!;
   type Entry = { sha: string; date: string; subject: string };
@@ -618,6 +668,10 @@ document.addEventListener('keydown', (e) => {
 // ---------- start ----------
 (async () => {
   applyTheme();
+  if (desktopBridge?.updates) {
+    desktopBridge.updates.onState((u) => { if (u.state === 'ready' && (upd?.state !== 'ready' || upd.version !== u.version)) updLater = false; upd = u; updateBanner(); const t = document.getElementById('upd-text'); if (t) t.textContent = updateText(u); });
+    desktopBridge.updates.state().then((u) => { upd = u; updateBanner(); }).catch(() => undefined);
+  }
   enableClearControls((field) => tx('clearField', { field }));
   try { health = await api<Health>('/api/health'); } catch { /* shown as unavailable */ }
   try { const s = await api<{ hasOwner: boolean; user: { name: string } | null }>('/api/auth/state'); hasOwner = s.hasOwner; user = s.user; } catch (e) { notify((e as Error).message, true); }

@@ -2,7 +2,7 @@
 # it writes .env with a free port and your worlds folder, then starts this file.
 services:
   map-editor:
-    image: ghcr.io/ding-ding-projects/map-editor:${MAP_EDITOR_VERSION:-0.1.0}
+    image: ghcr.io/ding-ding-projects/map-editor:${MAP_EDITOR_VERSION:-latest}
     restart: unless-stopped
     ports:
       - "${MAP_EDITOR_PORT:-8420}:8420"

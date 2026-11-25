@@ -49,6 +49,11 @@ export function validateInstance(name: string, port: number, existing: Instance[
   return undefined;
 }
 
+/** Docker tag rules; anything else could change the generated Compose file. */
+export function validateVersion(version: string): string | undefined {
+  return /^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$/.test(version) ? undefined : 'Version must be an image tag such as latest or 0.1.30 (letters, digits, dots, dashes, underscores).';
+}
+
 export function lanAddress(): string {
   for (const list of Object.values(os.networkInterfaces())) for (const a of list ?? []) if (a.family === 'IPv4' && !a.internal) return a.address;
   return '127.0.0.1';
@@ -186,7 +191,7 @@ export async function deployDocker(dataDir: string, opts: { name: string; port: 
   ];
   const step = (i: number, state: Step['state'], detail?: string) => { steps[i] = { ...steps[i], state, detail }; progress([...steps]); };
   const existing = await loadInstances(dataDir);
-  const bad = validateInstance(opts.name, opts.port, existing);
+  const bad = validateInstance(opts.name, opts.port, existing) ?? validateVersion(opts.version);
   if (bad) return { error: bad };
   if (!(await portFree(opts.port))) return { error: `Port ${opts.port} is already in use on this computer.` };
 

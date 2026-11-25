@@ -65,4 +65,12 @@ describe('deploy targets', () => {
     expect(y).toContain('"9001:8420"');
     expect(y).toContain('ghcr.io/ding-ding-projects/map-editor:0.1.0');
   });
+  it('accepts only Docker image tags as the version', async () => {
+    const { validateVersion } = await import('../src/deploy/targets.js');
+    expect(validateVersion('latest')).toBeUndefined();
+    expect(validateVersion('0.1.30')).toBeUndefined();
+    expect(validateVersion('0.1.30\n    privileged: true')).toMatch(/image tag/);
+    expect(validateVersion('')).toMatch(/image tag/);
+    expect(validateVersion('-x')).toMatch(/image tag/);
+  });
 });

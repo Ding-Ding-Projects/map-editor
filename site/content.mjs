@@ -2,6 +2,7 @@
 export const features = [
   { slug: 'desktop-app', title: 'Desktop app', group: 'Ways to run it', summary: 'A Windows app that opens worlds straight from your .minecraft saves folder.',
     body: [
+      ['Updates', 'The installed app looks for a newer version when it starts and every four hours, and downloads it in the background while you keep working. When it is ready, a banner names the version, links to its release notes and offers Restart to install update or Later. Nothing restarts on its own, and the restart waits if an edit is still running. Updates are not code-signed. About › Check for updates looks straight away. If the update site cannot be reached, the app you have keeps working.'],
       ['What it does', 'The desktop app runs the same editor as the web app, inside its own window. It starts a private server on your computer that only that window can reach, so nothing is exposed to your network.'],
       ['Install', 'Download Setup.exe from the latest release and run it. The installer is not code-signed, so Windows SmartScreen may show a warning first; choose More info, then Run anyway. Updates arrive through the same release feed.'],
       ['Build it yourself', 'On Windows run build.bat --run from the repository. It installs Node.js and Git through Chocolatey if they are missing (one admin prompt), builds everything and starts the app.'],
