@@ -17,13 +17,51 @@ import { notesPanel as notesPanelImpl } from './notes.js';
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
 
 // ---------- state ----------
-interface Prefs extends I18nState { dark: boolean; reduceMotion: boolean; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
+interface Prefs extends I18nState { dark: boolean; reduceMotion: boolean; largeText: boolean; settingsSection: string; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
 const PREFS_KEY = 'map-editor.prefs.v1';
 const DEFAULT_SEED = '#4c8c4a';
-const defaults: Prefs = { lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
+const defaults: Prefs = { lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, largeText: false, settingsSection: 'language', closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
 function loadPrefs(): Prefs { try { return { ...defaults, ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') }; } catch { return { ...defaults }; } }
 let prefs = loadPrefs();
-function savePrefs() { try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch { /* storage blocked: keep in memory */ } }
+// Settings history: every saved change to a user-facing setting keeps the previous values,
+// newest first, so any change can be restored (and the restore is recorded too).
+const HISTORY_KEY = 'map-editor.settings-history.v1';
+const TRACKED = ['lang', 'funnyEn', 'funnyYue', 'dark', 'reduceMotion', 'largeText', 'seed', 'rainbowSpeed'] as const;
+type Tracked = typeof TRACKED[number];
+interface SettingsChange { at: string; keys: Tracked[]; before: Partial<Prefs>; after: Partial<Prefs> }
+let lastSaved: Partial<Prefs> = pick(prefs);
+function pick(p: Prefs): Partial<Prefs> { const o: Record<string, unknown> = {}; for (const k of TRACKED) o[k] = p[k]; return o as Partial<Prefs>; }
+function loadSettingsHistory(): SettingsChange[] { try { const v = JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]'); return Array.isArray(v) ? v : []; } catch { return []; } }
+function savePrefs() {
+  const now = pick(prefs);
+  const keys = TRACKED.filter((k) => JSON.stringify(now[k]) !== JSON.stringify(lastSaved[k]));
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+    if (keys.length) {
+      const h = loadSettingsHistory();
+      h.unshift({ at: new Date().toISOString(), keys, before: Object.fromEntries(keys.map((k) => [k, lastSaved[k]])), after: Object.fromEntries(keys.map((k) => [k, now[k]])) });
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0, 200)));
+    }
+  } catch { /* storage blocked: keep in memory */ }
+  lastSaved = now;
+}
+/** Accepts only known settings with the right types; returns how many were applied. */
+function importSettings(raw: unknown): number {
+  if (!raw || typeof raw !== 'object') return 0;
+  const src = ((raw as { settings?: unknown }).settings ?? raw) as Record<string, unknown>;
+  let n = 0;
+  const p = prefs as unknown as Record<string, unknown>;
+  for (const k of TRACKED) {
+    const v = src[k];
+    if (v === undefined) continue;
+    const ok = k === 'lang' ? v === 'en' || v === 'yue' || v === 'both'
+      : k === 'seed' ? typeof v === 'string' && (/^#[0-9a-f]{6}$/i.test(v) || v === RAINBOW)
+      : typeof defaults[k] === 'number' ? typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 5
+      : typeof v === typeof defaults[k];
+    if (ok) { p[k] = v; n++; }
+  }
+  return n;
+}
 
 const TABS = ['worlds', 'editor', 'history', 'settings', 'about'] as const;
 type Tab = typeof TABS[number];
@@ -87,6 +125,7 @@ function paletteCommands(): Command[] {
   if (world) for (const [o, k] of [['fill', 'F'], ['replace', 'R'], ['delete', 'D'], ['clone', 'C'], ['waterlog', 'W']] as const) cmds.push({ id: `tool-${o}`, label: tx(o), where: `${tx('editor')} › Tools`, keys: k, run: () => { go('editor')(); setTimeout(() => selectTool?.(o), 50); } });
   if (world) cmds.push({ id: 'undo', label: tx('undo'), where: tx('history'), keys: 'Ctrl+Z', run: () => undoLast() });
   cmds.push({ id: 'dark', label: tx('dark'), where: `${tx('settings')} › Appearance`, toggle: { get: () => prefs.dark, set: (v) => { prefs.dark = v; savePrefs(); applyTheme(); } } });
+  cmds.push({ id: 'large-text', label: tx('largeText'), where: `${tx('settings')} › ${tx('secComfort')}`, toggle: { get: () => prefs.largeText, set: (v) => { prefs.largeText = v; savePrefs(); applyTheme(); } } });
   cmds.push({ id: 'motion', label: tx('reduceMotion'), where: `${tx('settings')} › Appearance`, toggle: { get: () => prefs.reduceMotion, set: (v) => { prefs.reduceMotion = v; savePrefs(); applyTheme(); } } });
   for (const [l, label] of [['en', 'English'], ['yue', '粵語'], ['both', 'EN + 粵']] as const) cmds.push({ id: `lang-${l}`, label: `${tx('language')}: ${label}`, where: `${tx('settings')} › ${tx('language')}`, run: () => { prefs.lang = l; savePrefs(); render(); } });
   cmds.push({ id: 'notes', label: tx('notifications'), where: 'Header', run: () => toggleNoteCentre() });
@@ -115,6 +154,7 @@ function applyTheme() {
   applySeed();
   document.documentElement.dataset.theme = prefs.dark ? 'dark' : 'light';
   document.documentElement.classList.toggle('reduce-motion', prefs.reduceMotion);
+  document.documentElement.classList.toggle('large-text', prefs.largeText);
   document.documentElement.lang = prefs.lang === 'yue' ? 'zh-Hant-HK' : 'en';
 }
 
@@ -381,23 +421,59 @@ async function historyView(view: HTMLElement): Promise<void> {
   } catch (err) { notify((err as Error).message, true); }
 }
 
+const SECTIONS = [['language', 'secLanguage'], ['appearance', 'secAppearance'], ['comfort', 'secComfort'], ['backup', 'secBackup'], ['later', 'secLater']] as const;
+
 function settingsView(view: HTMLElement) {
-  view.innerHTML = `<section class="card"><h1 class="md-typescale-display-small">${esc(tx('settings'))}</h1>
-    <div class="stack">
-      <label class="row"><span>${esc(tx('funnyEn'))}</span><md-slider id="fen" min="1" max="5" step="1" ticks labeled value="${prefs.funnyEn}"></md-slider></label>
-      <label class="row"><span>${esc(tx('funnyYue'))}</span><md-slider id="fyue" min="1" max="5" step="1" ticks labeled value="${prefs.funnyYue}"></md-slider></label>
-      <p class="muted">${esc(tx('funnyNote'))}</p>
-      <label class="row"><span>${esc(tx('dark'))}</span><md-switch id="dark" ${prefs.dark ? 'selected' : ''}></md-switch></label>
-      <label class="row"><span>${esc(tx('reduceMotion'))}</span><md-switch id="rm" ${prefs.reduceMotion ? 'selected' : ''}></md-switch></label>
-      <div class="row"><span>${esc(tx('seed'))}</span><span class="seed-now"><span class="seed-swatch ${prefs.seed === RAINBOW ? 'rainbow' : ''}" style="background:${prefs.seed === RAINBOW ? 'none' : esc(prefs.seed)}"></span><code>${esc(prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed)}</code><md-text-button id="seed-reset">${esc(tx('reset'))}</md-text-button></span></div>
-      <div id="seed-picker"></div>
-    </div></section>`;
+  const sec = SECTIONS.some(([id]) => id === prefs.settingsSection) ? prefs.settingsSection : 'language';
+  const sw = (id: string, label: Key, note: Key, on: boolean) => `<label class="set-row" data-find="${esc(tx(label))} ${esc(tx(note))}"><span><b>${esc(tx(label))}</b><small>${esc(tx(note))}</small></span><md-switch id="${id}" ${on ? 'selected' : ''} aria-label="${esc(tx(label))}"></md-switch></label>`;
+  const body: Record<string, string> = {
+    language: `<div class="set-langs" role="group" aria-label="${esc(tx('secLanguage'))}" data-find="English 粵語 ${esc(tx('secLanguage'))}">${(['en', 'yue', 'both'] as const).map((l) => `<button class="set-lang${prefs.lang === l ? ' on' : ''}" data-set-lang="${l}" aria-pressed="${prefs.lang === l}">${l === 'en' ? 'English' : l === 'yue' ? '粵語' : 'English + 粵語'}</button>`).join('')}</div>
+      <div class="set-sliders">
+        <label class="set-slider" data-find="${esc(tx('funnyEn'))}"><span><b>${esc(tx('funnyEn'))}</b><em>${prefs.funnyEn}</em></span><md-slider id="fen" min="1" max="5" step="1" ticks labeled value="${prefs.funnyEn}"></md-slider></label>
+        <label class="set-slider" data-find="${esc(tx('funnyYue'))}"><span><b>${esc(tx('funnyYue'))}</b><em>${prefs.funnyYue}</em></span><md-slider id="fyue" min="1" max="5" step="1" ticks labeled value="${prefs.funnyYue}"></md-slider></label>
+      </div><p class="muted">${esc(tx('funnyNote'))}</p>`,
+    appearance: `${sw('dark', 'dark', 'darkNote', prefs.dark)}
+      <div class="set-row seed-row" data-find="${esc(tx('seed'))}"><span><b>${esc(tx('seed'))}</b></span><span class="seed-now"><span class="seed-swatch ${prefs.seed === RAINBOW ? 'rainbow' : ''}" style="background:${prefs.seed === RAINBOW ? 'none' : esc(prefs.seed)}"></span><code>${esc(prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed)}</code><md-text-button id="seed-reset">${esc(tx('reset'))}</md-text-button></span></div>
+      <div id="seed-picker" data-find="${esc(tx('seed'))} colour color"></div>`,
+    comfort: `${sw('rm', 'reduceMotion', 'reduceMotionNote', prefs.reduceMotion)}${sw('lt', 'largeText', 'largeTextNote', prefs.largeText)}`,
+    backup: `<p data-find="${esc(tx('exportSettings'))} ${esc(tx('importSettings'))}">${esc(tx('settingsSaved'))}</p>
+      <div class="row-actions"><md-filled-tonal-button id="exp">${esc(tx('exportSettings'))}</md-filled-tonal-button><md-outlined-button id="imp">${esc(tx('importSettings'))}</md-outlined-button><input id="imp-file" type="file" accept="application/json,.json" hidden></div>
+      <h3 data-find="${esc(tx('settingsHistory'))}">${esc(tx('settingsHistory'))}</h3><ol class="set-history" id="sh"></ol>`,
+    later: `<p data-find="${esc(tx('laterList'))}">${esc(tx('laterList'))}</p>`,
+  };
+  view.innerHTML = `<div class="settings">
+    <nav class="set-nav" aria-label="${esc(tx('settings'))}"><h1>${esc(tx('settings'))}</h1>
+      <md-outlined-text-field id="ss" type="search" label="${esc(tx('searchSettings'))}"></md-outlined-text-field>
+      <div role="tablist" aria-orientation="vertical">${SECTIONS.map(([id, k]) => `<button role="tab" class="set-tab${id === sec ? ' on' : ''}" aria-selected="${id === sec}" data-sec="${id}">${esc(tx(k))}</button>`).join('')}</div></nav>
+    <main class="set-main" id="set-main">${SECTIONS.map(([id, k]) => `<section class="set-sec" data-sec-body="${id}" ${id === sec ? '' : 'hidden'}><h2>${esc(tx(k))}</h2>${body[id]}</section>`).join('')}
+      <p class="muted" id="ss-none" hidden></p></main></div>`;
+  view.querySelectorAll<HTMLElement>('[data-sec]').forEach((b) => b.addEventListener('click', () => { prefs.settingsSection = b.dataset.sec!; savePrefs(); render(); }));
+  view.querySelector('[role=tablist]')!.addEventListener('keydown', (e) => {
+    const ke = e as KeyboardEvent; if (ke.key !== 'ArrowDown' && ke.key !== 'ArrowUp') return;
+    const tabs = Array.from(view.querySelectorAll<HTMLElement>('[data-sec]')); const i = tabs.indexOf(document.activeElement as HTMLElement);
+    tabs[(i + (ke.key === 'ArrowDown' ? 1 : tabs.length - 1)) % tabs.length]?.focus(); ke.preventDefault();
+  });
+  // Search shows every matching row across all sections at once.
+  const ss = view.querySelector<HTMLInputElement>('#ss')!;
+  ss.addEventListener('input', () => {
+    const q = ss.value.trim().toLowerCase(); let hits = 0;
+    view.querySelectorAll<HTMLElement>('[data-sec-body]').forEach((secEl) => {
+      if (!q) { secEl.hidden = secEl.dataset.secBody !== sec; secEl.querySelectorAll<HTMLElement>('[data-find]').forEach((r) => r.hidden = false); return; }
+      let any = false;
+      secEl.querySelectorAll<HTMLElement>('[data-find]').forEach((r) => { const m = r.dataset.find!.toLowerCase().includes(q); r.hidden = !m; any ||= m; if (m) hits++; });
+      secEl.hidden = !any;
+    });
+    const none = view.querySelector<HTMLElement>('#ss-none')!; none.hidden = !q || hits > 0; none.textContent = tx('noSettingMatch', { q: ss.value.trim() });
+  });
+  view.querySelectorAll<HTMLElement>('[data-set-lang]').forEach((b) => b.addEventListener('click', () => { prefs.lang = b.dataset.setLang as Prefs['lang']; savePrefs(); applyTheme(); render(); }));
   const num = (id: string) => Number((view.querySelector(id) as HTMLInputElement).value);
-  view.querySelector('#fen')!.addEventListener('change', () => { prefs.funnyEn = num('#fen'); savePrefs(); });
-  view.querySelector('#fyue')!.addEventListener('change', () => { prefs.funnyYue = num('#fyue'); savePrefs(); });
-  view.querySelector('#dark')!.addEventListener('change', (e) => { prefs.dark = (e.target as HTMLInputElement & { selected: boolean }).selected; savePrefs(); applyTheme(); });
-  view.querySelector('#rm')!.addEventListener('change', (e) => { prefs.reduceMotion = (e.target as HTMLInputElement & { selected: boolean }).selected; savePrefs(); applyTheme(); });
-  const showSeed = () => { const sw = view.querySelector<HTMLElement>('.seed-swatch')!; sw.classList.toggle('rainbow', prefs.seed === RAINBOW); sw.style.background = prefs.seed === RAINBOW ? '' : prefs.seed; view.querySelector('.seed-now code')!.textContent = prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed; };
+  const sel = (e: Event) => (e.target as HTMLElement & { selected: boolean }).selected;
+  view.querySelector('#fen')!.addEventListener('change', () => { prefs.funnyEn = num('#fen'); savePrefs(); render(); });
+  view.querySelector('#fyue')!.addEventListener('change', () => { prefs.funnyYue = num('#fyue'); savePrefs(); render(); });
+  view.querySelector('#dark')!.addEventListener('change', (e) => { prefs.dark = sel(e); savePrefs(); applyTheme(); });
+  view.querySelector('#rm')!.addEventListener('change', (e) => { prefs.reduceMotion = sel(e); savePrefs(); applyTheme(); });
+  view.querySelector('#lt')!.addEventListener('change', (e) => { prefs.largeText = sel(e); savePrefs(); applyTheme(); });
+  const showSeed = () => { const s = view.querySelector<HTMLElement>('.seed-swatch')!; s.classList.toggle('rainbow', prefs.seed === RAINBOW); s.style.background = prefs.seed === RAINBOW ? '' : prefs.seed; view.querySelector('.seed-now code')!.textContent = prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed; };
   colorPicker(view.querySelector<HTMLElement>('#seed-picker')!, {
     value: prefs.seed, label: tx('seed'), allowRainbow: true, rainbowSpeed: prefs.rainbowSpeed,
     surface: getComputedStyle(document.documentElement).getPropertyValue('--md-sys-color-surface').trim() || '#10140f',
@@ -405,6 +481,27 @@ function settingsView(view: HTMLElement) {
     onSpeed: (lv) => { prefs.rainbowSpeed = lv; savePrefs(); applyRainbowSpeed(lv); },
   });
   view.querySelector('#seed-reset')!.addEventListener('click', () => { prefs.seed = DEFAULT_SEED; savePrefs(); render(); });
+  view.querySelector('#exp')!.addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify({ app: 'map-editor', kind: 'settings', version: 1, exportedAt: new Date().toISOString(), settings: pick(prefs) }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'map-editor-settings.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+  const file = view.querySelector<HTMLInputElement>('#imp-file')!;
+  view.querySelector('#imp')!.addEventListener('click', () => file.click());
+  file.addEventListener('change', async () => {
+    const f = file.files?.[0]; if (!f) return;
+    let n = 0; try { n = importSettings(JSON.parse(await f.text())); } catch { n = 0; }
+    if (!n) { notify(tx('importBad'), true); return; }
+    savePrefs(); applyTheme(); render(); notify(tx('imported', { n }));
+  });
+  const sh = view.querySelector<HTMLElement>('#sh')!;
+  const hist = loadSettingsHistory();
+  const fmt = (k: Tracked, v: unknown) => k === 'seed' && v === RAINBOW ? tx('rainbow') : typeof v === 'boolean' ? (v ? 'on' : 'off') : String(v);
+  const name: Record<Tracked, string> = { lang: tx('secLanguage'), funnyEn: tx('funnyEn'), funnyYue: tx('funnyYue'), dark: tx('dark'), reduceMotion: tx('reduceMotion'), largeText: tx('largeText'), seed: tx('seed'), rainbowSpeed: tx('rainbow') };
+  sh.innerHTML = hist.length ? hist.slice(0, 50).map((h, i) => `<li data-find="${esc(h.keys.map((k) => name[k]).join(' '))}"><span><b>${h.keys.map((k) => `${esc(name[k])}: ${esc(fmt(k, h.before[k]))} → ${esc(fmt(k, h.after[k]))}`).join(' · ')}</b><small>${esc(new Date(h.at).toLocaleString())}</small></span><md-text-button data-restore="${i}">${esc(tx('restore'))}</md-text-button></li>`).join('') : `<li class="muted">${esc(tx('noSettingsHistory'))}</li>`;
+  sh.querySelectorAll<HTMLElement>('[data-restore]').forEach((b) => b.addEventListener('click', () => {
+    const h = hist[Number(b.dataset.restore)]; if (!h) return;
+    Object.assign(prefs, h.before); savePrefs(); applyTheme(); render(); notify(tx('settingsRestored'));
+  }));
 }
 
 async function aboutView(view: HTMLElement): Promise<void> {

@@ -63,6 +63,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Infinite colour picker: continuous field, hue and opacity, any-notation translator (name, HEX, HEX8, RGB, HSL, HSV, HWB, LAB, LCH, OKLab, OKLCH, CMYK), gamut and contrast notes, copy, recent colours, animated rainbow marker with one global speed. Drives the theme seed live; checked in headless Chrome and unit tested.
 - [ ] Colour picker on every other colour control; per-element appearance editor; logo customization.
 - [ ] Regex builder on every search field.
+- [x] Settings in sections (Language and voice, Appearance, Comfort and focus, Backup and history, Coming later) with search across every section, Large text, Export and Import (only known settings with the right types are accepted) and a settings history where every change can be restored; checked in headless Chrome.
 - [ ] ADHD modes, narration, school mode, scheduled settings, personal vocabulary upload.
 - [x] Notification centre behind the bell with a count badge and Dismiss all.
 - [ ] Notification search; install success and failure takeovers in the desktop app.

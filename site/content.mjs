@@ -64,6 +64,8 @@ export const features = [
     ], related: ['editing', 'edit-history', 'languages'] },
   { slug: 'appearance', title: 'Theme colours and the colour picker', group: 'Settings', summary: 'Pick any colour and the whole Material 3 theme follows it.',
     body: [
+      ['Settings sections', 'Settings is split into Language and voice, Appearance, Comfort and focus, Backup and history, and Coming later. The search box at the top finds a setting in any section. Comfort and focus has Reduce motion and Large text.'],
+      ['Backup and history', 'Export settings saves a .json file; Import settings reads one back and ignores anything it does not recognise. Every change is listed in Settings history with the old and new value, and Restore puts the old value back as a new change.'],
       ['Theme colour', 'Settings, Theme colour regenerates every Material 3 colour role from the colour you pick, in light and dark. Reset returns to the default green.'],
       ['The colour picker', 'Drag in the field or use the arrow keys, set hue and opacity, or type any colour: a CSS name, HEX, HEX8, rgb(), hsl(), hsv(), hwb(), lab(), lch(), oklab(), oklch() or cmyk(). Every format is shown with a copy button. Colours outside what screens can show are clipped and the picker says so. The contrast against the background is shown with the WCAG threshold it passes.'],
       ['Animated rainbow', 'The rainbow is a separate choice, not a colour value. Its speed is one global level. With reduced motion it stays on one hue.'],
