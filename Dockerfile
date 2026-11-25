@@ -12,7 +12,9 @@ RUN APP_VERSION="$APP_VERSION" SOURCE_COMMIT="$SOURCE_COMMIT" SOURCE_DATE="$SOUR
 
 FROM node:22-alpine
 ARG SOURCE_COMMIT=unavailable
+ARG APP_VERSION=
 LABEL org.opencontainers.image.title="Map Editor" \
+      org.opencontainers.image.version="$APP_VERSION" \
       org.opencontainers.image.description="Minecraft world editor based on Amulet Map Editor" \
       org.opencontainers.image.source="https://github.com/Ding-Ding-Projects/map-editor" \
       org.opencontainers.image.revision="$SOURCE_COMMIT"

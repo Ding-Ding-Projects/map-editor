@@ -39,7 +39,8 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] x86_64 image built in CI (alpine-make-rootfs on a loop device, syslinux), booted under QEMU until the web app answered its health check, and published as `.img.xz` and `.ova` in release v0.1.0-build.12.
 - [ ] Booted on real VirtualBox, VMware and a spare PC from USB.
 - [x] Raspberry Pi arm64 image with a QEMU boot test after each release (raspi4b, through to the web app's health check).
-- [ ] Separate data partition and an in-place updater for the OS and the app image together.
+- [x] In-place updater on the appliance (built, not yet run on a booted appliance): a daily job pulls the newest image, switches only after its health check answers and falls back otherwise, then upgrades the Alpine packages, logging to /var/log/map-editor-update.log; the image carries its version label for it.
+- [ ] Separate data partition on the appliance.
 - [x] Worlds can be uploaded as a .zip, created as a flat world and downloaded as a .zip from the web UI (unpack checks every path and refuses archives without level.dat; idiots and a headless Chrome run).
 
 ## Phase 5: deploy app

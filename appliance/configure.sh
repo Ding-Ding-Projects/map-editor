@@ -95,3 +95,42 @@ IP=$(ip -4 -o addr show eth0 2>/dev/null | awk '{print $4}' | cut -d/ -f1)
 BAN
 # No password login on the console; the appliance is managed from the web app.
 passwd -l root
+# In-place updates: once a day, pull the newest published Map Editor image, switch the service to it
+# only after it answers its health check, keep the previous image to fall back to, and upgrade the
+# Alpine packages. Data and worlds stay in /var/lib/map-editor throughout.
+install -m 0755 /dev/stdin /usr/local/bin/map-editor-update <<'UP'
+#!/bin/sh
+set -u
+IMG=ghcr.io/ding-ding-projects/map-editor
+LOG=/var/log/map-editor-update.log
+say() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $*" | tee -a "$LOG"; }
+cur=$(cat /opt/map-editor/VERSION)
+if ! docker pull -q "$IMG:latest" >/dev/null 2>&1; then say "No network or registry; staying on $cur"; exit 0; fi
+new=$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.version"}}' "$IMG:latest" 2>/dev/null)
+case "$new" in ''|"$cur") say "Map Editor $cur is up to date"; ;;
+  *)
+    say "Updating Map Editor $cur -> $new"
+    docker tag "$IMG:latest" "$IMG:$new"
+    echo "$new" > /opt/map-editor/VERSION
+    touch "/var/lib/map-editor/.loaded-$new"
+    rc-service map-editor restart >/dev/null 2>&1
+    i=0; until wget -q -O /dev/null http://127.0.0.1:8420/api/health; do
+      i=$((i + 1))
+      if [ "$i" -ge 120 ]; then
+        say "Map Editor $new did not answer; going back to $cur"
+        echo "$cur" > /opt/map-editor/VERSION
+        rc-service map-editor restart >/dev/null 2>&1
+        exit 1
+      fi
+      sleep 2
+    done
+    say "Map Editor $new is running"
+    docker image prune -f >/dev/null 2>&1 || true ;;
+esac
+# Operating system packages (security fixes); a failure leaves the system as it was.
+if apk update -q >/dev/null 2>&1 && apk upgrade -q --available >/dev/null 2>&1; then say "Alpine packages are up to date"; else say "Alpine package upgrade skipped"; fi
+UP
+mkdir -p /etc/periodic/daily
+printf '#!/bin/sh\n/usr/local/bin/map-editor-update\n' > /etc/periodic/daily/map-editor-update
+chmod 0755 /etc/periodic/daily/map-editor-update
+rc-update add crond default
