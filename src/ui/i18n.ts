@@ -80,6 +80,8 @@ const S = {
   extMasterOn: { en: 'On: switched-on extensions can run.', yue: '開咗：已開啟嘅擴充功能可以行。' },
   extMasterOff: { en: 'Off: no extension runs at all.', yue: '閂咗：任何擴充功能都唔會行。' },
   extAddZip: { en: 'Add from .zip…', yue: '由 .zip 加入…' },
+  extAddLink: { en: 'Add from link…', yue: '由連結加入…' },
+  extLinkAsk: { en: 'Paste an https link to an extension .zip (up to 20 MiB). It stays off until you allow its permissions.', yue: '貼上擴充功能 .zip 嘅 https 連結（最多 20 MiB）。批准權限之前唔會開。' },
   extAddFolder: { en: 'Add from folder…', yue: '由資料夾加入…' },
   extOpenFolder: { en: 'Open extensions folder', yue: '打開擴充功能資料夾' },
   extReload: { en: 'Reload', yue: '重新載入' },

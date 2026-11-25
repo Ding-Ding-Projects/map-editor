@@ -70,6 +70,13 @@ IP=$(ip -4 -o addr show eth0 2>/dev/null | awk '{print $4}' | cut -d/ -f1)
   if [ -n "$IP" ]; then echo "Open http://$IP:8420/ from a computer on this network."; else echo "No network address yet. Check the cable or Wi-Fi."; fi
   echo "The first person to open it becomes the owner."
   echo
+  echo "Quick tour of this appliance:"
+  echo "  1. This screen: the version and the link above. It updates when the network changes."
+  echo "  2. The link: open it in a browser on another computer to reach the editor."
+  echo "  3. First visit: create the owner account, then follow the setup steps."
+  echo "  4. In the editor, the ? button > Take a tour walks through every screen."
+  echo "Nothing needs typing here; there is no console login."
+  echo
 } > /etc/issue
 BAN
 # No password login on the console; the appliance is managed from the web app.

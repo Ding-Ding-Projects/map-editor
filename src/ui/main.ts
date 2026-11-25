@@ -682,7 +682,7 @@ async function extensionsPanel(view: HTMLElement) {
   bar.className = 'ext-bar';
   bar.innerHTML = `<label class="ext-master"><md-switch id="ext-master" ${data.masterOn ? 'selected' : ''} aria-label="${esc(tx('extMaster'))}"></md-switch><span><b>${esc(tx('extMaster'))}</b><small>${esc(tx(data.masterOn ? 'extMasterOn' : 'extMasterOff'))}</small></span></label>
     <span class="spacer"></span>
-    <md-outlined-button id="ext-zip">${esc(tx('extAddZip'))}</md-outlined-button><input type="file" id="ext-zip-file" accept=".zip,application/zip" hidden>
+    <md-outlined-button id="ext-zip">${esc(tx('extAddZip'))}</md-outlined-button><md-outlined-button id="ext-link">${esc(tx('extAddLink'))}</md-outlined-button><input type="file" id="ext-zip-file" accept=".zip,application/zip" hidden>
     ${data.canAddFolder && desktopBridge ? `<md-outlined-button id="ext-folder">${esc(tx('extAddFolder'))}</md-outlined-button>` : ''}
     ${data.folder && desktopBridge?.openDataFolder ? `<md-text-button id="ext-open">${esc(tx('extOpenFolder'))}</md-text-button>` : ''}
     <md-text-button id="ext-reload">${esc(tx('extReload'))}</md-text-button>`;
@@ -711,6 +711,10 @@ async function extensionsPanel(view: HTMLElement) {
     const f = zipIn.files?.[0]; if (!f) return;
     void added((replace) => fetch('/api/extensions/upload', { method: 'POST', headers: { 'content-type': 'application/zip', 'x-map-editor': '1', ...(replace ? { 'x-replace': '1' } : {}) }, body: f }));
     zipIn.value = '';
+  });
+  bar.querySelector('#ext-link')!.addEventListener('click', () => {
+    const link = prompt(tx('extLinkAsk'))?.trim(); if (!link) return;
+    void added((replace) => fetch('/api/extensions/add-url', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url: link, replace }) }));
   });
   bar.querySelector('#ext-folder')?.addEventListener('click', async () => {
     const dir = await desktopBridge!.pickFolder(); if (!dir) return;

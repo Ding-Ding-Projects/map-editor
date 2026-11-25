@@ -201,6 +201,14 @@ export async function createServer(opts: ServerOptions) {
         throw new HttpError(400, (e as Error).message);
       }
     }
+    if (p === '/api/extensions/add-url' && req.method === 'POST') {
+      const { url: link, replace } = await body(req);
+      try { const m = await extensions.installUrl(String(link ?? ''), replace === true, opts.fetchImpl); return send(201, { id: m.id, name: m.name, version: m.version }); }
+      catch (e) {
+        if (e instanceof ReplaceNeeded) return send(409, { replace: true, id: e.id, installed: e.installed, incoming: e.incoming, error: e.message });
+        throw new HttpError(400, (e as Error).message);
+      }
+    }
     if (p === '/api/extensions/remove' && req.method === 'POST') {
       const { id } = await body(req);
       try { await extensions.remove(String(id ?? '')); } catch (e) { throw new HttpError(400, (e as Error).message); }

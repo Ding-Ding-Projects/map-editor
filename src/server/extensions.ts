@@ -138,6 +138,23 @@ export class Extensions {
     finally { await fs.rm(tmp, { recursive: true, force: true }); }
   }
 
+  /** Download a .zip from an https link (20 MiB at most, 30 s) and install it like an uploaded one. */
+  async installUrl(link: string, replace = false, fetchImpl: typeof fetch = fetch): Promise<Manifest> {
+    let u: URL;
+    try { u = new URL(link); } catch { throw new Error('That is not a link.'); }
+    if (u.protocol !== 'https:') throw new Error('Only https links are accepted.');
+    if (/^(localhost|127\.|10\.|192\.168\.|169\.254\.|0\.|\[?::1\]?$)/i.test(u.hostname) || /^172\.(1[6-9]|2\d|3[01])\./.test(u.hostname)) throw new Error('Links to this computer or the local network are not accepted.');
+    const res = await fetchImpl(u, { signal: AbortSignal.timeout(30_000), redirect: 'follow' });
+    if (!res.ok) throw new Error(`The link answered ${res.status}.`);
+    if (Number(res.headers.get('content-length') ?? 0) > LIMITS.folderBytes) throw new Error('Extension archives are limited to 20 MiB.');
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length > LIMITS.folderBytes) throw new Error('Extension archives are limited to 20 MiB.');
+    await fs.mkdir(path.join(this.dataDir, 'uploads'), { recursive: true });
+    const tmp = path.join(this.dataDir, 'uploads', `ext-link-${Date.now()}.zip`);
+    await fs.writeFile(tmp, buf);
+    try { return await this.installZip(tmp, replace); } finally { await fs.rm(tmp, { force: true }); }
+  }
+
   /** Remove an extension the user added (built-in ones can only be switched off). */
   async remove(id: string) {
     const ext = (await this.list()).find((e) => e.manifest.id === id);
