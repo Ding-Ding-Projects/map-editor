@@ -11,6 +11,8 @@ import { configureSounds, play } from '../ui/sounds.js';
 import { openPalette, type Command } from '../ui/palette.js';
 import { t as tr, type Key } from '../ui/i18n.js';
 import { currentLang } from './lang.js';
+import { ARTICLES, docsView, docTitle, openDoc } from '../ui/docs.js';
+let guideOpened = false;
 
 interface Step { label: string; state: 'waiting' | 'running' | 'done' | 'failed'; detail?: string }
 interface Disk { id: string; name: string; sizeBytes: number }
@@ -30,7 +32,7 @@ const TARGETS = [
   { id: 'pi', name: 'Raspberry Pi', desc: 'Write the Raspberry Pi image (unpack map-editor-appliance-rpi-arm64.img.xz first) to an SD card with USB drive, or use Docker on another computer if the Pi already runs Docker.' },
 ] as const;
 let target: typeof TARGETS[number]['id'] = 'docker';
-let view: 'deploy' | 'instances' | 'disks' = 'deploy';
+let view: 'deploy' | 'instances' | 'disks' | 'guide' = 'deploy';
 let managing: string | undefined;
 const STATE_LABEL: Record<string, string> = { running: 'Running', stopped: 'Stopped', missing: 'Not found in Docker, VirtualBox or VMware', unknown: 'State unknown' };
 
@@ -231,6 +233,7 @@ function deployTour(start = 0) {
     { target: '#form', title: 'Fill in and deploy', body: 'Each target asks only for what it needs, shows every step while it runs, and ends with the working link or the exact error.', missing: toDeploy },
     { target: '#v-inst', title: 'Instances', body: 'Everything this app created: open, start, stop, restart, update, remove, and follow its live log.' },
     { target: '#v-disks', title: 'Virtual disks', body: 'On Windows: make a disk that lives in one file, attach one you already have, or detach it. Files are never deleted here.' },
+    { target: '#v-guide', title: 'Guide', body: 'The whole guide is inside this app and opens without a network.' },
     { target: '#tour', title: 'Come back any time', body: 'Take a tour starts this walk-through again.' },
   ], { stepOf: (n, m) => `Step ${n} of ${m} of the deploy tour`, back: 'Back', skip: 'Skip this step', next: 'Next', done: 'Finish', close: 'Close', notHere: 'This part is not on screen right now.' }, {
     start,
@@ -244,7 +247,7 @@ async function render() {
   app.innerHTML = `<header class="top"><div class="brand"><div class="logo" aria-hidden="true"></div><div>
       <div class="md-typescale-headline-medium title">Put Map Editor on your network</div>
       <div class="muted" id="prov"></div></div></div>
-    <md-chip-set class="views"><md-filter-chip id="v-deploy" label="Deploy" ${view === 'deploy' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-inst" label="Instances" ${view === 'instances' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-disks" label="Virtual disks" ${view === 'disks' ? 'selected' : ''}></md-filter-chip></md-chip-set><md-text-button id="tour">Take a tour</md-text-button><button type="button" id="cmd" class="icon-btn" aria-label="Find commands (Ctrl+Shift+F)" title="Find commands (Ctrl+Shift+F)" aria-keyshortcuts="Control+Shift+F">${iconSvg('search', 20)}</button>${langSwitch()}<button type="button" id="snd" class="icon-btn" aria-pressed="${soundsOn}" aria-label="Sound effects" title="Sound effects">${iconSvg('sound', 20)}</button></header>
+    <md-chip-set class="views"><md-filter-chip id="v-deploy" label="Deploy" ${view === 'deploy' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-inst" label="Instances" ${view === 'instances' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-disks" label="Virtual disks" ${view === 'disks' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-guide" label="Guide" ${view === 'guide' ? 'selected' : ''}></md-filter-chip></md-chip-set><md-text-button id="tour">Take a tour</md-text-button><button type="button" id="cmd" class="icon-btn" aria-label="Find commands (Ctrl+Shift+F)" title="Find commands (Ctrl+Shift+F)" aria-keyshortcuts="Control+Shift+F">${iconSvg('search', 20)}</button>${langSwitch()}<button type="button" id="snd" class="icon-btn" aria-pressed="${soundsOn}" aria-label="Sound effects" title="Sound effects">${iconSvg('sound', 20)}</button></header>
     <div id="update-banner" class="update-banner" role="region" aria-label="Update" hidden></div>
     <div class="body"><main class="view" id="main"></main></div><div id="toasts" class="toasts"></div>`;
   showUpdate();
@@ -253,10 +256,16 @@ async function render() {
   app.querySelector('#v-deploy')!.addEventListener('click', () => { view = 'deploy'; render(); });
   app.querySelector('#v-inst')!.addEventListener('click', () => { view = 'instances'; render(); });
   app.querySelector('#v-disks')!.addEventListener('click', () => { view = 'disks'; render(); });
+  app.querySelector('#v-guide')!.addEventListener('click', () => { view = 'guide'; render(); });
   app.querySelector('#tour')!.addEventListener('click', () => deployTour());
   const main = app.querySelector('#main')!;
   if (!obState().done) return onboarding(main);
   if (view === 'disks') return virtualDisks(main);
+  if (view === 'guide') { // the same bundled guide as the editor, opened on this app's own article first
+    if (!guideOpened) { openDoc('deploy-app'); guideOpened = true; }
+    main.classList.add('guide-view');
+    return docsView(main as HTMLElement, { lang: currentLang(), tx: paletteText, esc, rx: (k, v) => paletteText(k, v) });
+  }
   if (view === 'instances') {
     const list: Instance[] = await d.instances();
     if (managing && list.some((i) => i.name === managing)) return manage(main, list.find((i) => i.name === managing)!);
@@ -490,6 +499,8 @@ function deployCommands(): Command[] {
     { id: 'v-deploy', label: 'Deploy', where: 'Views', run: go('deploy'), goto: go('deploy') },
     { id: 'v-inst', label: 'Instances', where: 'Views', run: go('instances'), goto: go('instances') },
     { id: 'v-disks', label: 'Virtual disks', where: 'Views', run: go('disks'), goto: go('disks') },
+    { id: 'v-guide', label: 'Guide', where: 'Views', run: go('guide'), goto: go('guide') },
+    ...ARTICLES.map((a) => ({ id: `doc-${a.slug}`, label: `Guide: ${docTitle(a, currentLang())}`, where: 'Guide', run: () => { openDoc(a.slug); guideOpened = true; view = 'guide'; void render(); } })),
     ...TARGETS.map((x) => ({ id: `t-${x.id}`, label: `Deploy to: ${x.name}`, where: 'Targets', run: () => { view = 'deploy'; target = x.id; void render(); } })),
     { id: 'tour', label: 'Take a tour', where: 'Help', run: () => deployTour() },
     { id: 'setup', label: 'Run first-time setup again', where: 'Help', run: () => { obSave({ step: 0, done: false }); void render(); } },
