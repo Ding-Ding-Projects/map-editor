@@ -10,7 +10,7 @@ import { promises as fs, existsSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { Accounts } from './auth.js';
+import { Accounts, Throttle } from './auth.js';
 import { EditSession, type OperationRequest } from '../core/session.js';
 import { decodeStructure } from '../core/structure.js';
 import { discoverWorlds, isWorldFolder, setLevelName, worldInfo, type Dimension } from '../core/world.js';
@@ -82,6 +82,7 @@ export async function createServer(opts: ServerOptions) {
   const dimsum = new DimSum(opts.dataDir, opts.fetchImpl);
   const activity = new ActivityLog(opts.dataDir);
   const passkeys = new Passkeys(path.join(opts.dataDir, 'accounts'));
+  const throttle = new Throttle();
   const authenticator = new Authenticator(path.join(opts.dataDir, 'accounts'));
   // The page's origin for passkeys; MAP_EDITOR_ORIGIN fixes it when a proxy rewrites the Host header.
   const rp = (req: http.IncomingMessage) => originFor(req.headers.host, (req.headers['x-forwarded-proto'] ?? '') === 'https', process.env.MAP_EDITOR_ORIGIN || undefined);
@@ -147,12 +148,16 @@ export async function createServer(opts: ServerOptions) {
     }
     if (p === '/api/auth/login' && req.method === 'POST') {
       const { name, password, code } = await body(req);
-      if (!(await accounts.verify(String(name ?? ''), String(password ?? '')))) { note('account', String(name ?? ''), 'A sign-in failed (wrong name or password)'); throw new HttpError(401, 'Name or password is wrong.'); }
+      const from = req.socket.remoteAddress ?? 'unknown';
+      const waitS = throttle.wait(from);
+      if (waitS > 0) throw new HttpError(429, `Too many wrong sign-ins. Try again in ${Math.ceil(waitS / 60)} minutes.`);
+      if (!(await accounts.verify(String(name ?? ''), String(password ?? '')))) { throttle.fail(from); note('account', String(name ?? ''), 'A sign-in failed (wrong name or password)'); throw new HttpError(401, 'Name or password is wrong.'); }
       // With an authenticator app set up, the password alone is not enough.
       if (await authenticator.enabled()) {
         if (!code) return send(401, { needCode: true, error: 'Enter the 6-digit code from your authenticator app.' });
-        if (!(await authenticator.verify(String(code)))) { note('account', String(name), 'A sign-in failed (wrong authenticator code)'); throw new HttpError(401, 'That code does not match. Use the newest code from the app.'); }
+        if (!(await authenticator.verify(String(code)))) { throttle.fail(from); note('account', String(name), 'A sign-in failed (wrong authenticator code)'); throw new HttpError(401, 'That code does not match. Use the newest code from the app.'); }
       }
+      throttle.ok(from);
       const t = accounts.startSession(name);
       note('account', name, 'Signed in');
       res.setHeader('set-cookie', `me_session=${t}; HttpOnly; SameSite=Strict; Path=/; Max-Age=1209600`);

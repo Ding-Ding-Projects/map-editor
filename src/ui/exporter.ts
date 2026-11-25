@@ -39,6 +39,8 @@ export function exportButton(label: string, names: Record<ExportFormat, string>,
     if (e.key === 'Escape') { close(); btn.focus(); } else if (e.key === 'ArrowDown') { e.preventDefault(); items[(i + 1) % items.length].focus(); } else if (e.key === 'ArrowUp') { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
   });
   menu.querySelectorAll<HTMLElement>('[data-fmt]').forEach((b) => b.addEventListener('click', () => { close(); onPick(b.dataset.fmt as ExportFormat); }));
-  document.addEventListener('pointerdown', (e) => { if (!wrap.contains(e.target as Node)) close(); });
+  // The listener removes itself once the button has left the page, so re-rendering does not pile them up.
+  const outside = (e: Event) => { if (!wrap.isConnected) { document.removeEventListener('pointerdown', outside); return; } if (!wrap.contains(e.target as Node)) close(); };
+  document.addEventListener('pointerdown', outside);
   return wrap;
 }

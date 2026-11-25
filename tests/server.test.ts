@@ -184,6 +184,19 @@ describe('server', () => {
     expect(JSON.stringify(events)).not.toMatch(/correct horse|another long password|wrong password!!/);
   });
 
+  it('slows sign-in guessing and refuses structure files that unpack too large', async () => {
+    const { Throttle } = await import('../src/server/auth.js');
+    const th = new Throttle(5, 600_000);
+    for (let i = 0; i < 5; i++) { expect(th.wait('a', 1000)).toBe(0); th.fail('a', 1000); }
+    expect(th.wait('a', 2000)).toBeGreaterThan(0);
+    expect(th.wait('b', 2000)).toBe(0);
+    expect(th.wait('a', 1000 + 600_001)).toBe(0);
+    th.fail('c'); th.ok('c'); expect(th.wait('c')).toBe(0);
+    const { decodeStructure } = await import('../src/core/structure.js');
+    const { gzipSync } = await import('node:zlib');
+    expect(() => decodeStructure(gzipSync(Buffer.alloc(300 * 1024 * 1024)))).toThrow(/256 MiB/);
+  });
+
   it('refuses non-JSON state-changing requests', async () => {
     const r = await fetch(base + '/api/auth/logout', { method: 'POST', headers: { 'content-type': 'text/plain' }, body: 'x' });
     expect(r.status).toBe(415);

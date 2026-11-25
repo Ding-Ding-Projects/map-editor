@@ -123,7 +123,7 @@ const TONE_ELEMENTS = [['header', 'toneHeader'], ['tabs', 'toneTabs'], ['toolbar
 const TONES = ['primary', 'secondary', 'tertiary', 'surface'];
 // Custom logo: a small picture kept in this browser, shown in the header instead of the built-in mark.
 const LOGO_KEY = 'map-editor.logo.v1';
-const customLogo = () => { try { const v = localStorage.getItem(LOGO_KEY); return v && /^data:image\/(png|jpeg|webp|gif);base64,/.test(v) ? v : undefined; } catch { return undefined; } };
+const customLogo = () => { try { const v = localStorage.getItem(LOGO_KEY); return v && /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v) ? v : undefined; } catch { return undefined; } };
 function loadVocab(): Record<string, { en?: string; yue?: string }> { try { return parseVocabulary(JSON.parse(localStorage.getItem(VOCAB_KEY) ?? '{}')).ok; } catch { return {}; } }
 function saveVocab(v: Record<string, { en?: string; yue?: string }>) { try { localStorage.setItem(VOCAB_KEY, JSON.stringify(v)); } catch { /* storage blocked */ } setVocabulary(v); }
 setVocabulary(loadVocab());

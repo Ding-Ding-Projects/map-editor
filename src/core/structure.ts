@@ -61,7 +61,8 @@ export function encodeStructure(s: Structure): Buffer {
 
 export function decodeStructure(buf: Uint8Array): Structure {
   let raw: Uint8Array;
-  try { raw = gunzipSync(buf); } catch { raw = buf; } // some tools save it uncompressed
+  // A small file must not unpack into gigabytes: stop at 256 MiB.
+  try { raw = gunzipSync(buf, { maxOutputLength: 256 * 1024 * 1024 }); } catch (e) { if ((e as NodeJS.ErrnoException).code === 'ERR_BUFFER_TOO_LARGE') throw new Error('This structure file unpacks to more than 256 MiB.'); raw = buf; } // some tools save it uncompressed
   const root = readNbt(raw).tag;
   const ints = (list: Tag[] | undefined) => (list ?? []).map((v) => (v.type === TagType.Int ? v.value : NaN));
   const size = ints(getList(root, 'size'));

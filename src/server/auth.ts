@@ -9,6 +9,20 @@ const scrypt = promisify(scryptCb) as (pw: string, salt: Buffer, len: number) =>
 
 export interface User { name: string; role: 'owner' | 'member'; salt: string; hash: string; created: string }
 
+/** Slows guessing: after 5 wrong sign-ins from one address within 10 minutes, that address waits. */
+export class Throttle {
+  private fails = new Map<string, number[]>();
+  constructor(private max = 5, private windowMs = 10 * 60_000) {}
+  /** Seconds to wait, or 0 when another try is allowed. */
+  wait(key: string, now = Date.now()): number {
+    const list = (this.fails.get(key) ?? []).filter((t) => now - t < this.windowMs);
+    this.fails.set(key, list);
+    return list.length >= this.max ? Math.ceil((list[0] + this.windowMs - now) / 1000) : 0;
+  }
+  fail(key: string, now = Date.now()) { this.fails.set(key, [...(this.fails.get(key) ?? []), now]); if (this.fails.size > 10_000) this.fails.clear(); }
+  ok(key: string) { this.fails.delete(key); }
+}
+
 export class Accounts {
   private sessions = new Map<string, { name: string; expires: number }>();
   constructor(private dir: string) {}
