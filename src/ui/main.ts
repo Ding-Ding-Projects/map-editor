@@ -30,16 +30,16 @@ import { notesPanel as notesPanelImpl } from './notes.js';
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
 
 // ---------- state ----------
-interface Prefs extends I18nState { dark: boolean; reduceMotion: boolean; largeText: boolean; dimSum: boolean; takeovers: boolean; narrate: boolean; narrateRate: number; darkSchedule: boolean; darkFrom: string; darkTo: string; editLock: boolean; tourOffered: boolean; tourResume: { name: string; step: number } | null; sounds: boolean; soundVolume: number; settingsSection: string; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
+interface Prefs extends I18nState { dark: boolean; reduceMotion: boolean; largeText: boolean; dimSum: boolean; takeovers: boolean; lockedSettings: string[]; quietHours: boolean; quietFrom: string; quietTo: string; narrate: boolean; narrateRate: number; darkSchedule: boolean; darkFrom: string; darkTo: string; editLock: boolean; tourOffered: boolean; tourResume: { name: string; step: number } | null; sounds: boolean; soundVolume: number; settingsSection: string; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
 const PREFS_KEY = 'map-editor.prefs.v1';
 const DEFAULT_SEED = '#4c8c4a';
-const defaults: Prefs = { lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, largeText: false, dimSum: true, takeovers: true, narrate: false, narrateRate: 10, darkSchedule: false, darkFrom: '19:00', darkTo: '07:00', editLock: false, tourOffered: false, tourResume: null, sounds: true, soundVolume: 40, settingsSection: 'language', closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
+const defaults: Prefs = { lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, largeText: false, dimSum: true, takeovers: true, lockedSettings: [], quietHours: false, quietFrom: '22:00', quietTo: '07:00', narrate: false, narrateRate: 10, darkSchedule: false, darkFrom: '19:00', darkTo: '07:00', editLock: false, tourOffered: false, tourResume: null, sounds: true, soundVolume: 40, settingsSection: 'language', closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
 function loadPrefs(): Prefs { try { return { ...defaults, ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') }; } catch { return { ...defaults }; } }
 let prefs = loadPrefs();
 // Settings history: every saved change to a user-facing setting keeps the previous values,
 // newest first, so any change can be restored (and the restore is recorded too).
 const HISTORY_KEY = 'map-editor.settings-history.v1';
-const TRACKED = ['lang', 'funnyEn', 'funnyYue', 'dark', 'reduceMotion', 'largeText', 'takeovers', 'dimSum', 'narrate', 'narrateRate', 'darkSchedule', 'darkFrom', 'darkTo', 'editLock', 'sounds', 'soundVolume', 'seed', 'rainbowSpeed'] as const;
+const TRACKED = ['lang', 'funnyEn', 'funnyYue', 'dark', 'reduceMotion', 'largeText', 'takeovers', 'lockedSettings', 'quietHours', 'quietFrom', 'quietTo', 'dimSum', 'narrate', 'narrateRate', 'darkSchedule', 'darkFrom', 'darkTo', 'editLock', 'sounds', 'soundVolume', 'seed', 'rainbowSpeed'] as const;
 type Tracked = typeof TRACKED[number];
 interface SettingsChange { at: string; keys: Tracked[]; before: Partial<Prefs>; after: Partial<Prefs> }
 let lastSaved: Partial<Prefs> = pick(prefs);
@@ -70,7 +70,8 @@ function importSettings(raw: unknown): number {
     const ok = k === 'lang' ? v === 'en' || v === 'yue' || v === 'both'
       : k === 'seed' ? typeof v === 'string' && (/^#[0-9a-f]{6}$/i.test(v) || v === RAINBOW)
       : k === 'narrateRate' ? typeof v === 'number' && Number.isInteger(v) && v >= 5 && v <= 20
-      : k === 'darkFrom' || k === 'darkTo' ? typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v)
+      : k === 'lockedSettings' ? Array.isArray(v) && v.every((x) => typeof x === 'string' && /^[a-z-]{1,20}$/.test(x))
+      : k === 'darkFrom' || k === 'darkTo' || k === 'quietFrom' || k === 'quietTo' ? typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v)
       : k === 'soundVolume' ? typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 100
       : typeof defaults[k] === 'number' ? typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 5
       : typeof v === typeof defaults[k];
@@ -107,7 +108,7 @@ const notes: Array<{ id: number; text: string; error: boolean; at: string }> = [
 let noteId = 0;
 // Narration: reads every message aloud with the device's own speech voices (nothing is sent anywhere).
 function narrate(text: string, force = false) {
-  if ((!prefs.narrate && !force) || !('speechSynthesis' in window)) return;
+  if ((!prefs.narrate && !force) || (!force && quiet()) || !('speechSynthesis' in window)) return;
   try {
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
@@ -117,13 +118,15 @@ function narrate(text: string, force = false) {
   } catch { /* no speech on this device: the message is still on screen */ }
 }
 // Scheduled dark theme: dark between darkFrom and darkTo (the range may cross midnight).
-function scheduledDark(now = new Date()): boolean | undefined {
-  if (!prefs.darkSchedule) return undefined;
+function inWindow(from: string, to: string, now = new Date()): boolean {
   const m = (t: string) => { const [h, mi] = t.split(':').map(Number); return h * 60 + mi; };
-  const cur = now.getHours() * 60 + now.getMinutes(), a = m(prefs.darkFrom), b = m(prefs.darkTo);
+  const cur = now.getHours() * 60 + now.getMinutes(), a = m(from), b = m(to);
   return a <= b ? cur >= a && cur < b : cur >= a || cur < b;
 }
-setInterval(() => { const d = scheduledDark(); if (d !== undefined && d !== (document.documentElement.dataset.theme === 'dark')) applyTheme(); }, 60_000);
+function scheduledDark(now = new Date()): boolean | undefined { return prefs.darkSchedule ? inWindow(prefs.darkFrom, prefs.darkTo, now) : undefined; }
+// Quiet hours: sounds and reading aloud stay silent between the two times.
+const quiet = () => prefs.quietHours && inWindow(prefs.quietFrom, prefs.quietTo);
+setInterval(() => { const d = scheduledDark(); if ((d !== undefined && d !== (document.documentElement.dataset.theme === 'dark')) || prefs.quietHours) applyTheme(); }, 60_000);
 
 function notify(text: string, error = false, action?: { label: string; run: () => void }) {
   const at = new Date().toLocaleTimeString('en-GB');
@@ -195,6 +198,12 @@ function paletteCommands(): Command[] {
   for (const [l, label] of [['en', 'English'], ['yue', '粵語'], ['both', 'EN + 粵']] as const) cmds.push({ id: `lang-${l}`, label: `${tx('language')}: ${label}`, where: `${tx('settings')} › ${tx('language')}`, run: () => { prefs.lang = l; savePrefs(); render(); } });
   cmds.push({ id: 'notes', label: tx('notifications'), where: 'Header', run: () => toggleNoteCentre() });
   cmds.push({ id: 'welcome', label: tx('welcome'), where: `${tx('settings')}`, run: () => { prefs.onboarded = false; prefs.onboardStep = 0; savePrefs(); render(); } });
+  // A setting locked in Settings is locked here too: its row says so instead of switching.
+  const SWITCH_OF: Record<string, string> = { dark: 'dark', motion: 'rm', 'large-text': 'lt', sounds: 'snd', 'edit-lock': 'elock', narrate: 'nar', 'dim-sum-toggle': 'ds' };
+  for (const c of cmds) {
+    const sid = SWITCH_OF[c.id];
+    if (c.toggle && sid && prefs.lockedSettings.includes(sid)) { c.where = `${c.where} · ${tx('lockedSettings')}`; c.toggle = { get: c.toggle.get, set: () => notify(tx('settingLocked'), true) }; }
+  }
   return cmds;
 }
 
@@ -221,7 +230,7 @@ function applyTheme() {
   document.documentElement.classList.toggle('edit-locked', prefs.editLock);
   document.documentElement.classList.toggle('reduce-motion', prefs.reduceMotion);
   document.documentElement.classList.toggle('large-text', prefs.largeText);
-  configureSounds(prefs.sounds, prefs.soundVolume / 100);
+  configureSounds(prefs.sounds && !quiet(), prefs.soundVolume / 100);
   document.documentElement.lang = prefs.lang === 'yue' ? 'zh-Hant-HK' : 'en';
 }
 
@@ -809,7 +818,11 @@ async function extensionsPanel(view: HTMLElement) {
 
 function settingsView(view: HTMLElement) {
   const sec = SECTIONS.some(([id]) => id === prefs.settingsSection) ? prefs.settingsSection : 'language';
-  const sw = (id: string, label: Key, note: Key, on: boolean) => `<label class="set-row" data-find="${esc(tx(label))} ${esc(tx(note))}"><span><b>${esc(tx(label))}</b><small>${esc(tx(note))}</small></span><md-switch id="${id}" ${on ? 'selected' : ''} aria-label="${esc(tx(label))}"></md-switch></label>`;
+  // Every switch can be locked on its own, so it cannot be changed by accident (here or in the palette).
+  const lockedSet = new Set(prefs.lockedSettings);
+  const sw = (id: string, label: Key, note: Key, on: boolean) => { const locked = lockedSet.has(id); return `<div class="set-row${locked ? ' locked' : ''}" data-find="${esc(tx(label))} ${esc(tx(note))}"><label for="${id}"><span><b>${esc(tx(label))}</b><small>${esc(tx(locked ? 'settingLocked' : note))}</small></span></label>
+    <md-icon-button class="set-lock" data-lock="${id}" aria-pressed="${locked}" aria-label="${esc(tx(locked ? 'unlockSetting' : 'lockSetting', { name: tx(label) }))}" title="${esc(tx(locked ? 'unlockSetting' : 'lockSetting', { name: tx(label) }))}">${locked ? '🔒' : '🔓'}</md-icon-button>
+    <md-switch id="${id}" ${on ? 'selected' : ''} ${locked ? 'disabled' : ''} aria-label="${esc(tx(label))}"></md-switch></div>`; };
   const body: Record<string, string> = {
     language: `<div class="set-langs" role="group" aria-label="${esc(tx('secLanguage'))}" data-find="English 粵語 ${esc(tx('secLanguage'))}">${(['en', 'yue', 'both'] as const).map((l) => `<button class="set-lang${prefs.lang === l ? ' on' : ''}" data-set-lang="${l}" aria-pressed="${prefs.lang === l}">${l === 'en' ? 'English' : l === 'yue' ? '粵語' : 'English + 粵語'}</button>`).join('')}</div>
       <div class="set-sliders">
@@ -828,6 +841,8 @@ function settingsView(view: HTMLElement) {
     sounds: `${sw('snd', 'soundEffects', 'soundEffectsNote', prefs.sounds)}
       <label class="set-slider" data-find="${esc(tx('soundVolume'))}"><span><b>${esc(tx('soundVolume'))}</b><em id="vol-n">${prefs.soundVolume}%</em></span><md-slider id="vol" min="0" max="100" step="10" labeled value="${prefs.soundVolume}" aria-label="${esc(tx('soundVolume'))}"></md-slider></label>
       <div class="row-actions" data-find="${esc(tx('soundTry'))}"><md-outlined-button id="snd-try">${esc(tx('soundTry'))}</md-outlined-button></div>
+      ${sw('quiet', 'quietHours', 'quietHoursNote', prefs.quietHours)}
+      <div class="set-times" data-find="${esc(tx('quietHours'))} ${esc(tx('quietFrom'))} ${esc(tx('quietTo'))}"><md-outlined-text-field id="qfrom" type="time" label="${esc(tx('quietFrom'))}" value="${prefs.quietFrom}"></md-outlined-text-field><md-outlined-text-field id="qto" type="time" label="${esc(tx('quietTo'))}" value="${prefs.quietTo}"></md-outlined-text-field></div>
       ${sw('nar', 'narrate', 'narrateNote', prefs.narrate)}
       <label class="set-slider" data-find="${esc(tx('narrateRate'))}"><span><b>${esc(tx('narrateRate'))}</b><em id="nar-n">${(prefs.narrateRate / 10).toFixed(1)}×</em></span><md-slider id="nar-rate" min="5" max="20" step="1" labeled value="${prefs.narrateRate}" aria-label="${esc(tx('narrateRate'))}"></md-slider></label>
       <div class="row-actions" data-find="${esc(tx('narrateTry'))}"><md-outlined-button id="nar-try">${esc(tx('narrateTry'))}</md-outlined-button></div>`,
@@ -882,6 +897,15 @@ function settingsView(view: HTMLElement) {
   view.querySelector('#nar')!.addEventListener('change', (e) => { prefs.narrate = sel(e); savePrefs(); if (prefs.narrate) narrate(tx('narrateOn')); });
   view.querySelector('#nar-rate')!.addEventListener('change', () => { prefs.narrateRate = num('#nar-rate'); view.querySelector('#nar-n')!.textContent = `${(prefs.narrateRate / 10).toFixed(1)}×`; savePrefs(); });
   view.querySelector('#nar-try')!.addEventListener('click', () => narrate(tx('narrateSample'), true));
+  view.querySelector('#quiet')!.addEventListener('change', (e) => { prefs.quietHours = sel(e); savePrefs(); applyTheme(); });
+  for (const [id, k] of [['#qfrom', 'quietFrom'], ['#qto', 'quietTo']] as const) view.querySelector(id)!.addEventListener('change', () => { const v = (view.querySelector(id) as HTMLInputElement).value; if (/^([01]\d|2[0-3]):[0-5]\d$/.test(v)) { prefs[k] = v; savePrefs(); applyTheme(); } });
+  view.querySelectorAll<HTMLElement>('[data-lock]').forEach((b) => b.addEventListener('click', () => {
+    const id = b.dataset.lock!;
+    const isLocked = prefs.lockedSettings.includes(id);
+    if (isLocked && !confirm(tx('unlockAsk'))) return;
+    prefs.lockedSettings = isLocked ? prefs.lockedSettings.filter((x) => x !== id) : [...prefs.lockedSettings, id];
+    savePrefs(); render(); notify(tx(isLocked ? 'settingUnlockedMsg' : 'settingLockedMsg'));
+  }));
   view.querySelector('#dsched')!.addEventListener('change', (e) => { prefs.darkSchedule = sel(e); savePrefs(); applyTheme(); });
   for (const [id, k] of [['#dfrom', 'darkFrom'], ['#dto', 'darkTo']] as const) view.querySelector(id)!.addEventListener('change', () => { const v = (view.querySelector(id) as HTMLInputElement).value; if (/^([01]\d|2[0-3]):[0-5]\d$/.test(v)) { prefs[k] = v; savePrefs(); applyTheme(); } });
   view.querySelector('#reset-layouts')!.addEventListener('click', () => { resetLayout(); notify(tx('resetLayoutsDone')); });
@@ -910,7 +934,7 @@ function settingsView(view: HTMLElement) {
   const sh = view.querySelector<HTMLElement>('#sh')!;
   const hist = loadSettingsHistory();
   const fmt = (k: Tracked, v: unknown) => k === 'seed' && v === RAINBOW ? tx('rainbow') : typeof v === 'boolean' ? (v ? 'on' : 'off') : String(v);
-  const name: Record<Tracked, string> = { takeovers: tx('takeovers'), narrate: tx('narrate'), narrateRate: tx('narrateRate'), darkSchedule: tx('darkSchedule'), darkFrom: tx('darkFrom'), darkTo: tx('darkTo'), editLock: tx('editLock'), dimSum: tx('dimSum'), sounds: tx('soundEffects'), soundVolume: tx('soundVolume'), lang: tx('secLanguage'), funnyEn: tx('funnyEn'), funnyYue: tx('funnyYue'), dark: tx('dark'), reduceMotion: tx('reduceMotion'), largeText: tx('largeText'), seed: tx('seed'), rainbowSpeed: tx('rainbow') };
+  const name: Record<Tracked, string> = { lockedSettings: tx('lockedSettings'), quietHours: tx('quietHours'), quietFrom: tx('quietFrom'), quietTo: tx('quietTo'), takeovers: tx('takeovers'), narrate: tx('narrate'), narrateRate: tx('narrateRate'), darkSchedule: tx('darkSchedule'), darkFrom: tx('darkFrom'), darkTo: tx('darkTo'), editLock: tx('editLock'), dimSum: tx('dimSum'), sounds: tx('soundEffects'), soundVolume: tx('soundVolume'), lang: tx('secLanguage'), funnyEn: tx('funnyEn'), funnyYue: tx('funnyYue'), dark: tx('dark'), reduceMotion: tx('reduceMotion'), largeText: tx('largeText'), seed: tx('seed'), rainbowSpeed: tx('rainbow') };
   sh.innerHTML = hist.length ? hist.slice(0, 50).map((h, i) => `<li data-find="${esc(h.keys.map((k) => name[k]).join(' '))}"><span><b>${h.keys.map((k) => `${esc(name[k])}: ${esc(fmt(k, h.before[k]))} → ${esc(fmt(k, h.after[k]))}`).join(' · ')}</b><small>${esc(new Date(h.at).toLocaleString())}</small></span><md-text-button data-restore="${i}">${esc(tx('restore'))}</md-text-button></li>`).join('') : `<li class="muted">${esc(tx('noSettingsHistory'))}</li>`;
   sh.querySelectorAll<HTMLElement>('[data-restore]').forEach((b) => b.addEventListener('click', () => {
     const h = hist[Number(b.dataset.restore)]; if (!h) return;

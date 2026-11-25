@@ -61,7 +61,9 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] dockview workspace for the editor (map, tools, history, notes; docking, tabbing, saved layout), checked in headless Chrome.
 - [x] Phone width (720 px and under): the editor workspace becomes one tabbed group with its own saved layout, the header compacts, and destinations move to a bottom bar; every screen checked at 390 px with no sideways scrolling.
 - [x] dockview on History (Edits and Details panels: pick an edit to see its time, full commit id and position, Roll back or Copy commit id) and About (About and Changelog panels), each with its own saved layout and the phone single-group fallback; Reset panel layouts in Settings and the palette; several workspaces can now be on screen at once. Checked in headless Chrome.
-- [ ] Floating groups by default on wide screens; Worlds and Settings stay as single pages.
+- [x] On wide screens (1600 px and over) the editor's Notes start as a floating group in the lower left of the map; checked in headless Chrome.
+- [x] A lock on every settings switch: a locked switch is disabled, its row says so, the palette refuses to change it, unlocking asks first; and Quiet hours silence sounds and reading aloud between two times. Both in settings history and export; checked in headless Chrome.
+- [ ] Locks on whole panels or screens.
 - [x] Rich text notes per world with self-hosted TinyMCE, autosaved; typing and saving checked in headless Chrome.
 - [ ] TinyMCE for every other rich text field.
 - [x] Command palette on Ctrl+Shift+F: every tab, tool, undo, language and appearance setting, with settings as live switches in the result row; checked in headless Chrome.

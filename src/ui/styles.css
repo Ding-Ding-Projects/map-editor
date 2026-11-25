@@ -498,3 +498,5 @@ md-list-item[hidden] { display: none; }
 md-list-item.picked { background: var(--md-sys-color-secondary-container); border-radius: 16px; }
 .dock .about-card, .dock .changelog { border-radius: 0; }
 .dock .changelog { padding: 20px 24px; box-sizing: border-box; } .dock .about-card { box-sizing: border-box; }
+.set-row > label { flex: 1; display: flex; cursor: pointer; } .set-row > label > span { display: flex; flex-direction: column; gap: 2px; }
+.set-lock { --md-icon-button-icon-size: 18px; font-size: 16px; opacity: .55; } .set-row:hover .set-lock, .set-lock:focus-visible, .set-row.locked .set-lock { opacity: 1; }

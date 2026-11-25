@@ -342,7 +342,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Settings. Try: section tabs, language buttons, switches, seed swatches; Tweaks dark, seed, motion.\nIn the app: section tabs, settings search across sections, language, both funny sliders, dark, theme colour picker, reduce motion, large text, sound effects with volume and a test sound, export, import, settings history with Restore, Clear buttons on every text field, read messages aloud with speed and a test, dark theme on a schedule, Lock editing, Extensions section. Not yet: locks for single settings or panels, schedules for other settings, dim sum surprise, emoji switch, regex builder on the search.",
+   "text": "Settings. Try: section tabs, language buttons, switches, seed swatches; Tweaks dark, seed, motion.\nIn the app: section tabs, settings search across sections, language, both funny sliders, dark, theme colour picker, reduce motion, large text, sound effects with volume and a test sound, export, import, settings history with Restore, Clear buttons on every text field, read messages aloud with speed and a test, dark theme on a schedule, Lock editing, Extensions section. Also: a lock on every switch (locked switches are disabled here and refused in the palette), Quiet hours for sounds and reading aloud. Not yet: locks on whole panels, dim sum surprise, emoji switch, regex builder on the search.",
    "fill": "yellow",
    "page": "settings"
   },

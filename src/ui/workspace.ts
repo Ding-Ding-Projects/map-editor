@@ -5,6 +5,8 @@ import { createDockview, type DockviewApi } from 'dockview-core/dist/dockview-co
 const LAYOUT_KEY = 'map-editor.layout.v1';
 // On a phone every panel is one tab in a single group, so nothing is squeezed side by side.
 export const PHONE = '(max-width: 720px)';
+/** Wide enough for a floating group to sit over the map without covering the tools. */
+export const WIDE = '(min-width: 1600px)';
 const live = new Map<HTMLElement, DockviewApi>();
 
 /** Default arrangement: each entry is [panel id, position relative to an earlier panel, size]. */
@@ -44,6 +46,11 @@ export function mountWorkspace(host: HTMLElement, panels: Record<string, HTMLEle
     api.addPanel({ id: 'tool', component: 'tool', title: titles.tool, position: phone ? { referencePanel: 'map', direction: 'within' } : { referencePanel: 'map', direction: 'right' }, initialWidth: phone ? undefined : 380 });
     api.addPanel({ id: 'history', component: 'history', title: titles.history, position: { referencePanel: 'tool', direction: 'within' } });
     api.addPanel({ id: 'notes', component: 'notes', title: titles.notes, position: { referencePanel: 'tool', direction: 'within' } });
+    // Wide screens: notes start as a floating group in the lower left of the map, so the tools keep their full height.
+    if (!phone && matchMedia(WIDE).matches) {
+      const notes = api.getPanel('notes');
+      if (notes) api.addFloatingGroup(notes, { x: 24, y: Math.max(80, host.clientHeight - 360), width: 420, height: 320 });
+    }
     api.getPanel(phone ? 'map' : 'tool')?.api.setActive();
   }
   for (const id of Object.keys(titles)) api.getPanel(id)?.api.setTitle(titles[id]);
