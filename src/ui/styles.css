@@ -608,3 +608,12 @@ canvas#map[data-mode="pick"] { cursor: copy; } canvas#map[data-mode="goto"] { cu
 .act-kind.k-account { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
 .act-kind.k-world { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
 .act-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; } .act-text b { overflow-wrap: anywhere; } .act-text small { color: var(--md-sys-color-on-surface-variant); }
+
+/* Passkeys */
+.or-line { display: flex; align-items: center; gap: 12px; color: var(--md-sys-color-on-surface-variant); margin: 16px 0 12px; }
+.or-line::before, .or-line::after { content: ''; flex: 1; height: 1px; background: var(--md-sys-color-outline-variant); }
+.pk-signin { width: 100%; }
+.pk-row { align-items: center !important; }
+.pk-row .act-text { flex: 1; }
+.pk-ico { font-size: 22px; }
+.danger-outline { --md-outlined-button-label-text-color: var(--md-sys-color-error); --md-outlined-button-outline-color: var(--md-sys-color-error); }

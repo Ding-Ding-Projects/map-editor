@@ -10,6 +10,7 @@ import { startTour, type TourStep } from './tour.js';
 import { worldsView } from './worlds.js';
 import { openPalette, type Command } from './palette.js';
 import { showTabSearch } from './tabsearch.js';
+import { browserSupportsWebAuthn, startAuthentication, startRegistration } from '@simplewebauthn/browser';
 import { onboarding } from './onboarding.js';
 
 /** Present only inside the desktop app (see src/desktop/preload.ts). */
@@ -105,6 +106,9 @@ interface Health { version: string; commit: string; builtAt: string | null }
 let health: Health | undefined;
 let user: { name: string } | null = null;
 let hasOwner = true;
+let hasPasskeys = false;
+/** Passkeys need a secure page (https or localhost) and a browser that supports them. */
+const passkeysUsable = () => window.isSecureContext && browserSupportsWebAuthn();
 let world: { name: string; versionName?: string; path: string; dimensions?: string[]; spawn?: { x: number; y: number; z: number } } | undefined;
 let fitPending = false; // centre the map on the world's chunks the next time the editor draws
 
@@ -194,6 +198,18 @@ function toggleNoteCentre() {
   panel.querySelector('#nc-close')!.addEventListener('click', () => panel.remove());
 }
 
+/** Material text prompt in place of the browser's prompt(), which the desktop app does not have. */
+function askText(title: string, label: string, value = ''): Promise<string | undefined> {
+  return new Promise((resolve) => {
+    const dlg = document.createElement('md-dialog') as HTMLElement & { show: () => void; returnValue: string };
+    dlg.innerHTML = `<div slot="headline">${esc(title)}</div><form slot="content" id="ask-text" method="dialog"><md-outlined-text-field name="v" label="${esc(label)}" value="${esc(value)}" maxlength="60"></md-outlined-text-field></form>
+      <div slot="actions"><md-text-button form="ask-text" value="cancel">${esc(tx('cancel'))}</md-text-button><md-filled-button form="ask-text" value="ok">${esc(tx('ok'))}</md-filled-button></div>`;
+    document.body.append(dlg);
+    dlg.addEventListener('closed', () => { const v = (dlg.querySelector('[name=v]') as HTMLInputElement).value.trim(); resolve(dlg.returnValue === 'ok' && v ? v : undefined); dlg.remove(); });
+    dlg.show();
+  });
+}
+
 /** Material confirm dialog in place of the browser's confirm(): themed, translated and keyboard friendly. */
 function askConfirm(text: string, ok = tx('ok'), danger = false): Promise<boolean> {
   return new Promise((resolve) => {
@@ -213,9 +229,9 @@ const SETTING_TARGETS: Array<[string, string, Key]> = [
   ['#dark', 'appearance', 'dark'], ['#dsched', 'appearance', 'darkSchedule'], ['#dfrom', 'appearance', 'darkFrom'], ['#ds', 'appearance', 'dimSum'], ['#seed-picker', 'appearance', 'seed'], ['#reset-layouts', 'appearance', 'resetLayouts'],
   ['#rm', 'comfort', 'reduceMotion'], ['#lt', 'comfort', 'largeText'], ['#elock', 'comfort', 'editLock'], ['#tko', 'comfort', 'takeovers'], ['#llock', 'comfort', 'layoutLocked'], ['#tlock', 'comfort', 'tabsLocked'], ['#slock', 'comfort', 'settingsLocked'],
   ['#snd', 'sounds', 'soundEffects'], ['#vol', 'sounds', 'soundVolume'], ['#quiet', 'sounds', 'quietHours'], ['#qfrom', 'sounds', 'quietFrom'], ['#nar', 'sounds', 'narrate'], ['#nar-rate', 'sounds', 'narrateRate'],
-  ['#exp', 'backup', 'exportSettings'], ['#imp', 'backup', 'importSettings'], ['#sh', 'backup', 'settingsHistory'],
+  ['#pk-add', 'account', 'pkAdd'], ['#exp', 'backup', 'exportSettings'], ['#imp', 'backup', 'importSettings'], ['#sh', 'backup', 'settingsHistory'],
 ];
-const SECTION_KEY: Record<string, Key> = { language: 'secLanguage', appearance: 'secAppearance', comfort: 'secComfort', sounds: 'secSounds', extensions: 'secExtensions', backup: 'secBackup' };
+const SECTION_KEY: Record<string, Key> = { language: 'secLanguage', appearance: 'secAppearance', comfort: 'secComfort', sounds: 'secSounds', account: 'secAccount', extensions: 'secExtensions', backup: 'secBackup' };
 
 /** Open Settings at the section holding a control, scroll it into view, focus it and flash a ring round it. */
 function showSetting(selector: string, section: string) {
@@ -556,7 +572,17 @@ function authView(view: HTMLElement) {
       <md-outlined-text-field name="name" label="${esc(tx('displayName'))}" required maxlength="40"></md-outlined-text-field>
       <md-outlined-text-field name="password" type="password" label="${esc(tx('password'))}" required minlength="10"></md-outlined-text-field>
       <md-filled-button type="submit">${esc(owner ? tx('createOwner') : tx('signIn'))}</md-filled-button>
-    </form></section>`;
+    </form>
+    ${!owner && hasPasskeys ? (passkeysUsable() ? `<div class="or-line" aria-hidden="true"><span>${esc(tx('or'))}</span></div><md-outlined-button id="pk-signin" class="pk-signin"><svg slot="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="9" r="4"/><path d="M2 21a6 6 0 0112 0M15 11h7M19 11v4M22 11v2"/></svg>${esc(tx('pkSignIn'))}</md-outlined-button>` : `<p class="muted">${esc(tx('pkInsecure'))}</p>`) : ''}</section>`;
+  view.querySelector('#pk-signin')?.addEventListener('click', async () => {
+    try {
+      const { options, ticket } = await api<{ options: Parameters<typeof startAuthentication>[0]['optionsJSON']; ticket: string }>('/api/auth/passkey/options', { method: 'POST', body: {} });
+      const response = await startAuthentication({ optionsJSON: options });
+      user = await api('/api/auth/passkey/verify', { method: 'POST', body: { ticket, response } });
+      loadExtensions().catch(() => undefined);
+      play('success'); render();
+    } catch (err) { notify((err as Error).name === 'NotAllowedError' ? tx('pkCancelled') : (err as Error).message, true); }
+  });
   view.querySelector('#auth')!.addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = e.target as HTMLFormElement;
@@ -957,7 +983,45 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
 
 const LOCK_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>';
 const UNLOCK_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 017.5-2"/></svg>';
-const SECTIONS = [['language', 'secLanguage'], ['appearance', 'secAppearance'], ['comfort', 'secComfort'], ['sounds', 'secSounds'], ['extensions', 'secExtensions'], ['backup', 'secBackup'], ['later', 'secLater']] as const;
+const SECTIONS = [['language', 'secLanguage'], ['appearance', 'secAppearance'], ['comfort', 'secComfort'], ['sounds', 'secSounds'], ['account', 'secAccount'], ['extensions', 'secExtensions'], ['backup', 'secBackup'], ['later', 'secLater']] as const;
+
+/** Settings › Account: the owner's passkeys. */
+async function passkeyPanel(view: HTMLElement) {
+  const host = view.querySelector<HTMLElement>('#pk-list');
+  if (!host) return;
+  const add = view.querySelector<HTMLElement & { disabled: boolean }>('#pk-add')!;
+  if (!passkeysUsable()) { add.disabled = true; view.querySelector('#pk-why')!.textContent = tx('pkInsecure'); }
+  try {
+    const { passkeys } = await api<{ passkeys: Array<{ id: string; name: string; created: string; lastUsed?: string }> }>('/api/passkeys');
+    hasPasskeys = passkeys.length > 0;
+    host.innerHTML = passkeys.length ? passkeys.map((k) => `<li class="pk-row"><span class="pk-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="8" cy="9" r="4"/><path d="M2 21a6 6 0 0112 0M15 11h7M19 11v4M22 11v2"/></svg></span><span class="act-text"><b>${esc(k.name)}</b><small>${esc(tx('pkAdded', { when: new Date(k.created).toLocaleString('en-GB') }))}${k.lastUsed ? ` · ${esc(tx('pkUsed', { when: new Date(k.lastUsed).toLocaleString('en-GB') }))}` : ''}</small></span><md-text-button data-pk-rename="${esc(k.id)}">${esc(tx('pkRename'))}</md-text-button><md-outlined-button data-pk-remove="${esc(k.id)}" class="danger-outline">${esc(tx('extRemoveOk'))}</md-outlined-button></li>`).join('') : `<li class="muted">${esc(tx('pkNone'))}</li>`;
+    host.querySelectorAll<HTMLElement>('[data-pk-remove]').forEach((b) => b.addEventListener('click', async () => {
+      const k = passkeys.find((x) => x.id === b.dataset.pkRemove)!;
+      if (!await askConfirm(tx('pkRemoveAsk', { name: k.name }), tx('extRemoveOk'), true)) return;
+      try { await api('/api/passkeys/remove', { method: 'POST', body: { id: k.id } }); notify(tx('pkRemoved', { name: k.name })); } catch (err) { notify((err as Error).message, true); }
+      void passkeyPanel(view);
+    }));
+    host.querySelectorAll<HTMLElement>('[data-pk-rename]').forEach((b) => b.addEventListener('click', async () => {
+      const k = passkeys.find((x) => x.id === b.dataset.pkRename)!;
+      const name = await askText(tx('pkRename'), tx('pkName'), k.name);
+      if (!name) return;
+      try { await api('/api/passkeys/rename', { method: 'POST', body: { id: k.id, name } }); } catch (err) { notify((err as Error).message, true); }
+      void passkeyPanel(view);
+    }));
+  } catch (err) { host.textContent = (err as Error).message; }
+}
+
+async function addPasskey(view: HTMLElement) {
+  const name = await askText(tx('pkAdd'), tx('pkName'), /Mac|iPhone|iPad/.test(navigator.userAgent) ? 'Apple device' : /Android/.test(navigator.userAgent) ? 'Android phone' : /Windows/.test(navigator.userAgent) ? 'Windows Hello' : 'Passkey');
+  if (!name) return;
+  try {
+    const { options, ticket } = await api<{ options: Parameters<typeof startRegistration>[0]['optionsJSON']; ticket: string }>('/api/passkeys/options', { method: 'POST', body: {} });
+    const response = await startRegistration({ optionsJSON: options });
+    await api('/api/passkeys/add', { method: 'POST', body: { ticket, response, name } });
+    notify(tx('pkAddedMsg', { name })); play('create');
+  } catch (err) { notify((err as Error).name === 'NotAllowedError' ? tx('pkCancelled') : (err as Error).name === 'InvalidStateError' ? tx('pkAlready') : (err as Error).message, true); }
+  void passkeyPanel(view);
+}
 
 async function extensionsPanel(view: HTMLElement) {
   const host = view.querySelector<HTMLElement>('#ext-list');
@@ -1115,6 +1179,9 @@ function settingsView(view: HTMLElement) {
       <label class="set-slider" data-find="${esc(tx('narrateRate'))}"><span><b>${esc(tx('narrateRate'))}</b><em id="nar-n">${(prefs.narrateRate / 10).toFixed(1)}×</em></span><md-slider id="nar-rate" min="5" max="20" step="1" labeled value="${prefs.narrateRate}" aria-label="${esc(tx('narrateRate'))}"></md-slider></label>
       <div class="row-actions" data-find="${esc(tx('narrateTry'))}"><md-outlined-button id="nar-try">${esc(tx('narrateTry'))}</md-outlined-button></div>`,
     extensions: `<p data-find="${esc(tx('extIntro'))}">${esc(tx('extIntro'))}</p><div id="ext-q"></div><div class="ext-list" id="ext-list" aria-live="polite"><md-linear-progress indeterminate></md-linear-progress></div>`,
+    account: `<p data-find="${esc(tx('pkIntro'))} passkey">${esc(tx('pkIntro'))}</p>
+      <div class="row-actions" data-find="${esc(tx('pkAdd'))}"><md-filled-tonal-button id="pk-add">${esc(tx('pkAdd'))}</md-filled-tonal-button><span class="muted" id="pk-why"></span></div>
+      <ol class="act-list" id="pk-list" aria-live="polite"><li><md-linear-progress indeterminate></md-linear-progress></li></ol>`,
     later: `<p data-find="${esc(tx('laterList'))}">${esc(tx('laterList'))}</p>`,
   };
   view.innerHTML = `<div class="settings">
@@ -1159,6 +1226,7 @@ function settingsView(view: HTMLElement) {
     const none = view.querySelector<HTMLElement>('#ss-none')!; none.hidden = !q || count > 0; none.textContent = tx('noSettingMatch', { q });
   });
   if (sec === 'extensions' || ss.query()) void extensionsPanel(view);
+  if (sec === 'account' || ss.query()) { void passkeyPanel(view); view.querySelector('#pk-add')?.addEventListener('click', () => { void addPasskey(view); }); }
   view.querySelectorAll<HTMLElement>('[data-set-lang]').forEach((b) => b.addEventListener('click', () => { prefs.lang = b.dataset.setLang as Prefs['lang']; savePrefs(); applyTheme(); render(); }));
   const num = (id: string) => Number((view.querySelector(id) as HTMLInputElement).value);
   const sel = (e: Event) => (e.target as HTMLElement & { selected: boolean }).selected;
@@ -1303,7 +1371,7 @@ document.addEventListener('keydown', (e) => {
   }
   enableClearControls((field) => tx('clearField', { field }));
   try { health = await api<Health>('/api/health'); } catch { /* shown as unavailable */ }
-  try { const s = await api<{ hasOwner: boolean; user: { name: string } | null }>('/api/auth/state'); hasOwner = s.hasOwner; user = s.user; } catch (e) { notify((e as Error).message, true); }
+  try { const s = await api<{ hasOwner: boolean; hasPasskeys?: boolean; user: { name: string } | null }>('/api/auth/state'); hasOwner = s.hasOwner; hasPasskeys = Boolean(s.hasPasskeys); user = s.user; } catch (e) { notify((e as Error).message, true); }
   render();
   setTimeout(() => { void dimSumSurprise(); }, 2500);
   if (user) loadExtensions().catch(() => undefined);

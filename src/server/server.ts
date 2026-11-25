@@ -3,6 +3,7 @@
 import { DimSum } from './dimsum.js';
 import { Extensions, PERMISSIONS, permissionKey, ReplaceNeeded } from './extensions.js';
 import { ActivityLog, type ActivityKind } from './activity.js';
+import { Passkeys, originFor } from './passkeys.js';
 import http from 'node:http';
 import { promises as fs, existsSync } from 'node:fs';
 import path from 'node:path';
@@ -78,6 +79,9 @@ export async function createServer(opts: ServerOptions) {
   const accounts = new Accounts(path.join(opts.dataDir, 'accounts'));
   const dimsum = new DimSum(opts.dataDir, opts.fetchImpl);
   const activity = new ActivityLog(opts.dataDir);
+  const passkeys = new Passkeys(path.join(opts.dataDir, 'accounts'));
+  // The page's origin for passkeys; MAP_EDITOR_ORIGIN fixes it when a proxy rewrites the Host header.
+  const rp = (req: http.IncomingMessage) => originFor(req.headers.host, (req.headers['x-forwarded-proto'] ?? '') === 'https', process.env.MAP_EDITOR_ORIGIN || undefined);
   // Recording never blocks or fails the request it describes.
   const note = (kind: ActivityKind, who: string, message: string) => { activity.record(kind, who, message).catch(() => undefined); };
   const extensions = new Extensions(opts.extensionsDir ?? path.join(here, '..', 'extensions'), opts.dataDir);
@@ -111,7 +115,22 @@ export async function createServer(opts: ServerOptions) {
       if (!user) throw new HttpError(401, 'Sign in first.');
       try { return send(200, await dimsum.random()); } catch (e) { throw new HttpError(503, `Dim sum catalog unavailable: ${(e as Error).message}`); }
     }
-    if (p === '/api/auth/state') return send(200, { hasOwner: await accounts.hasOwner(), user: user ? { name: user.name } : null });
+    if (p === '/api/auth/state') return send(200, { hasOwner: await accounts.hasOwner(), hasPasskeys: (await passkeys.all()).length > 0, user: user ? { name: user.name } : null });
+    if (p === '/api/auth/passkey/options' && req.method === 'POST') {
+      try { return send(200, await passkeys.loginOptions(rp(req))); } catch (e) { throw new HttpError(409, (e as Error).message); }
+    }
+    if (p === '/api/auth/passkey/verify' && req.method === 'POST') {
+      const { ticket, response } = await body(req);
+      const owner = await accounts.owner();
+      if (!owner) throw new HttpError(409, 'Create the owner account first.');
+      try {
+        const key = await passkeys.login(String(ticket ?? ''), response);
+        const t = accounts.startSession(owner.name);
+        res.setHeader('set-cookie', `me_session=${t}; HttpOnly; SameSite=Strict; Path=/; Max-Age=1209600`);
+        note('account', owner.name, `Signed in with the passkey "${key.name}"`);
+        return send(200, { name: owner.name });
+      } catch (e) { note('account', owner.name, 'A passkey sign-in failed'); throw new HttpError(401, (e as Error).message); }
+    }
     if (p === '/api/auth/register' && req.method === 'POST') {
       const { name, password } = await body(req);
       const err = Accounts.validate(String(name ?? ''), String(password ?? ''));
@@ -135,6 +154,30 @@ export async function createServer(opts: ServerOptions) {
 
     if (!user) throw new HttpError(401, 'Sign in first.');
 
+    if (p === '/api/passkeys' && req.method === 'GET') return send(200, { passkeys: await passkeys.list() });
+    if (p === '/api/passkeys/options' && req.method === 'POST') {
+      try { return send(200, await passkeys.registrationOptions(user.name, rp(req))); } catch (e) { throw new HttpError(409, (e as Error).message); }
+    }
+    if (p === '/api/passkeys/add' && req.method === 'POST') {
+      const { ticket, response, name } = await body(req);
+      try {
+        const key = await passkeys.register(user.name, String(ticket ?? ''), response, String(name ?? ''));
+        note('account', user.name, `Added the passkey "${key.name}"`);
+        return send(201, { passkey: key });
+      } catch (e) { throw new HttpError(400, (e as Error).message); }
+    }
+    if (p === '/api/passkeys/remove' && req.method === 'POST') {
+      const { id } = await body(req);
+      const name = (await passkeys.list()).find((k) => k.id === id)?.name;
+      try { await passkeys.remove(String(id ?? '')); } catch (e) { throw new HttpError(404, (e as Error).message); }
+      note('account', user.name, `Removed the passkey "${name}"`);
+      return send(200, { ok: true });
+    }
+    if (p === '/api/passkeys/rename' && req.method === 'POST') {
+      const { id, name } = await body(req);
+      try { await passkeys.rename(String(id ?? ''), String(name ?? '')); } catch (e) { throw new HttpError(404, (e as Error).message); }
+      return send(200, { ok: true });
+    }
     if (p === '/api/activity' && req.method === 'GET') return send(200, { events: await activity.list() });
     if (p === '/api/activity' && req.method === 'POST') {
       // The page reports settings changes (they live in each browser); only these kinds are accepted from it.
