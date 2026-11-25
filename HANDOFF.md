@@ -40,6 +40,13 @@ this file covers testing.
   teleport, Update coming soon, extension link dialog, Material dialogs, Tools tab, and passkeys
   end to end with a virtual authenticator. The 40-combination screen sweep (1440 and 390 px, light and
   dark, Cantonese and bilingual) passed at `54cc0a4`, before the Tools tab was added.
+- **On commit `f5826aa`** (right-click map menu, searchable dropdowns, the Windows virtual disk view, Bedrock
+  Edition worlds), GitHub Actions ran the type check and all 108 tests, built everything, published release
+  v0.1.94 with 12 files (the release step's new retry worked), and the Real-world checks passed: the Pi image
+  boot, the Linux deploy and the Windows update.
+- **Bedrock worlds** were read from real 1.16, 1.17 and 1.18 worlds from the Amulet test data, edited, and
+  the result opened with the stock LevelDB library, which replayed the new log file and returned the new
+  values with every other entry unchanged. The screen was checked in headless Chrome with one of those worlds.
 - **On commit `a59792f`** (exports, the site diagram, Focus and School modes), GitHub Actions ran the
   type check and the whole test suite, built everything, published release v0.1.79 with 12 files, and the
   Real-world checks passed again. The site build printed the phone PDF (1.5 MB) and the Downloads page.
