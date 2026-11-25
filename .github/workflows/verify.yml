@@ -98,7 +98,7 @@ jobs:
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |
           set -eu
-          sudo apt-get update -qq && sudo apt-get install -y -qq qemu-system-arm mtools xz-utils
+          sudo apt-get update -qq && sudo apt-get install -y -qq qemu-system-arm mtools xz-utils device-tree-compiler
           qemu-system-aarch64 --version | head -1
           gh release download ${{ needs.meta.outputs.tag }} --repo ${{ github.repository }} --pattern 'map-editor-appliance-rpi-arm64.img.xz'
           xz -d map-editor-appliance-rpi-arm64.img.xz
@@ -106,19 +106,23 @@ jobs:
           for f in vmlinuz-rpi initramfs-rpi bcm2711-rpi-4-b.dtb config.txt cmdline.txt; do mcopy -n -i "$IMG@@1M" "::$f" .; done
           cat config.txt cmdline.txt
           # QEMU does not run the Pi firmware, so the kernel, initramfs and device tree from the boot
-          # partition are loaded directly; the root file system is the image's own second partition.
-          ( timeout 900 qemu-system-aarch64 -M raspi4b -m 2G -kernel vmlinuz-rpi -initrd initramfs-rpi -dtb bcm2711-rpi-4-b.dtb \
-              -append "root=LABEL=map-editor rootfstype=ext4 modules=ext4 rootwait console=ttyAMA0,115200" \
-              -drive file=$IMG,format=raw,if=sd -serial mon:stdio -display none -no-reboot > serial.log 2>&1 || true ) &
-          for i in $(seq 1 180); do
-            if grep -q 'Starting Map Editor' serial.log; then echo "Reached the Map Editor service after ~$((i*5)) s"; break; fi
+          # partition are loaded directly. The firmware would also apply the Bluetooth overlay; here the
+          # Bluetooth node is removed so the PL011 UART stays a console (ttyAMA1 under this kernel's aliases).
+          fdtput -r bcm2711-rpi-4-b.dtb /soc/serial@7e201000/bluetooth
+          ( timeout 1500 qemu-system-aarch64 -M raspi4b -m 2G -kernel vmlinuz-rpi -initrd initramfs-rpi -dtb bcm2711-rpi-4-b.dtb \
+              -append "root=LABEL=map-editor rootfstype=ext4 modules=ext4 rootwait console=ttyAMA1,115200" \
+              -drive file=$IMG,format=raw,if=sd -serial file:serial.log -monitor none -display none -no-reboot < /dev/null || true ) &
+          for i in $(seq 1 290); do
+            if grep -aq 'Map Editor is ready\|did not answer\|does not match the detected host\|is for .*but this machine' serial.log 2>/dev/null; then echo "Stopped waiting after ~$((i*5)) s"; break; fi
             sleep 5
           done
-          tail -60 serial.log
-          grep -q 'Linux version' serial.log || { echo 'FAIL: kernel did not start'; exit 1; }
-          grep -qi 'openrc\|Starting' serial.log || { echo 'FAIL: init did not start'; exit 1; }
-          grep -q 'Starting Map Editor' serial.log || { echo 'FAIL: the Map Editor service did not start'; exit 1; }
-          echo 'PASS: Pi image kernel, initramfs, root file system and services boot on raspi4b'
+          grep -av '^\[' serial.log | tail -60
+          grep -aq 'Linux version' serial.log || { echo 'FAIL: kernel did not start'; exit 1; }
+          grep -aq 'OpenRC' serial.log || { echo 'FAIL: init did not start'; exit 1; }
+          grep -aq 'Starting Map Editor' serial.log || { echo 'FAIL: the Map Editor service did not start'; exit 1; }
+          ! grep -aq 'does not match the detected host\|but this machine' serial.log || { echo 'FAIL: the preloaded image is for the wrong processor'; exit 1; }
+          grep -aq 'Map Editor is ready' serial.log || { echo 'FAIL: the web app did not answer its health check'; exit 1; }
+          echo 'PASS: Pi image kernel, initramfs, root file system, services and web app health check on raspi4b'
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: pi-serial-log, path: serial.log, if-no-files-found: ignore }

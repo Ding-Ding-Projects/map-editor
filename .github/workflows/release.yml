@@ -77,17 +77,21 @@ jobs:
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8420/api/health && exit 0; sleep 2; done
           docker compose logs; exit 1
       - name: Save the amd64 image for the appliance
+        # skopeo copies exactly one platform from the registry. A docker pull and save of the same tag
+        # for two platforms can save the host platform twice, which put an amd64 image on the Pi.
         run: |
-          docker pull --platform linux/amd64 ${{ env.IMAGE }}:${{ needs.meta.outputs.tag }}
-          docker tag ${{ env.IMAGE }}:${{ needs.meta.outputs.tag }} ${{ env.IMAGE }}:${{ needs.meta.outputs.version }}
-          docker save ${{ env.IMAGE }}:${{ needs.meta.outputs.version }} -o map-editor-image.tar
+          skopeo copy --override-os linux --override-arch amd64 \
+            docker://${{ env.IMAGE }}:${{ needs.meta.outputs.tag }} \
+            docker-archive:map-editor-image.tar:${{ env.IMAGE }}:${{ needs.meta.outputs.version }}
+          node scripts/image-arch.mjs map-editor-image.tar amd64
       - uses: actions/upload-artifact@v4
         with: { name: image-tar, path: map-editor-image.tar, retention-days: 3 }
       - name: Save the arm64 image for the Raspberry Pi appliance
         run: |
-          docker pull --platform linux/arm64 ${{ env.IMAGE }}:${{ needs.meta.outputs.tag }}
-          docker tag ${{ env.IMAGE }}:${{ needs.meta.outputs.tag }} ${{ env.IMAGE }}:${{ needs.meta.outputs.version }}
-          docker save ${{ env.IMAGE }}:${{ needs.meta.outputs.version }} -o map-editor-image-arm64.tar
+          skopeo copy --override-os linux --override-arch arm64 \
+            docker://${{ env.IMAGE }}:${{ needs.meta.outputs.tag }} \
+            docker-archive:map-editor-image-arm64.tar:${{ env.IMAGE }}:${{ needs.meta.outputs.version }}
+          node scripts/image-arch.mjs map-editor-image-arm64.tar arm64
       - uses: actions/upload-artifact@v4
         with: { name: image-tar-arm64, path: map-editor-image-arm64.tar, retention-days: 3 }
       - run: echo "${{ steps.build.outputs.digest }}" > image-digest.txt

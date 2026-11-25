@@ -49,6 +49,13 @@ start_pre() {
   if [ ! -f /var/lib/map-editor/.loaded-$(cat /opt/map-editor/VERSION) ]; then
     docker load -i /opt/map-editor/image.tar && touch /var/lib/map-editor/.loaded-$(cat /opt/map-editor/VERSION)
   fi
+  # Refuse an image built for another processor instead of starting a container that cannot run.
+  want=$(uname -m); case "$want" in x86_64) want=amd64 ;; aarch64) want=arm64 ;; esac
+  have=$(docker image inspect --format '{{.Architecture}}' ghcr.io/ding-ding-projects/map-editor:$(cat /opt/map-editor/VERSION) 2>/dev/null)
+  if [ "$have" != "$want" ]; then
+    eerror "The preloaded Map Editor image is for ${have:-an unknown processor}, but this machine is $want"
+    return 1
+  fi
 }
 start() {
   ebegin "Starting Map Editor"
@@ -58,6 +65,13 @@ start() {
     ghcr.io/ding-ding-projects/map-editor:$(cat /opt/map-editor/VERSION)
   eend $?
   /usr/local/bin/map-editor-banner
+  # Report on the console once the web app answers, without holding up the rest of the boot.
+  ( i=0
+    until wget -q -O /dev/null http://127.0.0.1:8420/api/health 2>/dev/null; do
+      i=$((i + 1)); [ "$i" -ge 600 ] && { echo "Map Editor did not answer within 10 minutes" > /dev/console; exit 0; }
+      sleep 1
+    done
+    echo "Map Editor is ready on port 8420" > /dev/console ) &
 }
 stop() { ebegin "Stopping Map Editor"; docker stop map-editor; eend $?; }
 SVC
