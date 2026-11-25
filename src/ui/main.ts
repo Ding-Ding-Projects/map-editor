@@ -178,6 +178,19 @@ function toggleNoteCentre() {
   panel.querySelector('#nc-close')!.addEventListener('click', () => panel.remove());
 }
 
+/** Material confirm dialog in place of the browser's confirm(): themed, translated and keyboard friendly. */
+function askConfirm(text: string, ok = tx('ok'), danger = false): Promise<boolean> {
+  return new Promise((resolve) => {
+    const dlg = document.createElement('md-dialog') as HTMLElement & { show: () => void; returnValue: string };
+    dlg.setAttribute('type', 'alert');
+    dlg.innerHTML = `<form slot="content" id="ask-form" method="dialog"><p class="ask-text">${esc(text)}</p></form>
+      <div slot="actions"><md-text-button form="ask-form" value="cancel">${esc(tx('cancel'))}</md-text-button><md-filled-button form="ask-form" value="ok" class="${danger ? 'danger' : ''}" autofocus>${esc(ok)}</md-filled-button></div>`;
+    document.body.append(dlg);
+    dlg.addEventListener('closed', () => { resolve(dlg.returnValue === 'ok'); dlg.remove(); });
+    dlg.show();
+  });
+}
+
 function tabSearch() {
   showTabSearch({
     tabs: () => TABS.map((x) => ({ id: x, label: tx(x as Key), open: !prefs.closedTabs.includes(x), active: x === prefs.tab, busy: x === 'editor' && busy > 0 })),
@@ -783,7 +796,7 @@ async function extensionsPanel(view: HTMLElement) {
     let r = await doIt(false);
     let j = await r.json().catch(() => ({}));
     if (r.status === 409 && j.replace) {
-      if (!confirm(tx('extReplace', { id: j.id, installed: j.installed, incoming: j.incoming }))) return;
+      if (!await askConfirm(tx('extReplace', { id: j.id, installed: j.installed, incoming: j.incoming }), tx('extReplaceOk'))) return;
       r = await doIt(true); j = await r.json().catch(() => ({}));
     }
     if (!r.ok) { notify(j.error ?? `${r.status}`, true); return; }
@@ -862,7 +875,7 @@ async function extensionsPanel(view: HTMLElement) {
   host.querySelectorAll<HTMLElement>('[data-ext-run]').forEach((c) => c.addEventListener('click', async () => { await runExtension(c.dataset.extRun!, c.dataset.cmd!); void showRuns(); }));
   host.querySelectorAll<HTMLElement>('[data-ext-remove]').forEach((b) => b.addEventListener('click', async () => {
     const e = data.list.find((x) => x.id === b.dataset.extRemove)!;
-    if (!confirm(tx('extRemoveAsk', { name: e.name }))) return;
+    if (!await askConfirm(tx('extRemoveAsk', { name: e.name }), tx('extRemoveOk'), true)) return;
     try { await api('/api/extensions/remove', { method: 'POST', body: { id: e.id } }); notify(tx('extRemoved', { name: e.name })); } catch (err) { notify((err as Error).message, true); }
     void extensionsPanel(view);
   }));
@@ -925,7 +938,7 @@ function settingsView(view: HTMLElement) {
     bar.className = 'banner lock-banner'; bar.setAttribute('role', 'status');
     bar.innerHTML = `<div><b>${esc(tx('settingsLocked'))}</b><p>${esc(tx('settingsLockedBanner'))}</p></div><md-filled-button id="unlock-settings">${esc(tx('unlockScreen'))}</md-filled-button>`;
     main.prepend(bar);
-    bar.querySelector('#unlock-settings')!.addEventListener('click', () => { if (!confirm(tx('unlockAsk'))) return; prefs.settingsLocked = false; savePrefs(); render(); notify(tx('settingUnlockedMsg')); });
+    bar.querySelector('#unlock-settings')!.addEventListener('click', async () => { if (!await askConfirm(tx('unlockAsk'), tx('unlockOk'))) return; prefs.settingsLocked = false; savePrefs(); render(); notify(tx('settingUnlockedMsg')); });
   }
   view.querySelectorAll<HTMLElement>('[data-sec]').forEach((b) => b.addEventListener('click', () => { prefs.settingsSection = b.dataset.sec!; savePrefs(); render(); }));
   view.querySelector('[role=tablist]')!.addEventListener('keydown', (e) => {
@@ -971,10 +984,10 @@ function settingsView(view: HTMLElement) {
   view.querySelector('#nar-try')!.addEventListener('click', () => narrate(tx('narrateSample'), true));
   view.querySelector('#quiet')!.addEventListener('change', (e) => { prefs.quietHours = sel(e); savePrefs(); applyTheme(); });
   for (const [id, k] of [['#qfrom', 'quietFrom'], ['#qto', 'quietTo']] as const) view.querySelector(id)!.addEventListener('change', () => { const v = (view.querySelector(id) as HTMLInputElement).value; if (/^([01]\d|2[0-3]):[0-5]\d$/.test(v)) { prefs[k] = v; savePrefs(); applyTheme(); } });
-  view.querySelectorAll<HTMLElement>('[data-lock]').forEach((b) => b.addEventListener('click', () => {
+  view.querySelectorAll<HTMLElement>('[data-lock]').forEach((b) => b.addEventListener('click', async () => {
     const id = b.dataset.lock!;
     const isLocked = prefs.lockedSettings.includes(id);
-    if (isLocked && !confirm(tx('unlockAsk'))) return;
+    if (isLocked && !await askConfirm(tx('unlockAsk'), tx('unlockOk'))) return;
     prefs.lockedSettings = isLocked ? prefs.lockedSettings.filter((x) => x !== id) : [...prefs.lockedSettings, id];
     savePrefs(); render(); notify(tx(isLocked ? 'settingUnlockedMsg' : 'settingLockedMsg'));
   }));
