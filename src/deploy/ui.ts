@@ -12,6 +12,7 @@ import { openPalette, type Command } from '../ui/palette.js';
 import { t as tr, type Key } from '../ui/i18n.js';
 import { currentLang } from './lang.js';
 import { ARTICLES, docsView, docTitle, openDoc } from '../ui/docs.js';
+import { invert, pickItem, selectAll } from '../ui/select.js';
 let guideOpened = false;
 
 interface Step { label: string; state: 'waiting' | 'running' | 'done' | 'failed'; detail?: string }
@@ -272,7 +273,8 @@ async function render() {
     managing = undefined;
     main.innerHTML = `<section class="card"><h1 class="md-typescale-display-small">${list.length} ${list.length === 1 ? 'instance' : 'instances'}</h1>
       <p class="muted">Only instances this app created are listed.</p>
-      ${list.length ? `<md-list>${list.map((i) => `<md-list-item><div slot="headline">${esc(i.name)} · ${esc(i.target)} · ${esc(i.version)}</div>
+      ${list.length ? `<div class="h-selbar" id="inst-bar" role="toolbar" aria-label="Select"><b id="inst-count" role="status"></b><md-text-button id="inst-all">Select all</md-text-button><md-text-button id="inst-inv">Invert</md-text-button><md-outlined-button data-bulk="start" disabled>Start selected</md-outlined-button><md-outlined-button data-bulk="stop" disabled>Stop selected</md-outlined-button><md-outlined-button data-bulk="restart" disabled>Restart selected</md-outlined-button></div><p class="muted" id="inst-report" role="status" hidden></p>
+      <md-list>${list.map((i) => `<md-list-item><input type="checkbox" slot="start" class="h-pick" data-pick="${esc(i.name)}" aria-label="Select ${esc(i.name)}"><div slot="headline">${esc(i.name)} · ${esc(i.target)} · ${esc(i.version)}</div>
         <div slot="supporting-text">http://${esc(i.host)}:${i.port}/ · <span data-state="${esc(i.name)}">checking…</span></div>
         <md-filled-tonal-button slot="end" data-manage="${esc(i.name)}">Manage</md-filled-tonal-button></md-list-item>`).join('')}</md-list>` : '<p>Deploy one from the Deploy view and it appears here.</p>'}</section>
       <section class="card activity"><h2 class="md-typescale-headline-small">Activity</h2><p class="muted">Every deploy, duplicate, drive write and instance action from this app, kept in a local Git history on this computer.</p><ol class="act-list" id="act-list"><li>Loading…</li></ol></section>`;
@@ -283,7 +285,33 @@ async function render() {
     main.querySelectorAll<HTMLElement>('[data-manage]').forEach((b) => b.addEventListener('click', () => { managing = b.dataset.manage; render(); }));
     if (list.length) main.querySelector('section.card h1')!.after(exportButton('Export…', { csv: 'CSV (spreadsheets)', json: 'JSON', md: 'Markdown', html: 'HTML table' }, (f) => downloadRows(
       list.map((i) => ({ name: i.name, target: i.target, version: i.version, link: `http://${i.host}:${i.port}/`, sshHost: i.sshHost ?? '' })), ['name', 'target', 'version', 'link', 'sshHost'], f, 'Map Editor instances', 'map-editor-instances')));
-    for (const i of list) d.state(i.name).then((st: string) => { const el = main.querySelector(`[data-state="${CSS.escape(i.name)}"]`); if (el) el.textContent = STATE_LABEL[st] ?? st; });
+    const paintStates = () => { for (const i of list) d.state(i.name).then((st: string) => { const el = main.querySelector(`[data-state="${CSS.escape(i.name)}"]`); if (el) el.textContent = STATE_LABEL[st] ?? st; }); };
+    paintStates();
+    // Selection: start, stop or restart several instances in one go. Removing stays one at a time, behind its own confirmation.
+    const boxes = Array.from(main.querySelectorAll<HTMLInputElement>('.h-pick'));
+    if (boxes.length) {
+      const picked = new Set<number>(); let anchor: number | undefined;
+      const paint = () => {
+        boxes.forEach((b, k) => { b.checked = picked.has(k); });
+        main.querySelector('#inst-count')!.textContent = `${picked.size} of ${list.length} selected`;
+        main.querySelectorAll('[data-bulk]').forEach((b) => b.toggleAttribute('disabled', !picked.size));
+      };
+      boxes.forEach((b, k) => b.addEventListener('click', (ev) => { ev.stopPropagation(); anchor = pickItem(picked, k, anchor, ev.shiftKey); paint(); }));
+      main.querySelector('#inst-all')!.addEventListener('click', () => { selectAll(picked, list.length); paint(); });
+      main.querySelector('#inst-inv')!.addEventListener('click', () => { invert(picked, list.length); paint(); });
+      main.querySelectorAll<HTMLElement>('[data-bulk]').forEach((btn) => btn.addEventListener('click', async () => {
+        const action = btn.dataset.bulk!, chosen = [...picked].sort((x, y) => x - y).map((k) => list[k]);
+        if (!chosen.length) return;
+        main.querySelectorAll('[data-bulk]').forEach((b) => b.setAttribute('disabled', ''));
+        const failed: string[] = []; let ok = 0;
+        for (const i of chosen) { try { const r = await d.action(i.name, action, false); if (r.ok) ok++; else failed.push(`${i.name}: ${r.message}`); } catch (e) { failed.push(`${i.name}: ${(e as Error).message}`); } }
+        const report = main.querySelector<HTMLElement>('#inst-report');
+        const text = `${action === 'start' ? 'Started' : action === 'stop' ? 'Stopped' : 'Restarted'} ${ok} of ${chosen.length}.${failed.length ? ` Not done: ${failed.join('; ')}` : ''}`;
+        if (report) { report.hidden = false; report.textContent = text; }
+        toast(text, failed.length > 0); paintStates(); paint();
+      }));
+      paint();
+    }
     return;
   }
   main.innerHTML = `<div class="editor"><section class="grid" style="flex: 999 1 560px; align-self: flex-start">${TARGETS.map((t) => `<button class="world" data-t="${t.id}" aria-pressed="${t.id === target}" style="${t.id === target ? 'background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary)' : ''}"><span class="target-badge" aria-hidden="true">${iconSvg(TARGET_ICONS[t.id] ?? 'next', 26)}</span><span class="md-typescale-title-large">${esc(t.name)}</span><span>${esc(t.desc)}</span></button>`).join('')}</section>
