@@ -128,7 +128,7 @@ async function api<T = any>(path: string, init?: { method?: string; body?: unkno
   const res = await fetch(path, { method: init?.method ?? 'GET', headers: init?.body !== undefined ? { 'content-type': 'application/json' } : undefined, body: init?.body !== undefined ? JSON.stringify(init.body) : undefined, credentials: 'same-origin' });
   const ct = res.headers.get('content-type') ?? '';
   const data = ct.includes('json') ? await res.json() : await res.arrayBuffer();
-  if (!res.ok) throw new Error((data as { error?: string }).error ?? `HTTP ${res.status}`);
+  if (!res.ok) throw Object.assign(new Error((data as { error?: string }).error ?? `HTTP ${res.status}`), { data });
   return data as T;
 }
 
@@ -588,6 +588,7 @@ function authView(view: HTMLElement) {
     <form id="auth" class="stack">
       <md-outlined-text-field name="name" label="${esc(tx('displayName'))}" required maxlength="40"></md-outlined-text-field>
       <md-outlined-text-field name="password" type="password" label="${esc(tx('password'))}" required minlength="10"></md-outlined-text-field>
+      <md-outlined-text-field name="code" label="${esc(tx('totpCode'))}" inputmode="numeric" autocomplete="one-time-code" maxlength="6" hidden></md-outlined-text-field>
       <md-filled-button type="submit">${esc(owner ? tx('createOwner') : tx('signIn'))}</md-filled-button>
     </form>
     ${!owner && hasPasskeys ? (passkeysUsable() ? `<div class="or-line" aria-hidden="true"><span>${esc(tx('or'))}</span></div><md-outlined-button id="pk-signin" class="pk-signin"><svg slot="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="9" r="4"/><path d="M2 21a6 6 0 0112 0M15 11h7M19 11v4M22 11v2"/></svg>${esc(tx('pkSignIn'))}</md-outlined-button>` : `<p class="muted">${esc(tx('pkInsecure'))}</p>`) : ''}</section>`;
@@ -605,7 +606,14 @@ function authView(view: HTMLElement) {
     const f = e.target as HTMLFormElement;
     const val = (n: string) => (f.querySelector(`[name=${n}]`) as HTMLInputElement).value;
     try {
-      user = await api(owner ? '/api/auth/register' : '/api/auth/login', { method: 'POST', body: { name: val('name'), password: val('password') } });
+      const codeField = f.querySelector<HTMLElement>('[name=code]')!;
+      try {
+        user = await api(owner ? '/api/auth/register' : '/api/auth/login', { method: 'POST', body: { name: val('name'), password: val('password'), ...(codeField.hidden ? {} : { code: val('code') }) } });
+      } catch (err) {
+        // The password was right and an authenticator is set up: ask for the code, keeping what was typed.
+        if ((err as { data?: { needCode?: boolean } }).data?.needCode) { codeField.hidden = false; (codeField as HTMLInputElement).focus(); notify(tx('totpNeeded')); return; }
+        throw err;
+      }
       loadExtensions().catch(() => undefined);
       hasOwner = true; render();
     } catch (err) { notify((err as Error).message, true); if (/owner/.test((err as Error).message)) { hasOwner = true; render(); } }
@@ -1116,6 +1124,36 @@ async function passkeyPanel(view: HTMLElement) {
   } catch (err) { host.textContent = (err as Error).message; }
 }
 
+/** Settings › Account: authenticator app codes as a second step after the password. */
+async function totpPanel(view: HTMLElement) {
+  const box = view.querySelector<HTMLElement>('#totp-box'); if (!box) return;
+  let on = false;
+  try { on = (await api<{ enabled: boolean }>('/api/authenticator')).enabled; } catch (err) { box.textContent = (err as Error).message; return; }
+  const codeField = (id: string) => `<md-outlined-text-field id="${id}" label="${esc(tx('totpCode'))}" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></md-outlined-text-field>`;
+  if (on) {
+    box.innerHTML = `<p><b>${esc(tx('totpOn'))}</b></p><div class="row-actions">${codeField('totp-off-code')}<md-outlined-button id="totp-off" class="danger-outline">${esc(tx('totpTurnOff'))}</md-outlined-button></div>`;
+    box.querySelector('#totp-off')!.addEventListener('click', async () => {
+      try { await api('/api/authenticator/disable', { method: 'POST', body: { code: (box.querySelector('#totp-off-code') as HTMLInputElement).value.trim() } }); notify(tx('totpOffDone')); } catch (err) { notify((err as Error).message, true); }
+      void totpPanel(view);
+    });
+    return;
+  }
+  box.innerHTML = `<div class="row-actions"><md-filled-tonal-button id="totp-begin">${esc(tx('totpSetUp'))}</md-filled-tonal-button></div>`;
+  box.querySelector('#totp-begin')!.addEventListener('click', async () => {
+    try {
+      const { secret, uri } = await api<{ secret: string; uri: string }>('/api/authenticator/begin', { method: 'POST', body: {} });
+      box.innerHTML = `<ol class="totp-steps"><li>${esc(tx('totpStep1'))} <a href="${esc(uri)}">${esc(tx('totpOpenApp'))}</a></li>
+        <li>${esc(tx('totpStep2'))}<br><code class="totp-secret">${esc(secret.replace(/(.{4})/g, '$1 ').trim())}</code> <md-text-button id="totp-copy">${esc(tx('toolCopy'))}</md-text-button></li>
+        <li>${esc(tx('totpStep3'))}</li></ol><div class="row-actions">${codeField('totp-code')}<md-filled-button id="totp-confirm">${esc(tx('totpConfirm'))}</md-filled-button></div>`;
+      box.querySelector('#totp-copy')!.addEventListener('click', () => navigator.clipboard?.writeText(secret).then(() => notify(tx('copied'))));
+      box.querySelector('#totp-confirm')!.addEventListener('click', async () => {
+        try { await api('/api/authenticator/confirm', { method: 'POST', body: { code: (box.querySelector('#totp-code') as HTMLInputElement).value.trim() } }); notify(tx('totpOnDone')); play('success'); void totpPanel(view); }
+        catch (err) { notify((err as Error).message, true); }
+      });
+    } catch (err) { notify((err as Error).message, true); }
+  });
+}
+
 async function addPasskey(view: HTMLElement) {
   const name = await askText(tx('pkAdd'), tx('pkName'), /Mac|iPhone|iPad/.test(navigator.userAgent) ? 'Apple device' : /Android/.test(navigator.userAgent) ? 'Android phone' : /Windows/.test(navigator.userAgent) ? 'Windows Hello' : 'Passkey');
   if (!name) return;
@@ -1294,7 +1332,8 @@ function settingsView(view: HTMLElement) {
     extensions: `<p data-find="${esc(tx('extIntro'))}">${esc(tx('extIntro'))}</p><div id="ext-q"></div><div class="ext-list" id="ext-list" aria-live="polite"><md-linear-progress indeterminate></md-linear-progress></div>`,
     account: `<p data-find="${esc(tx('pkIntro'))} passkey">${esc(tx('pkIntro'))}</p>
       <div class="row-actions" data-find="${esc(tx('pkAdd'))}"><md-filled-tonal-button id="pk-add">${esc(tx('pkAdd'))}</md-filled-tonal-button><span class="muted" id="pk-why"></span></div>
-      <ol class="act-list" id="pk-list" aria-live="polite"><li><md-linear-progress indeterminate></md-linear-progress></li></ol>`,
+      <ol class="act-list" id="pk-list" aria-live="polite"><li><md-linear-progress indeterminate></md-linear-progress></li></ol>
+      <h3 data-find="${esc(tx('totpTitle'))} 2FA">${esc(tx('totpTitle'))}</h3><p class="muted">${esc(tx('totpIntro'))}</p><div id="totp-box" aria-live="polite"></div>`,
     later: `<p data-find="${esc(tx('laterList'))}">${esc(tx('laterList'))}</p>`,
   };
   view.innerHTML = `<div class="settings">
@@ -1339,7 +1378,7 @@ function settingsView(view: HTMLElement) {
     const none = view.querySelector<HTMLElement>('#ss-none')!; none.hidden = !q || count > 0; none.textContent = tx('noSettingMatch', { q });
   });
   if (sec === 'extensions' || ss.query()) void extensionsPanel(view);
-  if (sec === 'account' || ss.query()) { void passkeyPanel(view); view.querySelector('#pk-add')?.addEventListener('click', () => { void addPasskey(view); }); }
+  if (sec === 'account' || ss.query()) { void totpPanel(view); void passkeyPanel(view); view.querySelector('#pk-add')?.addEventListener('click', () => { void addPasskey(view); }); }
   view.querySelectorAll<HTMLElement>('[data-set-lang]').forEach((b) => b.addEventListener('click', () => { prefs.lang = b.dataset.setLang as Prefs['lang']; savePrefs(); applyTheme(); render(); }));
   const num = (id: string) => Number((view.querySelector(id) as HTMLInputElement).value);
   const sel = (e: Event) => (e.target as HTMLElement & { selected: boolean }).selected;

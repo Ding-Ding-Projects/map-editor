@@ -4,6 +4,7 @@ import { DimSum } from './dimsum.js';
 import { Extensions, PERMISSIONS, permissionKey, ReplaceNeeded } from './extensions.js';
 import { ActivityLog, type ActivityKind } from './activity.js';
 import { Passkeys, originFor } from './passkeys.js';
+import { Authenticator } from './totp.js';
 import http from 'node:http';
 import { promises as fs, existsSync } from 'node:fs';
 import path from 'node:path';
@@ -81,6 +82,7 @@ export async function createServer(opts: ServerOptions) {
   const dimsum = new DimSum(opts.dataDir, opts.fetchImpl);
   const activity = new ActivityLog(opts.dataDir);
   const passkeys = new Passkeys(path.join(opts.dataDir, 'accounts'));
+  const authenticator = new Authenticator(path.join(opts.dataDir, 'accounts'));
   // The page's origin for passkeys; MAP_EDITOR_ORIGIN fixes it when a proxy rewrites the Host header.
   const rp = (req: http.IncomingMessage) => originFor(req.headers.host, (req.headers['x-forwarded-proto'] ?? '') === 'https', process.env.MAP_EDITOR_ORIGIN || undefined);
   // Recording never blocks or fails the request it describes.
@@ -144,8 +146,13 @@ export async function createServer(opts: ServerOptions) {
       return send(201, { name, role: 'owner' });
     }
     if (p === '/api/auth/login' && req.method === 'POST') {
-      const { name, password } = await body(req);
+      const { name, password, code } = await body(req);
       if (!(await accounts.verify(String(name ?? ''), String(password ?? '')))) { note('account', String(name ?? ''), 'A sign-in failed (wrong name or password)'); throw new HttpError(401, 'Name or password is wrong.'); }
+      // With an authenticator app set up, the password alone is not enough.
+      if (await authenticator.enabled()) {
+        if (!code) return send(401, { needCode: true, error: 'Enter the 6-digit code from your authenticator app.' });
+        if (!(await authenticator.verify(String(code)))) { note('account', String(name), 'A sign-in failed (wrong authenticator code)'); throw new HttpError(401, 'That code does not match. Use the newest code from the app.'); }
+      }
       const t = accounts.startSession(name);
       note('account', name, 'Signed in');
       res.setHeader('set-cookie', `me_session=${t}; HttpOnly; SameSite=Strict; Path=/; Max-Age=1209600`);
@@ -155,6 +162,20 @@ export async function createServer(opts: ServerOptions) {
 
     if (!user) throw new HttpError(401, 'Sign in first.');
 
+    if (p === '/api/authenticator' && req.method === 'GET') return send(200, { enabled: await authenticator.enabled() });
+    if (p === '/api/authenticator/begin' && req.method === 'POST') return send(200, await authenticator.begin(user.name));
+    if (p === '/api/authenticator/confirm' && req.method === 'POST') {
+      const { code } = await body(req);
+      try { await authenticator.confirm(String(code ?? '')); } catch (e) { throw new HttpError(400, (e as Error).message); }
+      note('account', user.name, 'Turned on authenticator codes for sign-in');
+      return send(200, { enabled: true });
+    }
+    if (p === '/api/authenticator/disable' && req.method === 'POST') {
+      const { code } = await body(req);
+      try { await authenticator.disable(String(code ?? '')); } catch (e) { throw new HttpError(400, (e as Error).message); }
+      note('account', user.name, 'Turned off authenticator codes');
+      return send(200, { enabled: false });
+    }
     if (p === '/api/passkeys' && req.method === 'GET') return send(200, { passkeys: await passkeys.list() });
     if (p === '/api/passkeys/options' && req.method === 'POST') {
       try { return send(200, await passkeys.registrationOptions(user.name, rp(req))); } catch (e) { throw new HttpError(409, (e as Error).message); }

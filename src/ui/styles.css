@@ -651,3 +651,5 @@ canvas#map[data-mode="pick"] { cursor: copy; } canvas#map[data-mode="goto"] { cu
 .focus-mode .dv-groupview:not(.dv-active-group) { opacity: .72; }
 .focus-mode .dv-groupview.dv-active-group { box-shadow: inset 0 0 0 2px var(--md-sys-color-primary); border-radius: 16px; }
 .focus-mode md-filled-button, .focus-mode md-outlined-button, .focus-mode md-filled-tonal-button { --md-filled-button-container-height: 48px; --md-outlined-button-container-height: 48px; --md-filled-tonal-button-container-height: 48px; }
+.totp-steps { margin: 8px 0; padding-left: 20px; display: grid; gap: 8px; } .totp-secret { font: 600 15px 'Roboto Mono', monospace; letter-spacing: .04em; padding: 4px 8px; border-radius: 8px; background: var(--md-sys-color-surface-container-high); }
+md-outlined-text-field[hidden] { display: none; }
