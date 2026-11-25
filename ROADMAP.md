@@ -73,7 +73,8 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [ ] ADHD modes, narration, school mode, scheduled settings, personal vocabulary upload.
 - [x] Notification centre behind the bell with a count badge and Dismiss all.
 - [x] Deploy app takeovers from the Takeover board: success (link, version, time taken, Open, Copy link, closes after 8 s unless in use) and failure (stays until dismissed, step log and exact error, Try port N+1 when the port is taken, Copy details), focus kept inside, Esc closes; checked in headless Chrome including the port retry.
-- [ ] Notification search; takeovers in the editor app.
+- [x] Notification centre search with its own regex builder (in the search-surface catalogue test); checked in headless Chrome.
+- [ ] Takeovers in the editor app.
 - [x] Updates for both Windows apps through Squirrel.Windows: Squirrel install, update and uninstall events create and remove shortcuts; installed copies check `https://ding-ding-projects.github.io/map-editor/updates/<app>/RELEASES` at start and every four hours, download in the background and show a ready-to-install banner (version, release notes link, not code-signed, Later, Restart to install update; restart refused while an edit, deploy or flash is running). Check for updates in About and the palette. The site build writes the feeds from the latest release with absolute package URLs (unit tested). Every build now gets its own version, major.minor.run, so updates move forward. Banner and About states checked in headless Chrome with a stand-in bridge; the real update round trip on Windows is not verified yet.
 - [ ] Dim sum surprise using the public photo catalogue.
 - [x] About screen with version, build commit, licence note, Copy version details and a searchable changelog built from the commit log (Added, Fixed, Changed); checked in headless Chrome.

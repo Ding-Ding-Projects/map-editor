@@ -66,6 +66,7 @@ const S = {
   updNotReady: { en: 'the update is no longer ready', yue: '更新已經唔再準備好' },
   updError: { en: 'Could not update: {e}. This version keeps working; try again later.', yue: '更新唔到：{e}。而家呢個版本照用得，遲啲再試。' },
   updWeb: { en: 'This copy runs in a browser. It is updated by pulling a newer image; the deploy app’s Update button does that.', yue: '呢個版本喺瀏覽器度行，要拉新嘅映像先會更新；部署 app 嘅「更新」掣會幫你做。' },
+  searchNotifications: { en: 'Search notifications', yue: '搜尋通知' },
   clearField: { en: 'Clear {field}', yue: '清除{field}' },
   rxToggle: { en: 'Use regular expression', yue: '用正規表達式' },
   rxBuilder: { en: 'Regex builder', yue: '正規表達式砌圖器' },

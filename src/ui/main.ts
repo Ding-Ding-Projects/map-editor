@@ -128,6 +128,22 @@ function toggleNoteCentre() {
   panel.innerHTML = `<header><h2>${esc(tx('notifications'))}</h2><md-text-button id="nc-clear">${esc(tx('dismissAll'))}</md-text-button><md-text-button id="nc-close">${esc(tx('close'))}</md-text-button></header>
     ${notes.length ? `<ol>${notes.map((n) => `<li class="${n.error ? 'error' : ''}"><span class="dot" aria-hidden="true"></span><span class="nc-text">${esc(n.text)}</span><time>${esc(n.at)}</time></li>`).join('')}</ol>` : `<p class="muted">${esc(tx('noNotifications'))}</p>`}`;
   document.body.append(panel);
+  const list = panel.querySelector('ol');
+  if (list) {
+    const box = searchBox('notification-search', tx('searchNotifications'), rx, { compact: true });
+    list.before(box.el);
+    const items = Array.from(list.querySelectorAll<HTMLElement>('li'));
+    const none = document.createElement('p'); none.className = 'muted'; none.hidden = true; none.setAttribute('role', 'status'); list.after(none);
+    let run = 0;
+    box.onChange(async () => {
+      const my = ++run;
+      const hits = await box.filter(notes.map((n) => `${n.text} ${n.at}`)) ?? notes.map(() => false);
+      if (my !== run) return;
+      items.forEach((li, i) => { li.hidden = !hits[i]; });
+      const shown = hits.filter(Boolean).length;
+      none.hidden = shown > 0; none.textContent = tx('noMatches');
+    });
+  }
   panel.querySelector('#nc-clear')!.addEventListener('click', () => { notes.length = 0; panel.remove(); document.querySelector('.bell-wrap .badge')?.remove(); });
   panel.querySelector('#nc-close')!.addEventListener('click', () => panel.remove());
 }
