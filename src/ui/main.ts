@@ -1322,6 +1322,17 @@ async function extensionsPanel(view: HTMLElement) {
     ['id', 'name', 'version', 'builtIn', 'enabled', 'permissions', 'commands'], f, tx('secExtensions'), 'map-editor-extensions'));
   ex.classList.add('ext-export');
   q.el.after(ex);
+  // Bulk action: switch off every extension that is shown (after the search) and on.
+  view.querySelector('.ext-bulk')?.remove();
+  const bulk = document.createElement('md-outlined-button'); bulk.className = 'ext-bulk'; bulk.textContent = tx('extOffShown');
+  bulk.addEventListener('click', async () => {
+    const shown = data.list.filter((e, i) => !cards[i]?.hidden && e.enabled);
+    if (!shown.length) { notify(tx('extOffNone')); return; }
+    if (!await askConfirm(tx('extOffAsk', { n: shown.length, list: shown.map((e) => e.name).join(', ') }), tx('extOffOk'))) return;
+    for (const e of shown) { try { await api('/api/extensions/enable', { method: 'POST', body: { id: e.id, enabled: false } }); } catch (err) { notify((err as Error).message, true); } }
+    notify(tx('extOffDone', { n: shown.length })); void loadExtensions().catch(() => undefined); void extensionsPanel(view);
+  });
+  ex.after(bulk);
   let run = 0;
   q.onChange(async () => {
     const my = ++run;

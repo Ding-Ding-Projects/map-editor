@@ -33,3 +33,12 @@ describe('file converter', () => {
     expect(await readNbtFile(new Uint8Array(data))).toEqual({ Data: { LevelName: 'Island', Time: '42L', Pos: [1, 2] } });
   });
 });
+
+describe('server.properties editor', () => {
+  it('changes and adds keys while keeping comments and order', async () => {
+    const { parseProperties, setProperty, printProperties } = await import('../src/ui/tools.js');
+    const lines = parseProperties('#Minecraft server properties\nmotd=Hello\n\npvp=true\nquery.port=25565');
+    setProperty(lines, 'pvp', 'false'); setProperty(lines, 'max-players', '8'); setProperty(lines, 'motd', 'two\nlines');
+    expect(printProperties(lines)).toBe('#Minecraft server properties\nmotd=two lines\n\npvp=false\nquery.port=25565\nmax-players=8');
+  });
+});

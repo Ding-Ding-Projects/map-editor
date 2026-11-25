@@ -88,3 +88,18 @@ describe('flat world presets', () => {
     await expect(createFlatWorld(root, 'Bad', 13)).rejects.toThrow(/size/);
   });
 });
+
+describe('Bedrock worlds', () => {
+  it('are listed by name as Bedrock and not treated as Java worlds', async () => {
+    const { discoverWorlds, isBedrockWorld } = await import('../src/core/world.js');
+    const { mkdtemp, mkdir, writeFile } = await import('node:fs/promises');
+    const os = await import('node:os'); const path = await import('node:path');
+    const root = await mkdtemp(path.join(os.tmpdir(), 'me-bed-'));
+    const dir = path.join(root, 'AbCdEf=');
+    await mkdir(path.join(dir, 'db'), { recursive: true });
+    await writeFile(path.join(dir, 'level.dat'), Buffer.from([10, 0, 0, 0, 4, 0, 0, 0]));
+    await writeFile(path.join(dir, 'levelname.txt'), 'My Bedrock Base\n');
+    expect(isBedrockWorld(dir)).toBe(true);
+    expect(await discoverWorlds([root])).toEqual([{ path: dir, name: 'My Bedrock Base', dimensions: [], edition: 'bedrock' }]);
+  });
+});

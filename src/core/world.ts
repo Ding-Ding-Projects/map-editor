@@ -22,6 +22,8 @@ export interface WorldInfo {
   versionName?: string;
   dimensions: Dimension[];
   spawn?: { x: number; y: number; z: number };
+  /** Bedrock Edition worlds are recognised and listed, but cannot be opened for editing. */
+  edition?: 'java' | 'bedrock';
 }
 
 export function isWorldFolder(dir: string) {
@@ -60,6 +62,17 @@ export async function setLevelName(dir: string, name: string): Promise<void> {
   await fs.rename(file + '.tmp', file);
 }
 
+/** Bedrock Edition keeps its chunks in a LevelDB folder called db, next to level.dat and levelname.txt. */
+export function isBedrockWorld(dir: string) {
+  return existsSync(path.join(dir, 'level.dat')) && existsSync(path.join(dir, 'db')) && !existsSync(path.join(dir, 'region'));
+}
+
+export async function bedrockInfo(dir: string): Promise<WorldInfo> {
+  let name = path.basename(dir);
+  try { name = (await fs.readFile(path.join(dir, 'levelname.txt'), 'utf8')).trim().slice(0, 80) || name; } catch { /* no name file */ }
+  return { path: dir, name, dimensions: [], edition: 'bedrock' };
+}
+
 /** Find world folders one level below each given folder (for example `.minecraft/saves`). */
 export async function discoverWorlds(roots: string[]): Promise<WorldInfo[]> {
   const out: WorldInfo[] = [];
@@ -69,6 +82,7 @@ export async function discoverWorlds(roots: string[]): Promise<WorldInfo[]> {
     for (const e of entries) {
       const dir = path.join(root, e);
       if (!isWorldFolder(dir)) continue;
+      if (isBedrockWorld(dir)) { out.push(await bedrockInfo(dir)); continue; }
       try { out.push(await worldInfo(dir)); } catch { /* unreadable world: skip, the open dialog reports it */ }
     }
   }

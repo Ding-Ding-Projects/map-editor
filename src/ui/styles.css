@@ -678,3 +678,5 @@ md-outlined-text-field[hidden] { display: none; }
 .v3-stage { overflow: auto; border-radius: 16px; background: var(--md-sys-color-surface-container-lowest); max-height: 70vh; }
 #v3 { display: block; margin: 0 auto; image-rendering: auto; }
 .tool-inline { display: inline-flex; gap: 6px; align-items: center; } .tool-inline select { font: inherit; padding: 6px 8px; border-radius: 8px; }
+.sp-form { display: grid; gap: 6px; } .sp-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; } .sp-row input, .sp-row select { font: inherit; padding: 6px 8px; border-radius: 8px; width: 55%; box-sizing: border-box; }
+.tool-wrap { white-space: pre-wrap; }

@@ -80,6 +80,9 @@ above). These checks still need a person, a browser session or hardware:
 - An empty `/worlds` folder may be left on the build machine from an earlier check. A safety rule
   stopped its removal.
 - Still to do, from `ROADMAP.md`:
-  - Bedrock worlds;
-  - the remaining built-in tools (Ollama suite, server manager, virtual disk manager).
+  - editing Bedrock Edition worlds directly (they are recognised and listed, not edited);
+  - a virtual disk manager on Windows;
+  - the regex builder on dropdowns and right-click menus, once the app has them.
+- Not yet tried for real: the local AI helper against a running Ollama, and the server.properties editor
+  with a file from a live server.
 - Code-signed extension sources are not planned: this project does not sign code.

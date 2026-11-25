@@ -197,6 +197,14 @@ describe('server', () => {
     expect(() => decodeStructure(gzipSync(Buffer.alloc(300 * 1024 * 1024)))).toThrow(/256 MiB/);
   });
 
+  it('answers clearly when the local AI helper has no Ollama to talk to', async () => {
+    const r = await call('/api/ollama/models');
+    expect(r.status).toBe(503);
+    expect((await r.json()).error).toMatch(/Ollama is not reachable/);
+    expect((await call('/api/ollama/ask', { method: 'POST', body: { model: 'bad model!', prompt: 'hi' } })).status).toBe(400);
+    expect((await call('/api/ollama/ask', { method: 'POST', body: { model: 'llama3', prompt: '' } })).status).toBe(400);
+  });
+
   it('refuses non-JSON state-changing requests', async () => {
     const r = await fetch(base + '/api/auth/logout', { method: 'POST', headers: { 'content-type': 'text/plain' }, body: 'x' });
     expect(r.status).toBe(415);

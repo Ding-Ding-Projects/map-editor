@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { Accounts, Throttle } from './auth.js';
 import { EditSession, type OperationRequest } from '../core/session.js';
 import { decodeStructure } from '../core/structure.js';
-import { discoverWorlds, isWorldFolder, setLevelName, worldInfo, type Dimension } from '../core/world.js';
+import { discoverWorlds, isBedrockWorld, isWorldFolder, setLevelName, worldInfo, type Dimension } from '../core/world.js';
 import { volume, MAX_OPERATION_BLOCKS, OPERATIONS, type Box } from '../core/ops.js';
 import { importWorldZip, exportWorldZip, createFlatWorld, WORLD_PRESETS, WORLD_SIZES, type WorldPreset } from '../core/archive.js';
 import { createWriteStream } from 'node:fs';
@@ -83,6 +83,7 @@ export async function createServer(opts: ServerOptions) {
   const activity = new ActivityLog(opts.dataDir);
   const passkeys = new Passkeys(path.join(opts.dataDir, 'accounts'));
   const throttle = new Throttle();
+  const ollamaBase = (process.env.MAP_EDITOR_OLLAMA || 'http://127.0.0.1:11434').replace(/\/+$/, '');
   const authenticator = new Authenticator(path.join(opts.dataDir, 'accounts'));
   // The page's origin for passkeys; MAP_EDITOR_ORIGIN fixes it when a proxy rewrites the Host header.
   const rp = (req: http.IncomingMessage) => originFor(req.headers.host, (req.headers['x-forwarded-proto'] ?? '') === 'https', process.env.MAP_EDITOR_ORIGIN || undefined);
@@ -205,6 +206,26 @@ export async function createServer(opts: ServerOptions) {
       try { await passkeys.rename(String(id ?? ''), String(name ?? '')); } catch (e) { throw new HttpError(404, (e as Error).message); }
       return send(200, { ok: true });
     }
+    // Local AI helper: the server talks to an Ollama running beside it (the page cannot reach it directly).
+    if (p === '/api/ollama/models' && req.method === 'GET') {
+      try {
+        const r = await (opts.fetchImpl ?? fetch)(`${ollamaBase}/api/tags`, { signal: AbortSignal.timeout(5000) });
+        if (!r.ok) throw new Error(`Ollama answered ${r.status}`);
+        const j = await r.json() as { models?: Array<{ name?: string }> };
+        return send(200, { models: (j.models ?? []).map((m) => String(m.name ?? '')).filter(Boolean).slice(0, 200) });
+      } catch (e) { throw new HttpError(503, `Ollama is not reachable at ${ollamaBase} (${(e as Error).message}). Install it from ollama.com, start it on the computer that runs Map Editor, or set MAP_EDITOR_OLLAMA.`); }
+    }
+    if (p === '/api/ollama/ask' && req.method === 'POST') {
+      const { model, prompt } = await body(req);
+      if (typeof model !== 'string' || !/^[\w.:/-]{1,120}$/.test(model)) throw new HttpError(400, 'Choose a model.');
+      if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 8000) throw new HttpError(400, 'Write a question of up to 8,000 characters.');
+      try {
+        const r = await (opts.fetchImpl ?? fetch)(`${ollamaBase}/api/generate`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model, prompt, stream: false }), signal: AbortSignal.timeout(180_000) });
+        if (!r.ok) throw new Error(`Ollama answered ${r.status}`);
+        const j = await r.json() as { response?: string };
+        return send(200, { response: String(j.response ?? '').slice(0, 100_000) });
+      } catch (e) { throw new HttpError(503, `Ollama could not answer (${(e as Error).message}).`); }
+    }
     if (p === '/api/activity' && req.method === 'GET') return send(200, { events: await activity.list() });
     if (p === '/api/activity' && req.method === 'POST') {
       // The page reports settings changes (they live in each browser); only these kinds are accepted from it.
@@ -260,6 +281,7 @@ export async function createServer(opts: ServerOptions) {
       const { path: wp } = await body(req);
       if (typeof wp !== 'string' || !worldAllowed(wp)) throw new HttpError(403, 'That folder is outside the worlds folder this server was set up with.');
       if (!isWorldFolder(wp)) throw new HttpError(404, 'No level.dat in that folder.');
+      if (isBedrockWorld(wp)) throw new HttpError(415, 'This is a Bedrock Edition world. Map Editor edits Java Edition worlds; convert it to Java Edition first (for example with Amulet or Chunker), then upload the result.');
       session = await EditSession.open(opts.dataDir, wp);
       return send(200, { info: session.world.info });
     }

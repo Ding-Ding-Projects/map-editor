@@ -81,6 +81,25 @@ export async function readNbtFile(bytes: Uint8Array): Promise<unknown> {
   return nbtToJson(root.tag);
 }
 
+/** server.properties: keep comments and order, change or add single keys. */
+export function parseProperties(text: string): Array<{ key?: string; value?: string; raw: string }> {
+  return text.split(/\r?\n/).map((raw) => {
+    const m = /^\s*([^#!=:\s][^=:]*?)\s*[=:]\s*(.*)$/.exec(raw);
+    return m ? { key: m[1], value: m[2], raw } : { raw };
+  });
+}
+export function setProperty(lines: ReturnType<typeof parseProperties>, key: string, value: string) {
+  const clean = value.replace(/[\r\n]+/g, ' ');
+  const hit = lines.find((l) => l.key === key);
+  if (hit) { hit.value = clean; hit.raw = `${key}=${clean}`; } else lines.push({ key, value: clean, raw: `${key}=${clean}` });
+  return lines;
+}
+export const printProperties = (lines: ReturnType<typeof parseProperties>) => lines.map((l) => l.raw).join('\n');
+
+/** The settings most people change, with the values the game accepts. */
+export const SERVER_FIELDS: Array<[string, 'text' | 'number' | string[]]> = [['motd', 'text'], ['max-players', 'number'], ['gamemode', ['survival', 'creative', 'adventure', 'spectator']], ['difficulty', ['peaceful', 'easy', 'normal', 'hard']],
+  ['pvp', ['true', 'false']], ['white-list', ['true', 'false']], ['online-mode', ['true', 'false']], ['view-distance', 'number'], ['simulation-distance', 'number'], ['server-port', 'number'], ['level-name', 'text'], ['level-seed', 'text']];
+
 /** Block, chunk, region and dimension-scaled positions for one x, z. */
 export function coordinates(x: number, z: number) {
   const cx = Math.floor(x / 16), cz = Math.floor(z / 16);
@@ -111,6 +130,15 @@ export function toolsView(view: HTMLElement, t: ToolsText, esc: (s: unknown) => 
         <label class="tool-inline">${esc(t('toolConvertTo'))} <select id="cv-to"><option value="image/png">PNG</option><option value="image/jpeg">JPEG</option><option value="image/webp">WebP</option><option value="json">JSON (NBT)</option></select></label></div>
       <p class="muted" id="cv-info" aria-live="polite"></p><pre class="tool-pre" id="cv-out" hidden></pre>
       <div class="row-actions"><md-text-button id="cv-save" disabled>${esc(t('toolConvertSave'))}</md-text-button></div></section>
+    <section class="card tool-card" aria-labelledby="tsp"><h2 id="tsp">${esc(t('toolServer'))}</h2><p class="muted">${esc(t('toolServerNote'))}</p>
+      <div class="row-actions"><md-outlined-button id="sp-pick">${esc(t('toolServerPick'))}</md-outlined-button><md-text-button id="sp-new">${esc(t('toolServerNew'))}</md-text-button><input type="file" id="sp-file" accept=".properties,text/plain" hidden></div>
+      <div id="sp-form" class="sp-form"></div>
+      <div class="row-actions"><md-filled-tonal-button id="sp-save" disabled>${esc(t('toolServerSave'))}</md-filled-tonal-button></div></section>
+    <section class="card tool-card" aria-labelledby="tai"><h2 id="tai">${esc(t('toolAi'))}</h2><p class="muted">${esc(t('toolAiNote'))}</p>
+      <div class="row-actions"><label class="tool-inline">${esc(t('toolAiModel'))} <select id="ai-model"><option value="">…</option></select></label><md-text-button id="ai-refresh">${esc(t('toolAiRefresh'))}</md-text-button></div>
+      <label class="tool-field">${esc(t('toolAiPrompt'))}<textarea id="ai-in" rows="4" maxlength="8000"></textarea></label>
+      <div class="row-actions"><md-filled-tonal-button id="ai-go">${esc(t('toolAiAsk'))}</md-filled-tonal-button><md-text-button data-copy="ai-out">${esc(t('toolCopy'))}</md-text-button></div>
+      <pre class="tool-pre tool-wrap" id="ai-out" aria-live="polite"></pre></section>
     <section class="card tool-card" aria-labelledby="tco"><h2 id="tco">${esc(t('toolCoords'))}</h2><p class="muted">${esc(t('toolCoordsNote'))}</p>
       <div class="row-actions"><md-outlined-text-field id="co-x" type="number" label="x" value="1234"></md-outlined-text-field><md-outlined-text-field id="co-z" type="number" label="z" value="-567"></md-outlined-text-field></div>
       <dl class="tool-dl" id="co-out" aria-live="polite"></dl></section>
@@ -142,6 +170,44 @@ export function toolsView(view: HTMLElement, t: ToolsText, esc: (s: unknown) => 
       .map(([k, v]) => `<dt>${esc(k)}</dt><dd><code>${esc(v)}</code></dd>`).join('');
   };
   $('co-x').addEventListener('input', co); $('co-z').addEventListener('input', co); co();
+  // server.properties editor
+  let props: ReturnType<typeof parseProperties> | undefined;
+  const spForm = $('sp-form'), spSave = $<HTMLElement & { disabled: boolean }>('sp-save'), spIn = $<HTMLInputElement>('sp-file');
+  const spDraw = () => {
+    if (!props) return;
+    const val = (k: string) => props!.find((l) => l.key === k)?.value ?? '';
+    spForm.innerHTML = SERVER_FIELDS.map(([k, kind]) => `<label class="sp-row"><code>${esc(k)}</code>${Array.isArray(kind)
+      ? `<select data-sp="${esc(k)}"><option value=""></option>${kind.map((o) => `<option ${val(k) === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`
+      : `<input data-sp="${esc(k)}" type="${kind}" value="${esc(val(k))}">`}</label>`).join('') + `<p class="muted">${esc(t('toolServerOther', { n: props.filter((l) => l.key && !SERVER_FIELDS.some(([k]) => k === l.key)).length }))}</p>`;
+    spForm.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-sp]').forEach((f) => f.addEventListener('change', () => { if (f.value !== '' || props!.some((l) => l.key === f.dataset.sp)) setProperty(props!, f.dataset.sp!, f.value); }));
+    spSave.disabled = false;
+  };
+  $('sp-pick').addEventListener('click', () => spIn.click());
+  spIn.addEventListener('change', async () => { const f = spIn.files?.[0]; spIn.value = ''; if (!f) return; if (f.size > 256 * 1024) { notify(t('toolTooBig'), true); return; } props = parseProperties(await f.text()); spDraw(); });
+  $('sp-new').addEventListener('click', () => { props = parseProperties('#Minecraft server properties\nmotd=A Minecraft Server\nmax-players=20\ngamemode=survival\ndifficulty=easy\npvp=true\nwhite-list=false\nonline-mode=true\nview-distance=10\nserver-port=25565\nlevel-name=world'); spDraw(); });
+  spSave.addEventListener('click', () => { if (!props) return; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([printProperties(props)], { type: 'text/plain' })); a.download = 'server.properties'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); });
+  // Local AI helper through the server's Ollama proxy
+  const aiModel = $<HTMLSelectElement>('ai-model'), aiOut = $('ai-out');
+  const aiLoad = async () => {
+    try {
+      const r = await fetch('/api/ollama/models'); const j = await r.json();
+      if (!r.ok) throw new Error(j.error ?? String(r.status));
+      aiModel.innerHTML = (j.models as string[]).length ? (j.models as string[]).map((m) => `<option>${esc(m)}</option>`).join('') : `<option value="">${esc(t('toolAiNoModels'))}</option>`;
+      aiOut.textContent = '';
+    } catch (e) { aiOut.textContent = (e as Error).message; }
+  };
+  $('ai-refresh').addEventListener('click', () => { void aiLoad(); });
+  $('ai-go').addEventListener('click', async () => {
+    const go = $<HTMLElement & { disabled: boolean }>('ai-go');
+    if (!aiModel.value) { aiOut.textContent = t('toolAiPick'); return; }
+    go.disabled = true; aiOut.textContent = t('toolAiThinking');
+    try {
+      const r = await fetch('/api/ollama/ask', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model: aiModel.value, prompt: $<HTMLTextAreaElement>('ai-in').value }) });
+      const j = await r.json(); if (!r.ok) throw new Error(j.error ?? String(r.status));
+      aiOut.textContent = j.response;
+    } catch (e) { aiOut.textContent = (e as Error).message; } finally { go.disabled = false; }
+  });
+  void aiLoad();
   // Converter: pictures between PNG, JPEG and WebP through a canvas; NBT files (level.dat, .nbt, .dat) to JSON.
   const cvIn = $<HTMLInputElement>('cv-file'), cvOut = $<HTMLPreElement>('cv-out'), cvInfo = $('cv-info'), cvSave = $<HTMLElement & { disabled: boolean }>('cv-save');
   let result: { blob: Blob; name: string } | undefined;
