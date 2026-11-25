@@ -653,3 +653,24 @@ canvas#map[data-mode="pick"] { cursor: copy; } canvas#map[data-mode="goto"] { cu
 .focus-mode md-filled-button, .focus-mode md-outlined-button, .focus-mode md-filled-tonal-button { --md-filled-button-container-height: 48px; --md-outlined-button-container-height: 48px; --md-filled-tonal-button-container-height: 48px; }
 .totp-steps { margin: 8px 0; padding-left: 20px; display: grid; gap: 8px; } .totp-secret { font: 600 15px 'Roboto Mono', monospace; letter-spacing: .04em; padding: 4px 8px; border-radius: 8px; background: var(--md-sys-color-surface-container-high); }
 md-outlined-text-field[hidden] { display: none; }
+/* Per-element appearance (tones) and custom logo */
+.tone-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.tone-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 16px; background: var(--md-sys-color-surface-container); }
+.tone-row select { font: inherit; padding: 6px 8px; border-radius: 8px; }
+.logo.custom { background-size: cover; background-position: center; background-color: transparent; }
+.logo-preview { display: inline-block; width: 40px; height: 40px; border-radius: 12px; background: var(--md-sys-color-primary-container); }
+[data-tone-header="primary"] .top { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+[data-tone-header="secondary"] .top { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+[data-tone-header="tertiary"] .top { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
+[data-tone-header="surface"] .top { background: var(--md-sys-color-surface-container-high); }
+[data-tone-tabs="primary"] .tabs, [data-tone-tabs="primary"] .bottom-nav { background: var(--md-sys-color-primary-container); }
+[data-tone-tabs="secondary"] .tabs, [data-tone-tabs="secondary"] .bottom-nav { background: var(--md-sys-color-secondary-container); }
+[data-tone-tabs="tertiary"] .tabs, [data-tone-tabs="tertiary"] .bottom-nav { background: var(--md-sys-color-tertiary-container); }
+[data-tone-tabs="surface"] .tabs, [data-tone-tabs="surface"] .bottom-nav { background: var(--md-sys-color-surface-container-highest); }
+[data-tone-toolbar="secondary"] .map-toolbar { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+[data-tone-toolbar="tertiary"] .map-toolbar { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
+[data-tone-toolbar="surface"] .map-toolbar { background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface); }
+[data-tone-cards="primary"] .card { background: color-mix(in srgb, var(--md-sys-color-primary-container) 45%, var(--md-sys-color-surface-container-low)); }
+[data-tone-cards="secondary"] .card { background: color-mix(in srgb, var(--md-sys-color-secondary-container) 55%, var(--md-sys-color-surface-container-low)); }
+[data-tone-cards="tertiary"] .card { background: color-mix(in srgb, var(--md-sys-color-tertiary-container) 45%, var(--md-sys-color-surface-container-low)); }
+[data-tone-cards="surface"] .card { background: var(--md-sys-color-surface); box-shadow: inset 0 0 0 1px var(--md-sys-color-outline-variant); }

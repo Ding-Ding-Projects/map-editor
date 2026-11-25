@@ -83,5 +83,5 @@ above). These checks still need a person, a browser session or hardware:
   - a 3D view and Bedrock worlds;
   - a separate data partition on the appliance;
   - the remaining built-in tools (file converter, Ollama suite, server manager, virtual disk manager);
-  - per-element appearance and logo customization, and TinyMCE in other fields.
+  - TinyMCE in other rich text fields.
 - Code-signed extension sources are not planned: this project does not sign code.

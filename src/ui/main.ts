@@ -36,16 +36,16 @@ import { notesPanel as notesPanelImpl } from './notes.js';
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
 
 // ---------- state ----------
-interface Prefs extends I18nState { focusMode: boolean; schoolMode: boolean; dark: boolean; reduceMotion: boolean; largeText: boolean; dimSum: boolean; takeovers: boolean; lockedSettings: string[]; layoutLocked: boolean; tabsLocked: boolean; settingsLocked: boolean; quietHours: boolean; quietFrom: string; quietTo: string; narrate: boolean; narrateRate: number; darkSchedule: boolean; darkFrom: string; darkTo: string; editLock: boolean; tourOffered: boolean; tourResume: { name: string; step: number } | null; sounds: boolean; soundVolume: number; settingsSection: string; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
+interface Prefs extends I18nState { tones: Record<string, string>; focusMode: boolean; schoolMode: boolean; dark: boolean; reduceMotion: boolean; largeText: boolean; dimSum: boolean; takeovers: boolean; lockedSettings: string[]; layoutLocked: boolean; tabsLocked: boolean; settingsLocked: boolean; quietHours: boolean; quietFrom: string; quietTo: string; narrate: boolean; narrateRate: number; darkSchedule: boolean; darkFrom: string; darkTo: string; editLock: boolean; tourOffered: boolean; tourResume: { name: string; step: number } | null; sounds: boolean; soundVolume: number; settingsSection: string; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
 const PREFS_KEY = 'map-editor.prefs.v1';
 const DEFAULT_SEED = '#4c8c4a';
-const defaults: Prefs = { focusMode: false, schoolMode: false, lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, largeText: false, dimSum: true, takeovers: true, lockedSettings: [], layoutLocked: false, tabsLocked: false, settingsLocked: false, quietHours: false, quietFrom: '22:00', quietTo: '07:00', narrate: false, narrateRate: 10, darkSchedule: false, darkFrom: '19:00', darkTo: '07:00', editLock: false, tourOffered: false, tourResume: null, sounds: true, soundVolume: 40, settingsSection: 'language', closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
+const defaults: Prefs = { tones: {}, focusMode: false, schoolMode: false, lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, largeText: false, dimSum: true, takeovers: true, lockedSettings: [], layoutLocked: false, tabsLocked: false, settingsLocked: false, quietHours: false, quietFrom: '22:00', quietTo: '07:00', narrate: false, narrateRate: 10, darkSchedule: false, darkFrom: '19:00', darkTo: '07:00', editLock: false, tourOffered: false, tourResume: null, sounds: true, soundVolume: 40, settingsSection: 'language', closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
 function loadPrefs(): Prefs { try { return { ...defaults, ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') }; } catch { return { ...defaults }; } }
 let prefs = loadPrefs();
 // Settings history: every saved change to a user-facing setting keeps the previous values,
 // newest first, so any change can be restored (and the restore is recorded too).
 const HISTORY_KEY = 'map-editor.settings-history.v1';
-const TRACKED = ['focusMode', 'schoolMode', 'lang', 'funnyEn', 'funnyYue', 'dark', 'reduceMotion', 'largeText', 'takeovers', 'lockedSettings', 'layoutLocked', 'tabsLocked', 'settingsLocked', 'quietHours', 'quietFrom', 'quietTo', 'dimSum', 'narrate', 'narrateRate', 'darkSchedule', 'darkFrom', 'darkTo', 'editLock', 'sounds', 'soundVolume', 'seed', 'rainbowSpeed'] as const;
+const TRACKED = ['tones', 'focusMode', 'schoolMode', 'lang', 'funnyEn', 'funnyYue', 'dark', 'reduceMotion', 'largeText', 'takeovers', 'lockedSettings', 'layoutLocked', 'tabsLocked', 'settingsLocked', 'quietHours', 'quietFrom', 'quietTo', 'dimSum', 'narrate', 'narrateRate', 'darkSchedule', 'darkFrom', 'darkTo', 'editLock', 'sounds', 'soundVolume', 'seed', 'rainbowSpeed'] as const;
 type Tracked = typeof TRACKED[number];
 interface SettingsChange { at: string; keys: Tracked[]; before: Partial<Prefs>; after: Partial<Prefs> }
 let lastSaved: Partial<Prefs> = pick(prefs);
@@ -91,6 +91,7 @@ function importSettings(raw: unknown): number {
     const ok = k === 'lang' ? v === 'en' || v === 'yue' || v === 'both'
       : k === 'seed' ? typeof v === 'string' && (/^#[0-9a-f]{6}$/i.test(v) || v === RAINBOW)
       : k === 'narrateRate' ? typeof v === 'number' && Number.isInteger(v) && v >= 5 && v <= 20
+      : k === 'tones' ? !!v && typeof v === 'object' && !Array.isArray(v) && Object.entries(v as Record<string, unknown>).every(([e, t]) => TONE_ELEMENTS.some(([x]) => x === e) && typeof t === 'string' && TONES.includes(t))
       : k === 'lockedSettings' ? Array.isArray(v) && v.every((x) => typeof x === 'string' && /^[a-z-]{1,20}$/.test(x))
       : k === 'darkFrom' || k === 'darkTo' || k === 'quietFrom' || k === 'quietTo' ? typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v)
       : k === 'soundVolume' ? typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 100
@@ -117,6 +118,11 @@ let fitPending = false; // centre the map on the world's chunks the next time th
 const tx = (k: Key, v: Record<string, string | number> = {}) => tr(prefs, k, v);
 // Personal vocabulary, kept in this browser.
 const VOCAB_KEY = 'map-editor.vocabulary.v1';
+const TONE_ELEMENTS = [['header', 'toneHeader'], ['tabs', 'toneTabs'], ['toolbar', 'toneToolbar'], ['cards', 'toneCards']] as const;
+const TONES = ['primary', 'secondary', 'tertiary', 'surface'];
+// Custom logo: a small picture kept in this browser, shown in the header instead of the built-in mark.
+const LOGO_KEY = 'map-editor.logo.v1';
+const customLogo = () => { try { const v = localStorage.getItem(LOGO_KEY); return v && /^data:image\/(png|jpeg|webp|gif);base64,/.test(v) ? v : undefined; } catch { return undefined; } };
 function loadVocab(): Record<string, { en?: string; yue?: string }> { try { return parseVocabulary(JSON.parse(localStorage.getItem(VOCAB_KEY) ?? '{}')).ok; } catch { return {}; } }
 function saveVocab(v: Record<string, { en?: string; yue?: string }>) { try { localStorage.setItem(VOCAB_KEY, JSON.stringify(v)); } catch { /* storage blocked */ } setVocabulary(v); }
 setVocabulary(loadVocab());
@@ -373,6 +379,8 @@ function applyTheme() {
   document.documentElement.classList.toggle('reduce-motion', prefs.reduceMotion);
   document.documentElement.classList.toggle('large-text', prefs.largeText);
   document.documentElement.classList.toggle('focus-mode', prefs.focusMode);
+  // Per-element appearance: each part can take its own tone of the theme.
+  for (const [el] of TONE_ELEMENTS) { const v = prefs.tones?.[el]; if (v && TONES.includes(v)) document.documentElement.dataset[`tone${el[0].toUpperCase()}${el.slice(1)}`] = v; else delete document.documentElement.dataset[`tone${el[0].toUpperCase()}${el.slice(1)}`]; }
   document.documentElement.classList.toggle('school-mode', prefs.schoolMode);
   configureSounds(prefs.sounds && !quiet(), prefs.soundVolume / 100);
   document.documentElement.lang = prefs.lang === 'yue' ? 'zh-Hant-HK' : 'en';
@@ -553,7 +561,7 @@ function shell() {
   if (!open.includes(prefs.tab as Tab)) prefs.tab = open[0] ?? 'worlds';
   app.innerHTML = `
     <header class="top">
-      <div class="brand"><div class="logo" aria-hidden="true"></div>
+      <div class="brand"><div class="logo${customLogo() ? ' custom' : ''}" aria-hidden="true"${customLogo() ? ` style="background-image:url(${customLogo()})"` : ''}></div>
         <div><div class="md-typescale-headline-medium title">${esc(world?.name ?? tx('appName'))}</div>
         <div class="md-typescale-body-small muted" id="prov">${esc(provenance())}</div></div></div>
       <button class="search-pill" id="cmd" aria-keyshortcuts="Control+Shift+F"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>${esc(tx('paletteHint'))}</span><kbd>Ctrl Shift F</kbd></button>
@@ -1350,6 +1358,9 @@ function settingsView(view: HTMLElement) {
       <div class="set-times" data-find="${esc(tx('darkSchedule'))} ${esc(tx('darkFrom'))} ${esc(tx('darkTo'))}"><md-outlined-text-field id="dfrom" type="time" label="${esc(tx('darkFrom'))}" value="${prefs.darkFrom}"></md-outlined-text-field><md-outlined-text-field id="dto" type="time" label="${esc(tx('darkTo'))}" value="${prefs.darkTo}"></md-outlined-text-field></div>${sw('ds', 'dimSum', 'dimSumNote', prefs.dimSum)}
       <div class="set-row seed-row" data-find="${esc(tx('seed'))}"><span><b>${esc(tx('seed'))}</b></span><span class="seed-now"><span class="seed-swatch ${prefs.seed === RAINBOW ? 'rainbow' : ''}" style="background:${prefs.seed === RAINBOW ? 'none' : esc(prefs.seed)}"></span><code>${esc(prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed)}</code><md-text-button id="seed-reset">${esc(tx('reset'))}</md-text-button></span></div>
       <div class="row-actions" data-find="${esc(tx('resetLayouts'))} dockview panels"><md-outlined-button id="reset-layouts">${esc(tx('resetLayouts'))}</md-outlined-button></div>
+      <h3 data-find="${esc(tx('elemAppearance'))}">${esc(tx('elemAppearance'))}</h3><p class="muted">${esc(tx('elemAppearanceNote'))}</p>
+      <div class="tone-grid">${TONE_ELEMENTS.map(([el, key]) => `<label class="tone-row" data-find="${esc(tx(key))}"><span>${esc(tx(key))}</span><select data-tone="${el}"><option value="">${esc(tx('toneDefault'))}</option>${TONES.map((t) => `<option value="${t}" ${prefs.tones?.[el] === t ? 'selected' : ''}>${esc(tx(`tone_${t}` as Key))}</option>`).join('')}</select></label>`).join('')}</div>
+      <div class="row-actions" data-find="${esc(tx('logo'))}"><span class="logo-preview logo${customLogo() ? ' custom' : ''}"${customLogo() ? ` style="background-image:url(${customLogo()})"` : ''} aria-hidden="true"></span><md-outlined-button id="logo-up">${esc(tx('logoUpload'))}</md-outlined-button>${customLogo() ? `<md-text-button id="logo-reset">${esc(tx('logoReset'))}</md-text-button>` : ''}<input type="file" id="logo-file" accept="image/png,image/jpeg,image/webp,image/gif" hidden></div>
       <div id="seed-picker" data-find="${esc(tx('seed'))} colour color"></div>`,
     comfort: `<div class="row-actions" data-find="${esc(tx('tourTake'))} ${esc(tx('tourThisPage'))}"><md-filled-tonal-button id="set-tour">${esc(tx('tourTake'))}</md-filled-tonal-button></div>${sw('rm', 'reduceMotion', 'reduceMotionNote', prefs.reduceMotion)}${sw('lt', 'largeText', 'largeTextNote', prefs.largeText)}${sw('elock', 'editLock', 'editLockNote', prefs.editLock)}${sw('tko', 'takeovers', 'takeoversNote', prefs.takeovers)}${sw('llock', 'layoutLocked', 'layoutLockedNote', prefs.layoutLocked)}${sw('tlock', 'tabsLocked', 'tabsLockedNote', prefs.tabsLocked)}${sw('slock', 'settingsLocked', 'settingsLockedNote', prefs.settingsLocked)}${sw('focus', 'focusMode', 'focusModeNote', prefs.focusMode)}${sw('school', 'schoolMode', 'schoolModeNote', prefs.schoolMode)}`,
     backup: `<p data-find="${esc(tx('exportSettings'))} ${esc(tx('importSettings'))}">${esc(tx('settingsSaved'))}</p>
@@ -1462,6 +1473,17 @@ function settingsView(view: HTMLElement) {
   view.querySelector('#llock')!.addEventListener('change', (e) => { prefs.layoutLocked = sel(e); savePrefs(); notify(tx(prefs.layoutLocked ? 'layoutLockedOn' : 'layoutLockedOff')); });
   view.querySelector('#tlock')!.addEventListener('change', (e) => { prefs.tabsLocked = sel(e); savePrefs(); render(); });
   view.querySelector('#slock')!.addEventListener('change', (e) => { prefs.settingsLocked = sel(e); savePrefs(); render(); });
+  view.querySelectorAll<HTMLSelectElement>('[data-tone]').forEach((sel2) => sel2.addEventListener('change', () => { prefs.tones = { ...prefs.tones, [sel2.dataset.tone!]: sel2.value }; if (!sel2.value) delete prefs.tones[sel2.dataset.tone!]; savePrefs(); applyTheme(); }));
+  const lf = view.querySelector<HTMLInputElement>('#logo-file');
+  view.querySelector('#logo-up')?.addEventListener('click', () => lf?.click());
+  lf?.addEventListener('change', () => {
+    const f = lf.files?.[0]; lf.value = ''; if (!f) return;
+    if (f.size > 256 * 1024 || !/^image\/(png|jpeg|webp|gif)$/.test(f.type)) { notify(tx('logoBad'), true); return; }
+    const r = new FileReader();
+    r.onload = () => { try { localStorage.setItem(LOGO_KEY, String(r.result)); notify(tx('logoDone')); render(); } catch { notify(tx('logoBad'), true); } };
+    r.readAsDataURL(f);
+  });
+  view.querySelector('#logo-reset')?.addEventListener('click', () => { try { localStorage.removeItem(LOGO_KEY); } catch { /* ignore */ } render(); });
   view.querySelector('#focus')!.addEventListener('change', (e) => { prefs.focusMode = sel(e); if (prefs.focusMode) prefs.reduceMotion = true; savePrefs(); applyTheme(); render(); });
   view.querySelector('#school')!.addEventListener('change', async (e) => {
     const on = sel(e);
@@ -1495,8 +1517,8 @@ function settingsView(view: HTMLElement) {
   });
   const sh = view.querySelector<HTMLElement>('#sh')!;
   const hist = loadSettingsHistory();
-  const fmt = (k: Tracked, v: unknown) => k === 'seed' && v === RAINBOW ? tx('rainbow') : typeof v === 'boolean' ? (v ? 'on' : 'off') : String(v);
-  const name: Record<Tracked, string> = { focusMode: tx('focusMode'), schoolMode: tx('schoolMode'), layoutLocked: tx('layoutLocked'), tabsLocked: tx('tabsLocked'), settingsLocked: tx('settingsLocked'), lockedSettings: tx('lockedSettings'), quietHours: tx('quietHours'), quietFrom: tx('quietFrom'), quietTo: tx('quietTo'), takeovers: tx('takeovers'), narrate: tx('narrate'), narrateRate: tx('narrateRate'), darkSchedule: tx('darkSchedule'), darkFrom: tx('darkFrom'), darkTo: tx('darkTo'), editLock: tx('editLock'), dimSum: tx('dimSum'), sounds: tx('soundEffects'), soundVolume: tx('soundVolume'), lang: tx('secLanguage'), funnyEn: tx('funnyEn'), funnyYue: tx('funnyYue'), dark: tx('dark'), reduceMotion: tx('reduceMotion'), largeText: tx('largeText'), seed: tx('seed'), rainbowSpeed: tx('rainbow') };
+  const fmt = (k: Tracked, v: unknown) => k === 'seed' && v === RAINBOW ? tx('rainbow') : typeof v === 'boolean' ? (v ? 'on' : 'off') : v && typeof v === 'object' ? (Object.entries(v).map(([a, b]) => `${a} ${b}`).join(', ') || '—') : String(v);
+  const name: Record<Tracked, string> = { tones: tx('elemAppearance'), focusMode: tx('focusMode'), schoolMode: tx('schoolMode'), layoutLocked: tx('layoutLocked'), tabsLocked: tx('tabsLocked'), settingsLocked: tx('settingsLocked'), lockedSettings: tx('lockedSettings'), quietHours: tx('quietHours'), quietFrom: tx('quietFrom'), quietTo: tx('quietTo'), takeovers: tx('takeovers'), narrate: tx('narrate'), narrateRate: tx('narrateRate'), darkSchedule: tx('darkSchedule'), darkFrom: tx('darkFrom'), darkTo: tx('darkTo'), editLock: tx('editLock'), dimSum: tx('dimSum'), sounds: tx('soundEffects'), soundVolume: tx('soundVolume'), lang: tx('secLanguage'), funnyEn: tx('funnyEn'), funnyYue: tx('funnyYue'), dark: tx('dark'), reduceMotion: tx('reduceMotion'), largeText: tx('largeText'), seed: tx('seed'), rainbowSpeed: tx('rainbow') };
   sh.innerHTML = hist.length ? hist.slice(0, 50).map((h, i) => `<li data-find="${esc(h.keys.map((k) => name[k]).join(' '))}"><span><b>${h.keys.map((k) => `${esc(name[k])}: ${esc(fmt(k, h.before[k]))} → ${esc(fmt(k, h.after[k]))}`).join(' · ')}</b><small>${esc(new Date(h.at).toLocaleString())}</small></span><md-text-button data-restore="${i}">${esc(tx('restore'))}</md-text-button></li>`).join('') : `<li class="muted">${esc(tx('noSettingsHistory'))}</li>`;
   sh.querySelectorAll<HTMLElement>('[data-restore]').forEach((b) => b.addEventListener('click', () => {
     const h = hist[Number(b.dataset.restore)]; if (!h) return;

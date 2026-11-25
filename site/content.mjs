@@ -97,6 +97,7 @@ export const features = [
     ], related: ['editing', 'edit-history', 'languages'] },
   { slug: 'appearance', title: 'Theme colours and the colour picker', group: 'Settings', summary: 'Pick any colour and the whole Material 3 theme follows it.',
     body: [
+      ['Colours of each part and your own logo', 'Settings › Appearance › Colours of each part gives the header, the tab list, the map toolbar and the cards their own tone of the theme colour: primary, secondary, accent or plain. Use my own logo puts a small picture (PNG, JPEG, WebP or GIF, up to 256 KiB) in the header instead of the built-in mark, in this browser.'],
       ['Locking a setting', 'Every switch in Settings has a small lock next to it. A locked switch cannot be changed there or from the command palette until you unlock it, which asks first. Locks are saved with your other settings and included in exports.'],
       ['Locking screens and panels', 'Settings › Comfort and focus can also Lock panel layout (panels cannot be dragged, floated or closed), Keep every tab open (the Close buttons disappear) and Lock the Settings screen (everything can be read but nothing changed, here or from the palette, until you press Unlock).'],
       ['Quiet hours', 'Settings › Sounds › Quiet hours keeps sounds and reading aloud silent between two times, for example overnight.'],
