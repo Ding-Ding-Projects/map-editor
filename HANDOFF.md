@@ -37,7 +37,10 @@ this file covers testing.
   teleport, Update coming soon, extension link dialog, Material dialogs, Tools tab, and passkeys
   end to end with a virtual authenticator. The 40-combination screen sweep (1440 and 390 px, light and
   dark, Cantonese and bilingual) passed at `54cc0a4`, before the Tools tab was added.
-- **On the final feature commit `eef45aa`**, GitHub Actions ran the type check and the whole test suite
+- **On commit `a59792f`** (exports, the site diagram, Focus and School modes), GitHub Actions ran the
+  type check and the whole test suite, built everything, published release v0.1.79 with 12 files, and the
+  Real-world checks passed again. The site build printed the phone PDF (1.5 MB) and the Downloads page.
+- **On the earlier feature commit `eef45aa`**, GitHub Actions ran the type check and the whole test suite
   (passed). It also built the Docker image, the Windows apps and both appliance images, and published
   release v0.1.73 with 12 files and line counts in its notes.
 - **Real-world checks** passed on v0.1.73: Docker on the same computer and over SSH, USB flashing with
