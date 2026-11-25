@@ -1165,10 +1165,10 @@ async function editorView(view: HTMLElement): Promise<void> {
 function pickBar(rows: HTMLElement[], before: Element, name: (i: number) => string, note: Key = 'selectExportNote'): Set<number> {
   const picked = new Set<number>(); let anchor: number | undefined;
   const bar = document.createElement('div'); bar.className = 'h-selbar'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', tx('selectMode'));
-  bar.innerHTML = `<b role="status"></b><md-text-button data-pick="all">${esc(tx('selectAll'))}</md-text-button><md-text-button data-pick="inv">${esc(tx('selectInvert'))}</md-text-button><span class="muted" id="hsel-note">${esc(tx(note))}</span>`;
+  bar.innerHTML = `<b role="status"></b><md-text-button data-pick="all">${esc(tx('selectAll'))}</md-text-button><md-text-button data-pick="inv">${esc(tx('selectInvert'))}</md-text-button><span class="muted hsel-note" hidden>${esc(tx(note))}</span>`;
   before.before(bar);
   const shown = () => rows.map((r, i) => r.hidden ? -1 : i).filter((i) => i >= 0);
-  const paint = () => { rows.forEach((r, i) => { r.querySelector<HTMLInputElement>('.h-pick')!.checked = picked.has(i); r.classList.toggle('ticked', picked.has(i)); }); bar.querySelector('b')!.textContent = tx('selectedN', { n: picked.size, total: rows.length }); };
+  const paint = () => { rows.forEach((r, i) => { r.querySelector<HTMLInputElement>('.h-pick')!.checked = picked.has(i); r.classList.toggle('ticked', picked.has(i)); }); bar.querySelector('b')!.textContent = tx('selectedN', { n: picked.size, total: rows.length }); bar.querySelector<HTMLElement>('.hsel-note')!.hidden = !picked.size; };
   rows.forEach((r, i) => {
     const box = document.createElement('input'); box.type = 'checkbox'; box.className = 'h-pick'; box.setAttribute('aria-label', tx('selectWorld', { name: name(i).slice(0, 60) }));
     r.prepend(box);
@@ -1246,7 +1246,7 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
     const counts = new Map<string, number>(); for (const e of entries) counts.set(e.action, (counts.get(e.action) ?? 0) + 1);
     view.querySelector('#h')!.innerHTML = `<div class="h-filters"><div id="hq-host"></div>
         <md-outlined-text-field id="hfrom" type="date" label="${esc(tx('fromDate'))}"></md-outlined-text-field><md-outlined-text-field id="hto" type="date" label="${esc(tx('toDate'))}"></md-outlined-text-field></div>
-      <p class="muted" id="hcount" aria-live="polite"></p><div class="h-selbar" role="toolbar" aria-label="${esc(tx('selectMode'))}"><b id="hsel-count" role="status"></b><md-text-button id="hsel-all">${esc(tx('selectAll'))}</md-text-button><md-text-button id="hsel-inv">${esc(tx('selectInvert'))}</md-text-button><span class="muted" id="hsel-note">${esc(tx('selectExportNote'))}</span></div><md-chip-set>${[...counts].map(([a, n]) => `<md-filter-chip data-a="${esc(a)}" label="${esc(a)} · ${n}"></md-filter-chip>`).join('')}</md-chip-set>
+      <p class="muted" id="hcount" aria-live="polite"></p><div class="h-selbar" role="toolbar" aria-label="${esc(tx('selectMode'))}"><b id="hsel-count" role="status"></b><md-text-button id="hsel-all">${esc(tx('selectAll'))}</md-text-button><md-text-button id="hsel-inv">${esc(tx('selectInvert'))}</md-text-button><span class="muted hsel-note" hidden>${esc(tx('selectExportNote'))}</span></div><md-chip-set>${[...counts].map(([a, n]) => `<md-filter-chip data-a="${esc(a)}" label="${esc(a)} · ${n}"></md-filter-chip>`).join('')}</md-chip-set>
       <md-list>${entries.map((e, i) => `<md-list-item data-row="${esc(e.action)}" data-t="${e.time}" data-text="${esc((e.message + ' ' + e.sha).toLowerCase())}"><input type="checkbox" slot="start" class="h-pick" aria-label="${esc(tx('selectWorld', { name: e.message.slice(0, 60) }))}"><div slot="headline">${esc(e.message)}</div>
         <div slot="supporting-text">${esc(new Date(e.time * 1000).toLocaleString('en-GB'))} · <code>${esc(e.sha.slice(0, 7))}</code></div>
         ${i > 0 ? `<md-text-button slot="end" data-sha="${esc(e.sha)}">${esc(tx('rollBack'))}</md-text-button>` : ''}</md-list-item>`).join('')}</md-list>`;
@@ -1316,6 +1316,7 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
     const hPaint = () => {
       rows.forEach((r, i) => { r.querySelector<HTMLInputElement>('.h-pick')!.checked = hPicked.has(i); });
       view.querySelector('#hsel-count')!.textContent = tx('selectedN', { n: hPicked.size, total: entries.length });
+      view.querySelector<HTMLElement>('.h-selbar .hsel-note')!.hidden = !hPicked.size;
     };
     rows.forEach((r, i) => r.querySelector('.h-pick')!.addEventListener('click', (ev) => { ev.stopPropagation(); hAnchor = pickItem(hPicked, i, hAnchor, (ev as MouseEvent).shiftKey); hPaint(); }));
     view.querySelector('#hsel-all')!.addEventListener('click', () => { const vis = hShown(); const all = vis.length > 0 && vis.every((i) => hPicked.has(i)); vis.forEach((i) => { if (all) hPicked.delete(i); else hPicked.add(i); }); hPaint(); });
