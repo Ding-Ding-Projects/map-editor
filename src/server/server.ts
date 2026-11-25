@@ -1,5 +1,6 @@
 // HTTP server shared by every form: the desktop app runs it on 127.0.0.1, the Docker
 // image and the appliance run it on the LAN. Same API, same UI.
+import { DimSum } from './dimsum.js';
 import http from 'node:http';
 import { promises as fs, existsSync } from 'node:fs';
 import path from 'node:path';
@@ -18,6 +19,8 @@ export interface ServerOptions {
   host: string;
   port: number;
   dataDir: string;
+  /** For tests: replaces fetch for the dim sum catalog. */
+  fetchImpl?: typeof fetch;
   /** Folders whose sub-folders are offered as worlds. */
   worldRoots: string[];
   /** Desktop only: allow opening any folder the person picked in a native dialog. */
@@ -69,6 +72,7 @@ export function lanAddresses(): string[] {
 
 export async function createServer(opts: ServerOptions) {
   const accounts = new Accounts(path.join(opts.dataDir, 'accounts'));
+  const dimsum = new DimSum(opts.dataDir, opts.fetchImpl);
   const build = await readBuildInfo();
   let session: EditSession | undefined;
   const staticDir = opts.staticDir ?? path.join(here, '..', 'ui');
@@ -95,6 +99,10 @@ export async function createServer(opts: ServerOptions) {
     const token = cookie(req, 'me_session');
     const user = accounts.session(token);
 
+    if (p === '/api/dimsum/random') {
+      if (!user) throw new HttpError(401, 'Sign in first.');
+      try { return send(200, await dimsum.random()); } catch (e) { throw new HttpError(503, `Dim sum catalog unavailable: ${(e as Error).message}`); }
+    }
     if (p === '/api/auth/state') return send(200, { hasOwner: await accounts.hasOwner(), user: user ? { name: user.name } : null });
     if (p === '/api/auth/register' && req.method === 'POST') {
       const { name, password } = await body(req);

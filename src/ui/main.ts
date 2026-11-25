@@ -28,16 +28,16 @@ import { notesPanel as notesPanelImpl } from './notes.js';
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
 
 // ---------- state ----------
-interface Prefs extends I18nState { dark: boolean; reduceMotion: boolean; largeText: boolean; sounds: boolean; soundVolume: number; settingsSection: string; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
+interface Prefs extends I18nState { dark: boolean; reduceMotion: boolean; largeText: boolean; dimSum: boolean; sounds: boolean; soundVolume: number; settingsSection: string; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
 const PREFS_KEY = 'map-editor.prefs.v1';
 const DEFAULT_SEED = '#4c8c4a';
-const defaults: Prefs = { lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, largeText: false, sounds: true, soundVolume: 40, settingsSection: 'language', closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
+const defaults: Prefs = { lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, largeText: false, dimSum: true, sounds: true, soundVolume: 40, settingsSection: 'language', closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
 function loadPrefs(): Prefs { try { return { ...defaults, ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') }; } catch { return { ...defaults }; } }
 let prefs = loadPrefs();
 // Settings history: every saved change to a user-facing setting keeps the previous values,
 // newest first, so any change can be restored (and the restore is recorded too).
 const HISTORY_KEY = 'map-editor.settings-history.v1';
-const TRACKED = ['lang', 'funnyEn', 'funnyYue', 'dark', 'reduceMotion', 'largeText', 'sounds', 'soundVolume', 'seed', 'rainbowSpeed'] as const;
+const TRACKED = ['lang', 'funnyEn', 'funnyYue', 'dark', 'reduceMotion', 'largeText', 'dimSum', 'sounds', 'soundVolume', 'seed', 'rainbowSpeed'] as const;
 type Tracked = typeof TRACKED[number];
 interface SettingsChange { at: string; keys: Tracked[]; before: Partial<Prefs>; after: Partial<Prefs> }
 let lastSaved: Partial<Prefs> = pick(prefs);
@@ -158,6 +158,8 @@ function paletteCommands(): Command[] {
   cmds.push({ id: 'large-text', label: tx('largeText'), where: `${tx('settings')} › ${tx('secComfort')}`, toggle: { get: () => prefs.largeText, set: (v) => { prefs.largeText = v; savePrefs(); applyTheme(); } } });
   cmds.push({ id: 'sounds', label: tx('soundEffects'), where: `${tx('settings')} › ${tx('secSounds')}`, toggle: { get: () => prefs.sounds, set: (v) => { prefs.sounds = v; savePrefs(); applyTheme(); } } });
   cmds.push({ id: 'check-updates', label: tx('updCheck'), where: `${tx('about')}`, run: () => { void checkForUpdates(); } });
+  cmds.push({ id: 'dim-sum', label: tx('dimSumNow'), where: `${tx('settings')} › ${tx('secAppearance')}`, run: () => { void dimSumSurprise(true); } });
+  cmds.push({ id: 'dim-sum-toggle', label: tx('dimSum'), where: `${tx('settings')} › ${tx('secAppearance')}`, toggle: { get: () => prefs.dimSum, set: (v) => { prefs.dimSum = v; savePrefs(); } } });
   cmds.push({ id: 'motion', label: tx('reduceMotion'), where: `${tx('settings')} › Appearance`, toggle: { get: () => prefs.reduceMotion, set: (v) => { prefs.reduceMotion = v; savePrefs(); applyTheme(); } } });
   for (const [l, label] of [['en', 'English'], ['yue', '粵語'], ['both', 'EN + 粵']] as const) cmds.push({ id: `lang-${l}`, label: `${tx('language')}: ${label}`, where: `${tx('settings')} › ${tx('language')}`, run: () => { prefs.lang = l; savePrefs(); render(); } });
   cmds.push({ id: 'notes', label: tx('notifications'), where: 'Header', run: () => toggleNoteCentre() });
@@ -210,6 +212,34 @@ const TAB_ICON: Record<Tab, string> = {
   settings: ico('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>'),
   about: ico('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>'),
 };
+
+// Dim sum surprise: a 1 in 10 chance per start once setup is done, never during setup or an error.
+// Non-blocking corner card that closes itself after 9 s (held while hovered or focused).
+let surprised = false;
+async function dimSumSurprise(force = false) {
+  if (!force && (surprised || !prefs.dimSum || !user || !prefs.onboarded || Math.random() >= 0.1)) return;
+  surprised = true;
+  type R = { dish: { id: string; name: { en: string; zhHant: string }; jyutping?: string; description: { en: string; yue: string }; alt?: { en: string; yue: string } }; total: number; revision: string };
+  let r: R;
+  try { r = await api<R>('/api/dimsum/random'); } catch (e) { if (force) notify(tx('dimSumOffline'), true); return; }
+  document.querySelector('.dimsum')?.remove();
+  const d = r.dish;
+  const desc = prefs.lang === 'yue' ? d.description.yue : prefs.lang === 'both' ? `${d.description.en} ${d.description.yue}` : d.description.en;
+  const alt = prefs.lang === 'yue' ? d.alt?.yue : d.alt?.en;
+  const el = document.createElement('aside');
+  el.className = 'dimsum'; el.setAttribute('role', 'status'); el.setAttribute('aria-label', tx('dimSum'));
+  el.innerHTML = `<div class="ds-photo" role="img" aria-label="${esc(tx('dimSumNoImage'))}${alt ? `: ${esc(alt)}` : ''}"><span class="ds-steamer" aria-hidden="true"><i></i><i></i><i></i></span><small>${esc(tx('dimSumNoImage'))}</small></div>
+    <div class="ds-body"><small class="ds-kicker">${esc(tx('dimSum'))}</small><b class="ds-en">${esc(d.name.en)}</b><span class="ds-zh" lang="zh-Hant-HK">${esc(d.name.zhHant)}${d.jyutping ? ` <em>${esc(d.jyutping)}</em>` : ''}</span>
+    <p>${esc(desc)}</p><small class="ds-src">${esc(tx('dimSumSource', { n: r.total.toLocaleString('en') }))}</small></div>
+    <md-icon-button class="ds-close" aria-label="${esc(tx('close'))}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></md-icon-button>`;
+  const close = () => { clearTimeout(timer); el.remove(); };
+  let timer = setTimeout(close, 9000);
+  const hold = () => clearTimeout(timer);
+  el.addEventListener('pointerenter', hold); el.addEventListener('focusin', hold);
+  el.addEventListener('pointerleave', () => { timer = setTimeout(close, 4000); });
+  el.querySelector('.ds-close')!.addEventListener('click', close);
+  document.body.append(el);
+}
 
 function updateText(u: UpdState | undefined): string {
   if (!desktopBridge?.updates) return tx('updWeb');
@@ -538,7 +568,7 @@ function settingsView(view: HTMLElement) {
         <label class="set-slider" data-find="${esc(tx('funnyEn'))}"><span><b>${esc(tx('funnyEn'))}</b><em>${prefs.funnyEn}</em></span><md-slider id="fen" min="1" max="5" step="1" ticks labeled value="${prefs.funnyEn}"></md-slider></label>
         <label class="set-slider" data-find="${esc(tx('funnyYue'))}"><span><b>${esc(tx('funnyYue'))}</b><em>${prefs.funnyYue}</em></span><md-slider id="fyue" min="1" max="5" step="1" ticks labeled value="${prefs.funnyYue}"></md-slider></label>
       </div><p class="muted">${esc(tx('funnyNote'))}</p>`,
-    appearance: `${sw('dark', 'dark', 'darkNote', prefs.dark)}
+    appearance: `${sw('dark', 'dark', 'darkNote', prefs.dark)}${sw('ds', 'dimSum', 'dimSumNote', prefs.dimSum)}
       <div class="set-row seed-row" data-find="${esc(tx('seed'))}"><span><b>${esc(tx('seed'))}</b></span><span class="seed-now"><span class="seed-swatch ${prefs.seed === RAINBOW ? 'rainbow' : ''}" style="background:${prefs.seed === RAINBOW ? 'none' : esc(prefs.seed)}"></span><code>${esc(prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed)}</code><md-text-button id="seed-reset">${esc(tx('reset'))}</md-text-button></span></div>
       <div id="seed-picker" data-find="${esc(tx('seed'))} colour color"></div>`,
     comfort: `${sw('rm', 'reduceMotion', 'reduceMotionNote', prefs.reduceMotion)}${sw('lt', 'largeText', 'largeTextNote', prefs.largeText)}`,
@@ -589,6 +619,7 @@ function settingsView(view: HTMLElement) {
   view.querySelector('#dark')!.addEventListener('change', (e) => { prefs.dark = sel(e); savePrefs(); applyTheme(); });
   view.querySelector('#rm')!.addEventListener('change', (e) => { prefs.reduceMotion = sel(e); savePrefs(); applyTheme(); });
   view.querySelector('#lt')!.addEventListener('change', (e) => { prefs.largeText = sel(e); savePrefs(); applyTheme(); });
+  view.querySelector('#ds')!.addEventListener('change', (e) => { prefs.dimSum = sel(e); savePrefs(); });
   view.querySelector('#snd')!.addEventListener('change', (e) => { prefs.sounds = sel(e); savePrefs(); applyTheme(); });
   view.querySelector('#vol')!.addEventListener('change', () => { prefs.soundVolume = num('#vol'); view.querySelector('#vol-n')!.textContent = `${prefs.soundVolume}%`; savePrefs(); applyTheme(); play('success'); });
   view.querySelector('#snd-try')!.addEventListener('click', () => { play('create'); });
@@ -615,7 +646,7 @@ function settingsView(view: HTMLElement) {
   const sh = view.querySelector<HTMLElement>('#sh')!;
   const hist = loadSettingsHistory();
   const fmt = (k: Tracked, v: unknown) => k === 'seed' && v === RAINBOW ? tx('rainbow') : typeof v === 'boolean' ? (v ? 'on' : 'off') : String(v);
-  const name: Record<Tracked, string> = { sounds: tx('soundEffects'), soundVolume: tx('soundVolume'), lang: tx('secLanguage'), funnyEn: tx('funnyEn'), funnyYue: tx('funnyYue'), dark: tx('dark'), reduceMotion: tx('reduceMotion'), largeText: tx('largeText'), seed: tx('seed'), rainbowSpeed: tx('rainbow') };
+  const name: Record<Tracked, string> = { dimSum: tx('dimSum'), sounds: tx('soundEffects'), soundVolume: tx('soundVolume'), lang: tx('secLanguage'), funnyEn: tx('funnyEn'), funnyYue: tx('funnyYue'), dark: tx('dark'), reduceMotion: tx('reduceMotion'), largeText: tx('largeText'), seed: tx('seed'), rainbowSpeed: tx('rainbow') };
   sh.innerHTML = hist.length ? hist.slice(0, 50).map((h, i) => `<li data-find="${esc(h.keys.map((k) => name[k]).join(' '))}"><span><b>${h.keys.map((k) => `${esc(name[k])}: ${esc(fmt(k, h.before[k]))} → ${esc(fmt(k, h.after[k]))}`).join(' · ')}</b><small>${esc(new Date(h.at).toLocaleString())}</small></span><md-text-button data-restore="${i}">${esc(tx('restore'))}</md-text-button></li>`).join('') : `<li class="muted">${esc(tx('noSettingsHistory'))}</li>`;
   sh.querySelectorAll<HTMLElement>('[data-restore]').forEach((b) => b.addEventListener('click', () => {
     const h = hist[Number(b.dataset.restore)]; if (!h) return;
@@ -692,4 +723,5 @@ document.addEventListener('keydown', (e) => {
   try { health = await api<Health>('/api/health'); } catch { /* shown as unavailable */ }
   try { const s = await api<{ hasOwner: boolean; user: { name: string } | null }>('/api/auth/state'); hasOwner = s.hasOwner; user = s.user; } catch (e) { notify((e as Error).message, true); }
   render();
+  setTimeout(() => { void dimSumSurprise(); }, 2500);
 })();

@@ -324,7 +324,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Command palette (Ctrl+Shift+F) with live setting rows, notification centre, Update coming soon, dim sum surprise. Tweaks dark, seed, motion.\nIn the app: palette with live switches and its own regex builder, notification centre, update flow: background download shown in About, ready-to-install banner with version, release notes, unsigned note, Later and Restart. Not yet: the Update coming soon card during download, dim sum surprise.",
+   "text": "Command palette (Ctrl+Shift+F) with live setting rows, notification centre, Update coming soon, dim sum surprise. Tweaks dark, seed, motion.\nIn the app: palette with live switches and its own regex builder, notification centre, update flow: background download shown in About, ready-to-install banner with version, release notes, unsigned note, Later and Restart. Dim sum surprise in the app: 1 in 10 at start after setup, corner card with bilingual name, jyutping and description from the public catalogue, Public image unavailable placeholder (photos are only published encrypted), closes after 9 s unless hovered, switch in Settings and palette. Not yet: the Update coming soon card during download.",
    "fill": "yellow",
    "page": "feedback"
   },

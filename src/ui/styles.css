@@ -421,3 +421,22 @@ md-list-item[hidden] { display: none; }
 .takeover md-outlined-button { --md-outlined-button-outline-color: var(--tk-fg); --md-outlined-button-outline-width: 2px; --md-outlined-button-label-text-color: var(--tk-fg); --md-outlined-button-hover-label-text-color: var(--tk-fg); --md-outlined-button-focus-label-text-color: var(--tk-fg); --md-outlined-button-pressed-label-text-color: var(--tk-fg); }
 .takeover md-text-button { --md-text-button-label-text-color: var(--tk-fg); --md-text-button-hover-label-text-color: var(--tk-fg); --md-text-button-focus-label-text-color: var(--tk-fg); --md-text-button-pressed-label-text-color: var(--tk-fg); --md-text-button-label-text-size: 16px; }
 .note-centre .search-box { margin: 0 12px 8px; } .note-centre li[hidden] { display: none; }
+
+/* ---------- dim sum surprise ---------- */
+.dimsum { position: fixed; right: 24px; bottom: 24px; z-index: 30; display: flex; gap: 16px; width: min(460px, calc(100vw - 48px)); box-sizing: border-box; padding: 16px; border-radius: 32px 32px 32px 12px; background: var(--md-sys-color-tertiary-container, #bcebf0); color: var(--md-sys-color-on-tertiary-container, #002023); box-shadow: 0 8px 28px rgba(0,0,0,.22); animation: ds-pop .5s cubic-bezier(.2,1.4,.4,1) both; }
+.ds-photo { flex: none; width: 112px; height: 112px; border-radius: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: color-mix(in srgb, currentColor 10%, transparent); text-align: center; }
+.ds-photo small { font-size: 10px; line-height: 12px; padding: 0 8px; }
+.ds-steamer { position: relative; width: 64px; height: 40px; border-radius: 10px 10px 18px 18px; background: #c89b5a; box-shadow: inset 0 -6px 0 #a87a3c; }
+.ds-steamer i { position: absolute; top: -10px; width: 18px; height: 18px; border-radius: 50% 50% 40% 40%; background: #f6efe1; box-shadow: inset 0 -3px 0 #e3d6bd; }
+.ds-steamer i:nth-child(1) { left: 4px; } .ds-steamer i:nth-child(2) { left: 23px; top: -13px; } .ds-steamer i:nth-child(3) { left: 42px; }
+.ds-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding-right: 28px; }
+.ds-kicker { font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; opacity: .8; }
+.ds-en { font-size: 18px; line-height: 24px; font-weight: 800; }
+.ds-zh { font-size: 16px; font-weight: 600; } .ds-zh em { font-style: normal; font-size: 12px; opacity: .8; }
+.ds-body p { margin: 6px 0 4px; font-size: 13px; line-height: 18px; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.ds-src { font-size: 11px; opacity: .75; }
+.ds-close { position: absolute; top: 6px; right: 6px; --md-icon-button-icon-color: currentColor; }
+@keyframes ds-pop { from { opacity: 0; transform: translateY(24px) scale(.9) rotate(-2deg); } to { opacity: 1; transform: none; } }
+.reduce-motion .dimsum { animation: none; }
+@media (prefers-reduced-motion: reduce) { .dimsum { animation: none; } }
+@media (max-width: 720px) { .dimsum { right: 12px; left: 12px; width: auto; bottom: 100px; } .ds-photo { width: 80px; height: 80px; } }
