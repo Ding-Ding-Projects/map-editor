@@ -37,7 +37,7 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
     <header class="worlds-head"><div>
       <h1 class="display">${esc(tx('worlds'))}</h1><p class="muted" id="roots"></p></div>
       <div class="worlds-actions">
-        <label class="btn-primary shape-tl" tabindex="0" role="button" id="upload-label">${esc(tx('uploadZip'))}<input type="file" id="upload" accept=".zip,application/zip" hidden></label>
+        <label class="btn-primary shape-tl" tabindex="0" role="button" id="upload-label">${esc(tx('uploadZip'))}<input type="file" id="upload" accept=".zip,.mcworld,application/zip" hidden></label>
         <md-filled-tonal-button id="new">${esc(tx('newFlat'))}</md-filled-tonal-button>
         ${c.browse ? `<md-outlined-button id="browse">${esc(tx('browse'))}</md-outlined-button>` : ''}
       </div></header>
@@ -74,7 +74,7 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
         const w = worlds[Number(b.dataset.dl)];
         const a = document.createElement('a');
         a.href = '/api/worlds/download?path=' + encodeURIComponent(w.path);
-        a.download = `${w.name}.zip`;
+        a.download = `${w.name}${w.edition === 'bedrock' ? '.mcworld' : '.zip'}`;
         document.body.append(a); a.click(); a.remove();
       }));
     } catch (e) {

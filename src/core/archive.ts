@@ -4,7 +4,8 @@ import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import yauzl from 'yauzl';
 import yazl from 'yazl';
-import { createWorld, World } from './world.js';
+import { createWorld, isBedrockWorld, World } from './world.js';
+import { BedrockWorld } from './bedrock.js';
 
 export const MAX_UNPACKED_BYTES = 8 * 1024 ** 3; // refuse archives that would unpack to more than 8 GiB
 export const MAX_ENTRIES = 200_000;
@@ -92,7 +93,8 @@ export async function importWorldZip(zipFile: string, root: string, suggestedNam
       zip.on('error', reject);
       zip.readEntry();
     });
-    await World.open(tmp); // proves level.dat is readable before the world is offered
+    // Prove the world can be read before it is offered: Bedrock worlds by their database, Java worlds by level.dat.
+    if (isBedrockWorld(tmp)) await BedrockWorld.open(tmp); else await World.open(tmp);
     await fs.rename(tmp, dest);
     return dest;
   } catch (e) {
@@ -136,7 +138,8 @@ export async function zipEntryNames(zipFile: string): Promise<string[]> {
 }
 
 /** Stream a world folder as a .zip, with the world in a top folder of its own name. */
-export async function exportWorldZip(worldDir: string, out: NodeJS.WritableStream): Promise<void> {
+/** `flat` puts the files at the top of the archive, which is how a Bedrock .mcworld file is laid out. */
+export async function exportWorldZip(worldDir: string, out: NodeJS.WritableStream, flat = false): Promise<void> {
   const zip = new yazl.ZipFile();
   const top = path.basename(worldDir);
   async function walk(dir: string, rel: string) {
@@ -145,7 +148,7 @@ export async function exportWorldZip(worldDir: string, out: NodeJS.WritableStrea
       const abs = path.join(dir, ent.name);
       const r = rel ? `${rel}/${ent.name}` : ent.name;
       if (ent.isDirectory()) await walk(abs, r);
-      else if (ent.isFile()) zip.addFile(abs, `${top}/${r}`);
+      else if (ent.isFile()) zip.addFile(abs, flat ? r : `${top}/${r}`);
     }
   }
   await walk(worldDir, '');

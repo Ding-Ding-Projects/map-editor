@@ -159,3 +159,26 @@ describe('Bedrock block list and colours', () => {
     await rm(dir, { recursive: true, force: true });
   });
 });
+
+describe('Bedrock worlds as files', () => {
+  it('packs as .mcworld (files at the top) and unpacks again as a Bedrock world', async () => {
+    const { exportWorldZip, importWorldZip, zipEntryNames } = await import('../src/core/archive.js');
+    const { createWriteStream } = await import('node:fs');
+    const dir = await makeWorld(); const out = await mkdtemp(path.join(os.tmpdir(), 'me-mcworld-'));
+    const file = path.join(out, 'tiny.mcworld');
+    await exportWorldZip(dir, createWriteStream(file), true);
+    expect((await zipEntryNames(file)).sort()).toEqual(['db/000003.log', 'db/CURRENT', 'db/MANIFEST-000002', 'level.dat', 'levelname.txt']);
+    const root = path.join(out, 'worlds'); await mkdir(root);
+    const dest = await importWorldZip(file, root, 'tiny');
+    expect(isBedrockWorld(dest)).toBe(true);
+    const w = await BedrockWorld.open(dest);
+    expect((await w.getBlock('overworld', 3, 2, 3))?.name).toBe('minecraft:grass');
+    // a Bedrock archive whose database is missing is refused and nothing is left behind
+    await rm(path.join(dir, 'db', 'CURRENT'));
+    const broken = path.join(out, 'broken.mcworld');
+    await exportWorldZip(dir, createWriteStream(broken), true);
+    await expect(importWorldZip(broken, root, 'broken')).rejects.toThrow();
+    expect(await readdir(root)).toEqual(['tiny']);
+    await rm(dir, { recursive: true, force: true }); await rm(out, { recursive: true, force: true });
+  });
+});

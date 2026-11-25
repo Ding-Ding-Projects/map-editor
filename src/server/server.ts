@@ -272,9 +272,10 @@ export async function createServer(opts: ServerOptions) {
       const wp = url.searchParams.get('path') ?? '';
       if (!worldAllowed(wp) || !isWorldFolder(wp)) throw new HttpError(403, 'That world is not available for download.');
       if (session && path.resolve(session.world.dir) === path.resolve(wp) && session.world.unsavedChunks) throw new HttpError(409, 'Save the world before downloading it.');
-      const file = encodeURIComponent(path.basename(wp)) + '.zip';
+      const bedrock = isBedrockWorld(wp); // Bedrock worlds travel as .mcworld: a zip with the files at the top
+      const file = encodeURIComponent(path.basename(wp)) + (bedrock ? '.mcworld' : '.zip');
       res.writeHead(200, { 'content-type': 'application/zip', 'content-disposition': `attachment; filename*=UTF-8''${file}`, 'cache-control': 'no-store' });
-      await exportWorldZip(wp, res);
+      await exportWorldZip(wp, res, bedrock);
       return;
     }
     if (p === '/api/worlds/open' && req.method === 'POST') {
