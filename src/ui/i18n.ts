@@ -91,6 +91,16 @@ const S = {
   stepWorld: { en: 'Your first world', yue: '你第一個世界' },
   stepWorldBody: { en: 'Next you will see your worlds. Upload one as a .zip, open one from the list, or start a flat world to try the tools.', yue: '跟住會見到你嘅世界。可以上載 .zip、喺清單打開，或者開個平地世界試工具。' },
   progressSaved: { en: 'Progress saves as you go. Close any time and resume here.', yue: '進度會自動儲存，隨時關咗都可以返嚟繼續。' },
+  versionLabel: { en: 'Version', yue: '版本' },
+  buildLabel: { en: 'Build', yue: '建置' },
+  aboutLegal: { en: 'Based on Amulet Map Editor by the Amulet Team; using it needs an Amulet licence. Minecraft is a trademark of Mojang Synergies AB; not affiliated with Mojang or Microsoft.', yue: '基於 Amulet Team 嘅 Amulet Map Editor；使用需要 Amulet 授權。Minecraft 係 Mojang Synergies AB 嘅商標；同 Mojang 或 Microsoft 冇關係。' },
+  copyDetails: { en: 'Copy version details', yue: '複製版本資料' },
+  copied: { en: 'Copied.', yue: '已複製。' },
+  copyFailed: { en: 'Could not copy. Select the text instead.', yue: '複製唔到，請自己揀字。' },
+  changelog: { en: 'Changelog', yue: '更新紀錄' },
+  searchChanges: { en: 'Search changes', yue: '搜尋更新' },
+  changelogUnavailable: { en: 'This build was made without its history, so there is no changelog.', yue: '呢個版本建置時冇歷史紀錄，所以冇更新紀錄。' },
+  added: { en: 'Added', yue: '新增' }, fixed: { en: 'Fixed', yue: '修正' }, changed: { en: 'Changed', yue: '更改' },
   signedOut: { en: 'Sign in first.', yue: '請先登入。' },
 } satisfies Record<string, Entry>;
 

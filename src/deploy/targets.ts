@@ -259,3 +259,77 @@ export async function deployVirtualBox(dataDir: string, opts: { name: string; ov
   await saveInstances(dataDir, [...existing, instance]);
   return { instance, url };
 }
+
+// ---------- instance management ----------
+export type InstanceAction = 'start' | 'stop' | 'restart' | 'update' | 'remove';
+
+function composeArgs(dataDir: string, name: string) {
+  return ['compose', '-f', path.join(dataDir, 'instances', name, 'compose.yaml'), '-p', name];
+}
+const vboxManage = () => (process.platform === 'win32' ? 'C:\\Program Files\\Oracle\\VirtualBox\\VBoxManage.exe' : 'VBoxManage');
+
+/** Current state of an instance this app created, read from Docker or VirtualBox, never assumed. */
+export async function instanceState(dataDir: string, i: Instance): Promise<'running' | 'stopped' | 'missing' | 'unknown'> {
+  if (i.target === 'docker') {
+    const r = await run('docker', [...composeArgs(dataDir, i.name), 'ps', '--all', '--format', '{{.State}}']);
+    if (r.code !== 0) return 'unknown';
+    const s = r.stdout.trim();
+    return !s ? 'missing' : /running/.test(s) ? 'running' : 'stopped';
+  }
+  if (i.target === 'virtualbox') {
+    const r = await run(vboxManage(), ['showvminfo', i.name, '--machinereadable']);
+    if (r.code !== 0) return 'missing';
+    return /VMState="running"/.test(r.stdout) ? 'running' : 'stopped';
+  }
+  return 'unknown';
+}
+
+/** Run one action on an instance. Remove keeps worlds and data unless deleteData is true. */
+export async function instanceAction(dataDir: string, name: string, action: InstanceAction, deleteData = false): Promise<{ ok: boolean; message: string }> {
+  const list = await loadInstances(dataDir);
+  const i = list.find((x) => x.name === name);
+  if (!i) return { ok: false, message: `${name} is not an instance this app created.` };
+  let r: RunResult;
+  if (i.target === 'docker') {
+    const base = composeArgs(dataDir, name);
+    if (action === 'update') {
+      r = await run('docker', [...base, 'pull']);
+      if (r.code === 0) r = await run('docker', [...base, 'up', '-d']);
+    } else if (action === 'remove') {
+      r = await run('docker', [...base, 'down', ...(deleteData ? ['--volumes'] : [])]);
+    } else {
+      r = await run('docker', [...base, action]);
+    }
+  } else if (i.target === 'virtualbox') {
+    const vbm = vboxManage();
+    const map: Record<InstanceAction, string[][]> = {
+      start: [['startvm', name, '--type', 'headless']],
+      stop: [['controlvm', name, 'acpipowerbutton']],
+      restart: [['controlvm', name, 'reset']],
+      update: [],
+      remove: [['controlvm', name, 'poweroff'], ['unregistervm', name, ...(deleteData ? ['--delete'] : [])]],
+    };
+    if (action === 'update') return { ok: false, message: 'Update a VirtualBox instance by importing the new appliance image. In-place updates are on the roadmap.' };
+    r = { code: 0, stdout: '', stderr: '' };
+    for (const args of map[action]) {
+      r = await run(vbm, args);
+      if (r.code !== 0 && !(action === 'remove' && args[0] === 'controlvm')) break; // poweroff fails harmlessly when already off
+    }
+  } else {
+    return { ok: false, message: `Managing ${i.target} instances is not available yet.` };
+  }
+  if (r.code !== 0) return { ok: false, message: `${action} failed with exit code ${r.code}: ${r.stderr.trim().split('\n').slice(-2).join(' ')}` };
+  if (action === 'remove') await saveInstances(dataDir, list.filter((x) => x.name !== name));
+  return { ok: true, message: `${name}: ${action} finished.` };
+}
+
+/** Follow an instance's log. Returns a function that stops following. */
+export function followLogs(dataDir: string, i: Instance, onLine: (line: string) => void): () => void {
+  if (i.target !== 'docker') { onLine('Live logs are available for Docker instances. For a VM, open its console in VirtualBox.'); return () => undefined; }
+  const p = spawn('docker', [...composeArgs(dataDir, i.name), 'logs', '--follow', '--tail', '200', '--no-color'], { windowsHide: true });
+  let buf = '';
+  const feed = (d: Buffer) => { buf += d.toString(); const lines = buf.split(/\r?\n/); buf = lines.pop() ?? ''; for (const l of lines) onLine(l); };
+  p.stdout.on('data', feed); p.stderr.on('data', feed);
+  p.on('error', (e) => onLine(`Could not read the log: ${e.message}`));
+  return () => p.kill();
+}

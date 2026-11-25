@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Deploy app instance management</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,400..1000&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid #8FD88A;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(143,216,138,0)}}
+@keyframes tail{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+.moving .rise{animation:rise .55s cubic-bezier(.2,0,0,1) both}
+.moving .live{animation:pulse 1.6s ease-out infinite;box-shadow:0 0 0 0 rgba(143,216,138,.6)}
+.moving .logline:last-child{animation:tail .4s ease-out both}
+.moving button{transition:border-radius .2s cubic-bezier(.2,0,0,1),transform .2s}
+.moving button:hover{border-radius:12px}
+.still *{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div class="{{motionClass}}" style="min-height: 900px; padding: 24px; box-sizing: border-box; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif; font-size: 14px">
+  <div style="max-width: 1360px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+    <section class="rise" aria-label="Instance" style="flex: 1 1 420px; max-width: 520px; display: flex; flex-direction: column; gap: 16px; padding: 28px; border-radius: 40px 40px 40px 12px; background: {{t.surfaceContainerLow}}">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <span class="{{liveClass}}" style="{{dot}}"></span>
+        <span style="font-size: 32px; line-height: 36px; font-weight: 900; letter-spacing: -.8px">map-editor-1</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+        <div style="padding: 14px; border-radius: 18px; background: {{t.surfaceContainerHigh}}"><div style="font-size: 12px; color: {{t.onSurfaceVariant}}">State</div><div style="font-size: 20px; font-weight: 800">{{stateLabel}}</div></div>
+        <div style="padding: 14px; border-radius: 18px; background: {{t.surfaceContainerHigh}}"><div style="font-size: 12px; color: {{t.onSurfaceVariant}}">Version</div><div style="font-size: 20px; font-weight: 800">0.1.0</div></div>
+        <div style="padding: 14px; border-radius: 18px; background: {{t.surfaceContainerHigh}}; grid-column: span 2"><div style="font-size: 12px; color: {{t.onSurfaceVariant}}">Link</div><div style="font-family: 'Roboto Mono', monospace; font-size: 16px; color: {{t.primary}}">http://192.168.1.42:8420/</div></div>
+      </div>
+      <div role="group" aria-label="Instance actions" style="display: flex; flex-wrap: wrap; gap: 8px">
+        <sc-for list="{{actions}}" as="a" hint-placeholder-count="6"><button style="{{a.style}}">{{a.label}}</button></sc-for>
+      </div>
+      <span style="font-size: 12px; color: {{t.onSurfaceVariant}}">Remove stops the container and deletes its Compose file. The worlds folder and the data volume are kept unless you also choose Delete data.</span>
+    </section>
+    <section class="rise" aria-label="Live log" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; border-radius: 32px; overflow: hidden; background: {{t.logBg}}">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px 12px 24px; background: {{t.surfaceContainerHigh}}">
+        <span style="flex: 1; font-size: 18px; font-weight: 800">Live log</span>
+        <button style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-weight: 600">Pause</button>
+        <button style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-weight: 600">Copy</button>
+      </div>
+      <div style="padding: 16px 24px; font-family: 'Roboto Mono', monospace; font-size: 13px; line-height: 22px; color: {{t.logFg}}; white-space: pre-wrap; min-height: 560px">
+        <sc-for list="{{log}}" as="l" hint-placeholder-count="10"><div class="logline">{{l}}</div></sc-for>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["running","stopped","restarting"],"default":"running"},"dark":{"editor":"boolean","default":true},"seed":{"editor":"color","default":"#4C8C4A"},"motion":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? true;
+    const t = dark ? {
+      primary:'#8FD88A', onPrimary:'#00390A', primaryContainer:'#1B5220', onPrimaryContainer:'#AAF5A4', secondaryContainer:'#3B4B38', onSecondaryContainer:'#D6E8CF', error:'#FFB4AB',
+      surface:'#10140F', surfaceContainerLow:'#181D17', surfaceContainerHigh:'#262B25', onSurface:'#E0E4DA', onSurfaceVariant:'#C2C9BD', outline:'#8C9388', logBg:'#0B0F0A', logFg:'#C2C9BD'
+    } : {
+      primary:'#2E6B2C', onPrimary:'#FFFFFF', primaryContainer:'#AFF4A6', onPrimaryContainer:'#002204', secondaryContainer:'#D6E8CF', onSecondaryContainer:'#111F0F', error:'#BA1A1A',
+      surface:'#F7FBF1', surfaceContainerLow:'#F1F5EB', surfaceContainerHigh:'#E5EAE0', onSurface:'#181D17', onSurfaceVariant:'#42493F', outline:'#72796E', logBg:'#2D322B', logFg:'#EEF2E8'
+    };
+    const seed = this.props.seed ?? '#4C8C4A';
+    if (seed.toLowerCase() !== '#4c8c4a') { t.primary = seed; t.onPrimary = '#FFFFFF'; }
+    const state = this.props.state ?? 'running';
+    const on = state === 'running';
+    const btn = (bg, fg, border) => 'height: 44px; padding: 0 18px; border-radius: 22px; font-weight: 700; border: ' + (border ? '1px solid ' + border : '0') + '; background: ' + bg + '; color: ' + fg;
+    const actions = [
+      { label: 'Open', style: btn(t.primary, t.onPrimary) },
+      { label: on ? 'Stop' : 'Start', style: btn(t.secondaryContainer, t.onSecondaryContainer) },
+      { label: 'Restart', style: btn('transparent', t.primary, t.outline) },
+      { label: 'Update', style: btn('transparent', t.primary, t.outline) },
+      { label: 'Remove', style: btn('transparent', t.error, t.outline) }
+    ];
+    const log = [
+      '01:49:58  Map Editor 0.1.0 listening on 0.0.0.0:8420',
+      '01:49:58    http://172.18.0.2:8420/',
+      '01:50:14  GET /api/health 200 2 ms',
+      '01:50:31  POST /api/auth/register 201 (owner created)',
+      '01:51:02  POST /api/worlds/upload 201 Survival Island',
+      '01:51:40  POST /api/worlds/open 200',
+      '01:52:07  POST /api/op fill 53,248 blocks 1.4 s',
+      '01:52:07  history: filled a41c9e2',
+      '01:52:44  POST /api/history/undo 200 restored',
+      '01:53:10  GET /api/render 200 64x64 chunks'
+    ];
+    return {
+      t, actions, log, motionClass: (this.props.motion ?? true) ? 'moving' : 'still',
+      stateLabel: state === 'running' ? 'Running, healthy' : state === 'stopped' ? 'Stopped' : 'Restarting…',
+      liveClass: on ? 'live' : '',
+      dot: 'width: 16px; height: 16px; flex: none; border-radius: 8px; background: ' + (on ? t.primary : state === 'stopped' ? t.outline : t.error)
+    };
+  }
+}
+</script>
+</body>
+</html>

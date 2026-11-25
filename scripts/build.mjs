@@ -16,8 +16,14 @@ try {
 
 const dist = path.join(root, 'dist');
 mkdirSync(path.join(dist, 'ui'), { recursive: true });
+// Changelog from the real commit history (subject line only), newest first.
+let changelog = [];
+try {
+  const out = execFileSync('git', ['log', '-200', '--format=%H%x1f%cI%x1f%s'], { cwd: root }).toString().trim();
+  changelog = out ? out.split('\n').map((l) => { const [sha, date, subject] = l.split('\x1f'); return { sha, date, subject }; }) : [];
+} catch { /* not a checkout: the About screen says the changelog is unavailable */ }
 // Updated-at comes from the source commit time, never the clock of whoever builds it.
-writeFileSync(path.join(dist, 'build-info.json'), JSON.stringify({ version: pkg.version, commit, builtAt }, null, 2));
+writeFileSync(path.join(dist, 'build-info.json'), JSON.stringify({ version: pkg.version, commit, builtAt, changelog }, null, 2));
 
 const common = { bundle: true, sourcemap: true, logLevel: 'info', legalComments: 'linked' };
 await build({ ...common, entryPoints: [path.join(root, 'src/ui/main.ts')], outfile: path.join(dist, 'ui/app.js'), format: 'esm', platform: 'browser', target: 'es2022', minify: true });

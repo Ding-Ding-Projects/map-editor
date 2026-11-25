@@ -31,4 +31,18 @@ ipcMain.handle('flash', async (_e, image: string, diskId: string, typed: string)
   if (!disk) return { ok: false, message: 'That drive is no longer connected or is not removable. Nothing was written.' };
   return targets.flash(image, disk, typed, (w, t) => win?.webContents.send('flash-progress', w, t));
 });
+ipcMain.handle('state', async (_e, name: string) => {
+  const i = (await targets.loadInstances(dataDir())).find((x) => x.name === name);
+  return i ? targets.instanceState(dataDir(), i) : 'missing';
+});
+ipcMain.handle('action', (_e, name: string, action: targets.InstanceAction, deleteData: boolean) => targets.instanceAction(dataDir(), name, action, Boolean(deleteData)));
+let stopLogs: (() => void) | undefined;
+ipcMain.handle('logs-start', async (_e, name: string) => {
+  stopLogs?.();
+  const i = (await targets.loadInstances(dataDir())).find((x) => x.name === name);
+  if (!i) return false;
+  stopLogs = targets.followLogs(dataDir(), i, (line) => win?.webContents.send('log-line', line));
+  return true;
+});
+ipcMain.handle('logs-stop', () => { stopLogs?.(); stopLogs = undefined; });
 ipcMain.handle('open', (_e, url: string) => { if (/^http:\/\/[\d.]+:\d+\/$/.test(url)) shell.openExternal(url); });

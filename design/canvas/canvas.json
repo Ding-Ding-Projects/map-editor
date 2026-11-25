@@ -35,6 +35,10 @@
    "name": "Feedback"
   },
   {
+   "id": "about",
+   "name": "About and changelog"
+  },
+  {
    "id": "mobile",
    "name": "Phone"
   },
@@ -134,6 +138,24 @@
    "page": "deploy",
    "is_interactive": true
   },
+  "DeployManage.dc.html": {
+   "x": 2020,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Instance actions and live log",
+   "expand": "fill",
+   "page": "deploy"
+  },
+  "About.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 920,
+   "title": "About and changelog",
+   "expand": "fill",
+   "page": "about"
+  },
   "SiteHome.dc.html": {
    "x": 0,
    "y": 0,
@@ -154,6 +176,8 @@
   "Takeover.dc.html",
   "Phone.dc.html",
   "Deploy.dc.html",
+  "DeployManage.dc.html",
+  "About.dc.html",
   "SiteHome.dc.html"
  ],
  "notes": {
@@ -208,12 +232,20 @@
   "t6": {
    "x": 0,
    "y": -300,
+   "text": "About and changelog",
+   "kind": "title1",
+   "maxW": 2400,
+   "page": "about"
+  },
+  "t7": {
+   "x": 0,
+   "y": -300,
    "text": "Phone",
    "kind": "title1",
    "maxW": 2400,
    "page": "mobile"
   },
-  "t7": {
+  "t8": {
    "x": 0,
    "y": -300,
    "text": "Deploy app",
@@ -221,7 +253,7 @@
    "maxW": 2400,
    "page": "deploy"
   },
-  "t8": {
+  "t9": {
    "x": 0,
    "y": -300,
    "text": "Docs site",
@@ -300,6 +332,22 @@
    "text": "Deploy app. Try: target cards, Deploy and Instances views; Tweaks dark, seed, motion.\nIn the app: Docker, VirtualBox and USB flash targets (not run on real hosts), instance list. Not yet: VMware, Raspberry Pi, Docker over SSH, instance actions.",
    "fill": "yellow",
    "page": "deploy"
+  },
+  "n_deploymanage": {
+   "x": 3540,
+   "y": 0,
+   "w": 420,
+   "text": "Deploy app instance management. Try: Tweak state (running, stopped, restarting), dark, seed, motion.\nStands for Open, Start or Stop, Restart, Update and Remove on a Docker instance the app created, plus a live log that follows docker compose logs.\nBeing built for the Docker target; not run against a real Docker host.",
+   "fill": "yellow",
+   "page": "deploy"
+  },
+  "n_about": {
+   "x": 1520,
+   "y": 0,
+   "w": 420,
+   "text": "About and changelog. Tweaks dark, seed, motion.\nStands for version provenance from the running build and a changelog generated from the real commit history at build time, each entry with its SHA, searchable.\nBeing built; the regex builder beside the search is not built.",
+   "fill": "yellow",
+   "page": "about"
   },
   "n_sitehome": {
    "x": 1520,

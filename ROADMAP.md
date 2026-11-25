@@ -46,7 +46,8 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [ ] VMware target. Shown as not available in the app.
 - [ ] Raspberry Pi flashing (needs the arm64 image).
 - [ ] Docker on another machine over SSH.
-- [ ] Instance actions: start, stop, restart, logs, update, duplicate, remove.
+- [x] Instance actions: start, stop, restart, update, remove (with an optional Delete data step and a confirm dialog), state dot and live log with Pause and Copy; unit tested with a stand-in `docker` and driven in headless Chrome.
+- [ ] Instance duplicate.
 
 ## Phase 6: required interface features still open
 
@@ -66,7 +67,8 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Notification centre behind the bell with a count badge and Dismiss all.
 - [ ] Notification search; install success and failure takeovers in the desktop app.
 - [ ] Dim sum surprise using the public photo catalogue.
-- [ ] Exports in every format, bulk actions, changelog viewer, offline documentation.
+- [x] About screen with version, build commit, licence note, Copy version details and a searchable changelog built from the commit log (Added, Fixed, Changed); checked in headless Chrome.
+- [ ] Exports in every format, bulk actions, offline documentation.
 - [ ] Element locks, unlock ladder, authenticator.
 - [ ] Built-in tools: file converter, Base64, quicktype, Ollama suite, Minecraft server manager and world generator, virtual disk manager on Windows.
 - [x] Documentation site generated from `site/content.mjs`: landing page and one article per feature, each ending in suggested articles, version and commit in the footer; checked at 320 px wide with no sideways scrolling.

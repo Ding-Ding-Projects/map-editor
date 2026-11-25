@@ -407,11 +407,34 @@ function settingsView(view: HTMLElement) {
   view.querySelector('#seed-reset')!.addEventListener('click', () => { prefs.seed = DEFAULT_SEED; savePrefs(); render(); });
 }
 
-function aboutView(view: HTMLElement) {
-  view.innerHTML = `<section class="card"><h1 class="md-typescale-display-small">${esc(tx('about'))}</h1>
-    <p class="md-typescale-body-large">${esc(provenance())}</p>
-    <p class="muted">Commit ${esc(health?.commit ?? 'unavailable')}</p>
-    <p>Map Editor is based on Amulet Map Editor by the Amulet Team, used under the Amulet licence. Minecraft is a trademark of Mojang Synergies AB; this project is not affiliated with Mojang or Microsoft.</p></section>`;
+async function aboutView(view: HTMLElement): Promise<void> {
+  view.innerHTML = `<div class="about">
+    <section class="about-card"><div class="about-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <h1>${esc(tx('appName'))}</h1>
+      <div class="about-stats"><div><small>${esc(tx('versionLabel'))}</small><b>${esc(health?.version ?? 'unavailable')}</b></div><div><small>${esc(tx('buildLabel'))}</small><code>${esc((health?.commit ?? 'unavailable').slice(0, 7))}</code></div></div>
+      <p>${esc(provenance())}</p>
+      <p class="fine">${esc(tx('aboutLegal'))}</p>
+      <div class="row-actions"><md-filled-button id="copy-ver">${esc(tx('copyDetails'))}</md-filled-button></div></section>
+    <section class="changelog"><div class="cl-head"><h2>${esc(tx('changelog'))}</h2>
+      <md-outlined-text-field id="cl-q" label="${esc(tx('searchChanges'))}" type="search"></md-outlined-text-field></div>
+      <ol id="cl" aria-live="polite"><li class="muted">${esc(tx('loading'))}</li></ol></section></div>`;
+  view.querySelector('#copy-ver')!.addEventListener('click', () => navigator.clipboard?.writeText(`Map Editor ${health?.version} ${health?.commit} ${health?.builtAt ?? ''}`).then(() => notify(tx('copied')), () => notify(tx('copyFailed'), true)));
+  const listEl = view.querySelector<HTMLElement>('#cl')!;
+  type Entry = { sha: string; date: string; subject: string };
+  let entries: Entry[] | null = null;
+  try { entries = (await api<{ entries: Entry[] | null }>('/api/changelog')).entries; } catch (e) { notify((e as Error).message, true); }
+  const kind = (s: string) => /^(add|new|build|introduc)/i.test(s) ? 'added' : /^(fix|repair|correct)/i.test(s) ? 'fixed' : 'changed';
+  const draw = () => {
+    if (!listEl.isConnected) return;
+    if (!entries) { listEl.innerHTML = `<li class="muted">${esc(tx('changelogUnavailable'))}</li>`; return; }
+    const q = ((view.querySelector('#cl-q') as HTMLInputElement | null)?.value ?? '').trim().toLowerCase();
+    const all: Entry[] = entries;
+    const shown = all.filter((e) => !q || e.subject.toLowerCase().includes(q) || e.sha.startsWith(q));
+    listEl.innerHTML = shown.length ? shown.map((e, i) => `<li class="cl-entry${i === 0 && !q ? ' newest' : ''}" style="--i:${Math.min(i, 12)}"><span class="cl-kind ${kind(e.subject)}">${esc(tx(kind(e.subject) as Key))}</span>
+      <span class="cl-text"><b>${esc(e.subject)}</b><small>${esc(new Date(e.date).toLocaleString('en-GB'))} · <code>${esc(e.sha.slice(0, 7))}</code></small></span></li>`).join('') : `<li class="muted">${esc(tx('noMatches'))}</li>`;
+  };
+  view.querySelector('#cl-q')!.addEventListener('input', draw);
+  draw();
 }
 
 function notesPanel(el: HTMLElement) {

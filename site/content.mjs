@@ -25,7 +25,8 @@ export const features = [
     body: [
       ['Targets', 'Docker on this computer pulls the published image, starts it with Compose and waits for the health check. VirtualBox imports the appliance with a bridged adapter, starts it headless and reads its network address. USB drive writes the appliance image to a removable drive.'],
       ['Flashing safely', 'Only removable drives are listed, the drive running your system is never offered, and nothing is selected for you. You type a confirmation that names the drive. After writing, the drive is read back and its SHA-256 compared with the image before success is shown.'],
-      ['Instances', 'The Instances view lists only what this app created, with the verified link for each.'],
+      ['Instances', 'The Instances view lists only what this app created, with its current state and the verified link for each.'],
+      ['Managing an instance', 'Manage opens one instance: a state dot, its version and link, and buttons for Open, Start or Stop, Restart and Update (pulls the newest image and restarts). The live log follows the container output; Pause holds it still and Copy puts it on the clipboard. Remove asks first, stops the instance and deletes its Compose file; worlds and data stay unless you also tick Delete data.'],
       ['Not yet available', 'VMware, Raspberry Pi flashing and Docker over SSH are shown as unavailable and are on the roadmap.'],
     ], related: ['appliance', 'web-app', 'desktop-app'] },
   { slug: 'worlds', title: 'Getting worlds in and out', group: 'Using the editor', summary: 'Upload a world as a .zip, download it again, or start a new flat world.',
@@ -40,6 +41,7 @@ export const features = [
       ['Command palette', 'Press Ctrl+Shift+F or select the search bar at the top. Type to filter; arrow keys move, Enter runs, Esc closes. Settings such as Dark theme and Reduce motion appear as switches in the list, so you can change them without leaving the palette.'],
       ['Shortcuts', 'In the editor, F, R, D, C and W pick Fill, Replace, Delete blocks, Clone and Waterlog. Ctrl+Z undoes the last edit by adding a restore entry to the history, so the undo itself can be undone.'],
       ['Notifications', 'The bell keeps every message from this session with its time. Dismiss all clears them.'],
+      ['About and changelog', 'The About tab shows the version and build, the licence note, and Copy version details for bug reports. Its changelog lists every change in this build, newest first, marked Added, Fixed or Changed, with a search box.'],
     ], related: ['editing', 'edit-history', 'appearance'] },
   { slug: 'editing', title: 'Editing worlds', group: 'Using the editor', summary: 'Top-down map, selections, and the fill, replace, delete, clone and waterlog tools.',
     body: [
