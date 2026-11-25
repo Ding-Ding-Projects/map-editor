@@ -81,5 +81,5 @@ above). These checks still need a person, a browser session or hardware:
   stopped its removal.
 - Still to do, from `ROADMAP.md`:
   - Bedrock worlds;
-  - the remaining built-in tools (file converter, Ollama suite, server manager, virtual disk manager).
+  - the remaining built-in tools (Ollama suite, server manager, virtual disk manager).
 - Code-signed extension sources are not planned: this project does not sign code.

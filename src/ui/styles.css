@@ -677,3 +677,4 @@ md-outlined-text-field[hidden] { display: none; }
 .view3d-panel { padding: 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; }
 .v3-stage { overflow: auto; border-radius: 16px; background: var(--md-sys-color-surface-container-lowest); max-height: 70vh; }
 #v3 { display: block; margin: 0 auto; image-rendering: auto; }
+.tool-inline { display: inline-flex; gap: 6px; align-items: center; } .tool-inline select { font: inherit; padding: 6px 8px; border-radius: 8px; }

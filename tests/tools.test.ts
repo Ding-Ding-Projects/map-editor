@@ -23,3 +23,13 @@ describe('built-in tools', () => {
     expect(coordinates(1234, -567)).toEqual({ chunk: [77, -36], inChunk: [2, 9], region: 'r.2.-2.mca', nether: [154, -71], overworldFromNether: [9872, -4536] });
   });
 });
+
+describe('file converter', () => {
+  it('reads gzip NBT (as level.dat is stored) into readable JSON', async () => {
+    const { readNbtFile } = await import('../src/ui/tools.js');
+    const { nbt, writeNbt } = await import('../src/core/nbt.js');
+    const { gzipSync } = await import('node:zlib');
+    const data = gzipSync(writeNbt({ name: '', tag: nbt.compound({ Data: nbt.compound({ LevelName: nbt.string('Island'), Time: nbt.long(42n), Pos: nbt.intArray(Int32Array.from([1, 2])) }) }) }));
+    expect(await readNbtFile(new Uint8Array(data))).toEqual({ Data: { LevelName: 'Island', Time: '42L', Pos: [1, 2] } });
+  });
+});

@@ -3,6 +3,8 @@
 //  - JSON to TypeScript: types for a JSON sample (the kind of job quicktype does).
 //  - Coordinates: block, chunk, region file and Nether/Overworld positions.
 
+import { readNbt, TagType, type Tag } from '../core/nbt.js';
+
 export type ToolsText = (k: string, v?: Record<string, string | number>) => string;
 
 /** Base64 for any Unicode text (btoa only takes Latin-1). */
@@ -56,6 +58,29 @@ export function jsonToTypeScript(json: string, rootName = 'Root'): string {
   return out.join('\n\n') + '\n';
 }
 
+/** NBT (as in level.dat or .nbt structure files) to plain JSON, keeping number kinds readable. */
+export function nbtToJson(tag: Tag): unknown {
+  switch (tag.type) {
+    case TagType.Compound: return Object.fromEntries([...tag.value].map(([k, v]) => [k, nbtToJson(v)]));
+    case TagType.List: return tag.value.map(nbtToJson);
+    case TagType.Long: return `${tag.value}L`;
+    case TagType.ByteArray: case TagType.IntArray: return Array.from(tag.value as ArrayLike<number>);
+    case TagType.LongArray: return Array.from(tag.value as BigInt64Array, (v) => `${v}L`);
+    default: return tag.value;
+  }
+}
+
+/** Read an NBT file, gzip-compressed or not, as the browser receives it. */
+export async function readNbtFile(bytes: Uint8Array): Promise<unknown> {
+  let raw = bytes;
+  if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
+    const ds = new Blob([bytes as Uint8Array<ArrayBuffer>]).stream().pipeThrough(new DecompressionStream('gzip'));
+    raw = new Uint8Array(await new Response(ds).arrayBuffer());
+  }
+  const root = readNbt(raw);
+  return nbtToJson(root.tag);
+}
+
 /** Block, chunk, region and dimension-scaled positions for one x, z. */
 export function coordinates(x: number, z: number) {
   const cx = Math.floor(x / 16), cz = Math.floor(z / 16);
@@ -81,6 +106,11 @@ export function toolsView(view: HTMLElement, t: ToolsText, esc: (s: unknown) => 
       <md-outlined-text-field id="ts-name" label="${esc(t('toolTypeName'))}" value="World"></md-outlined-text-field>
       <div class="row-actions"><md-filled-tonal-button id="ts-go">${esc(t('toolMakeTypes'))}</md-filled-tonal-button><md-text-button data-copy="ts-out">${esc(t('toolCopy'))}</md-text-button></div>
       <pre class="tool-pre" id="ts-out" aria-live="polite"></pre></section>
+    <section class="card tool-card" aria-labelledby="tcv"><h2 id="tcv">${esc(t('toolConvert'))}</h2><p class="muted">${esc(t('toolConvertNote'))}</p>
+      <div class="row-actions"><md-outlined-button id="cv-pick">${esc(t('toolConvertPick'))}</md-outlined-button><input type="file" id="cv-file" hidden>
+        <label class="tool-inline">${esc(t('toolConvertTo'))} <select id="cv-to"><option value="image/png">PNG</option><option value="image/jpeg">JPEG</option><option value="image/webp">WebP</option><option value="json">JSON (NBT)</option></select></label></div>
+      <p class="muted" id="cv-info" aria-live="polite"></p><pre class="tool-pre" id="cv-out" hidden></pre>
+      <div class="row-actions"><md-text-button id="cv-save" disabled>${esc(t('toolConvertSave'))}</md-text-button></div></section>
     <section class="card tool-card" aria-labelledby="tco"><h2 id="tco">${esc(t('toolCoords'))}</h2><p class="muted">${esc(t('toolCoordsNote'))}</p>
       <div class="row-actions"><md-outlined-text-field id="co-x" type="number" label="x" value="1234"></md-outlined-text-field><md-outlined-text-field id="co-z" type="number" label="z" value="-567"></md-outlined-text-field></div>
       <dl class="tool-dl" id="co-out" aria-live="polite"></dl></section>
@@ -112,6 +142,39 @@ export function toolsView(view: HTMLElement, t: ToolsText, esc: (s: unknown) => 
       .map(([k, v]) => `<dt>${esc(k)}</dt><dd><code>${esc(v)}</code></dd>`).join('');
   };
   $('co-x').addEventListener('input', co); $('co-z').addEventListener('input', co); co();
+  // Converter: pictures between PNG, JPEG and WebP through a canvas; NBT files (level.dat, .nbt, .dat) to JSON.
+  const cvIn = $<HTMLInputElement>('cv-file'), cvOut = $<HTMLPreElement>('cv-out'), cvInfo = $('cv-info'), cvSave = $<HTMLElement & { disabled: boolean }>('cv-save');
+  let result: { blob: Blob; name: string } | undefined;
+  $('cv-pick').addEventListener('click', () => cvIn.click());
+  cvIn.addEventListener('change', async () => {
+    const f = cvIn.files?.[0]; cvIn.value = ''; if (!f) return;
+    result = undefined; cvSave.disabled = true; cvOut.hidden = true;
+    const to = $<HTMLSelectElement>('cv-to').value;
+    const base = f.name.replace(/\.[^.]+$/, '');
+    try {
+      if (f.size > 50 * 1024 * 1024) throw new Error(t('toolTooBig'));
+      if (to === 'json') {
+        const json = JSON.stringify(await readNbtFile(new Uint8Array(await f.arrayBuffer())), null, 2);
+        cvOut.textContent = json.length > 200_000 ? `${json.slice(0, 200_000)}\n…` : json; cvOut.hidden = false;
+        result = { blob: new Blob([json], { type: 'application/json' }), name: `${base}.json` };
+      } else {
+        const bmp = await createImageBitmap(f);
+        const c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height;
+        const ctx = c.getContext('2d')!;
+        if (to === 'image/jpeg') { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); } // JPEG has no transparency
+        ctx.drawImage(bmp, 0, 0);
+        const blob = await new Promise<Blob | null>((r) => c.toBlob(r, to, 0.92));
+        if (!blob) throw new Error(t('toolConvertUnsupported'));
+        result = { blob, name: `${base}.${to.split('/')[1].replace('jpeg', 'jpg')}` };
+      }
+      cvInfo.textContent = t('toolConvertDone', { from: f.name, to: result.name, n: result.blob.size.toLocaleString('en') });
+      cvSave.disabled = false;
+    } catch (e) { cvInfo.textContent = t('toolConvertFail', { e: (e as Error).message }); }
+  });
+  cvSave.addEventListener('click', () => {
+    if (!result) return;
+    const a = document.createElement('a'); a.href = URL.createObjectURL(result.blob); a.download = result.name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
   view.querySelectorAll<HTMLElement>('[data-copy]').forEach((b) => b.addEventListener('click', () => {
     const el = $(b.dataset.copy!) as HTMLTextAreaElement | HTMLElement;
     navigator.clipboard?.writeText('value' in el ? (el as HTMLTextAreaElement).value : el.textContent ?? '').then(() => notify(t('copied')), () => notify(t('toolCopyFail'), true));
