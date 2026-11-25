@@ -1,4 +1,5 @@
 // Deployment wizard: one click per target, then the verified link.
+import { promises as fsp } from 'node:fs';
 import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import path from 'node:path';
 import os from 'node:os';
@@ -36,6 +37,13 @@ app.on('window-all-closed', () => app.quit());
 
 const progress = (steps: targets.Step[]) => win?.webContents.send('progress', steps);
 
+// Version, commit and build time of this app, read from the file the build writes beside it.
+ipcMain.handle('build-info', async () => {
+  for (const f of [path.join(__dirname, '..', 'build-info.json'), path.join(__dirname, 'build-info.json')]) {
+    try { const b = JSON.parse(await fsp.readFile(f, 'utf8')); return { version: String(b.version ?? ''), commit: String(b.commit ?? ''), builtAt: b.builtAt ?? null }; } catch { /* try the next place */ }
+  }
+  return { version: 'unavailable', commit: 'unavailable', builtAt: null };
+});
 ipcMain.handle('instances', () => targets.loadInstances(dataDir()));
 ipcMain.handle('lan', () => targets.lanAddress());
 ipcMain.handle('pick-folder', async () => (await dialog.showOpenDialog(win!, { properties: ['openDirectory'] })).filePaths[0]);

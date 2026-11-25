@@ -243,6 +243,8 @@ async function render() {
     <div id="update-banner" class="update-banner" role="region" aria-label="Update" hidden></div>
     <div class="body"><main class="view" id="main"></main></div><div id="toasts" class="toasts"></div>`;
   showUpdate();
+  // Front-screen provenance: the version and when this build was made.
+  d.buildInfo?.().then((b: { version: string; commit: string; builtAt: string | null }) => { const el = app.querySelector('#prov'); if (el) el.textContent = `Version ${b.version} · updated ${b.builtAt ? new Date(b.builtAt).toLocaleString('en-GB', { timeZoneName: 'short' }) : 'unavailable'} · ${String(b.commit).slice(0, 7)}`; }).catch(() => undefined);
   app.querySelector('#v-deploy')!.addEventListener('click', () => { view = 'deploy'; render(); });
   app.querySelector('#v-inst')!.addEventListener('click', () => { view = 'instances'; render(); });
   app.querySelector('#v-disks')!.addEventListener('click', () => { view = 'disks'; render(); });
