@@ -76,6 +76,7 @@ export const features = [
       ['Finding an edit', 'The History tab has a search box for the edit description or commit, From and To dates, and a chip per kind of edit with its count. They combine, and the line above the list says how many edits are shown.'],
       ['How it works', 'After each operation the changed region files are saved and committed to a Git repository kept in the app data folder. The repository is never created inside your world folder, and a world that already has its own .git is left alone.'],
       ['Rolling back', 'Choose Roll back here on any entry. The world files are restored from that point and the restore is recorded as a new entry, so you can undo a rollback too. Nothing in the history is ever rewritten.'],
+      ['Opening an earlier version as a copy', 'Open as a copy, in Details, writes the world as it was at that entry into a new folder next to it, named after the world and the short commit id (for example Survival at 1b89e32), and renames the copy inside the game so the two are easy to tell apart. The world you are editing and its history are not touched. A notification offers Open it. Details also counts what each entry changed: chunks, region files and which dimensions, plus the number of files.'],
       ['Filtering', 'Action chips show how many entries of each kind exist and filter the list.'],
     ], related: ['editing', 'notes', 'roadmap'] },
   { slug: 'notes', title: 'World notes', group: 'Using the editor', summary: 'Rich text notes for each world, saved automatically.',

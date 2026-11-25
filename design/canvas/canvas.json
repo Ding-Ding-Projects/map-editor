@@ -334,7 +334,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Edit history. Try: action filter chips, select a point; Tweaks dark, seed, motion.\nStands for the private Git history kept beside app data, append-only restore.\nIn the app: Edits and Details panels with their own saved layout, list, search, From and To dates, action filters with counts, shown count, details with full commit id, roll back, copy commit id. Not yet: Open as a copy, per-point chunk stats.",
+   "text": "Edit history. Try: action filter chips, select a point; Tweaks dark, seed, motion.\nStands for the private Git history kept beside app data, append-only restore.\nIn the app: Edits and Details panels with their own saved layout, list, search, From and To dates, action filters with counts, shown count, details with full commit id, roll back, copy commit id. Also: Open as a copy (a new folder beside the world, renamed in game, original untouched) and per-point stats (chunks, region files, dimensions, files).",
    "fill": "yellow",
    "page": "history"
   },
@@ -366,7 +366,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Command palette (Ctrl+Shift+F) with live setting rows, notification centre, Update coming soon, dim sum surprise. Tweaks dark, seed, motion.\nIn the app: palette with live switches and its own regex builder, notification centre, update flow: background download shown in About, ready-to-install banner with version, release notes, unsigned note, Later and Restart. Dim sum surprise in the app: 1 in 10 at start after setup, corner card with bilingual name, jyutping and description from the public catalogue, Public image unavailable placeholder (photos are only published encrypted), closes after 9 s unless hovered, switch in Settings and palette. Not yet: the Update coming soon card during download.",
+   "text": "Command palette (Ctrl+Shift+F) with live setting rows, notification centre, Update coming soon, dim sum surprise. Tweaks dark, seed, motion.\nIn the app: palette with live switches and its own regex builder, notification centre, update flow: background download shown in About, ready-to-install banner with version, release notes, unsigned note, Later and Restart. Dim sum surprise in the app: 1 in 10 at start after setup, corner card with bilingual name, jyutping and description from the public catalogue, Public image unavailable placeholder (photos are only published encrypted), closes after 9 s unless hovered, switch in Settings and palette. Also: the Update coming soon card with an indeterminate bar and Hide while the download runs, in the editor and the deploy app.",
    "fill": "yellow",
    "page": "feedback"
   },

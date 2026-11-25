@@ -96,3 +96,34 @@ export class RegionFile {
     return out;
   }
 }
+
+/** Decompressed bytes of one chunk payload, for comparing content across recompression. */
+function inflatePayload(p: { compression: Compression; data: Uint8Array }): Uint8Array | undefined {
+  try {
+    switch (p.compression) {
+      case Compression.GZip: return gunzipSync(p.data);
+      case Compression.Zlib: return inflateSync(p.data);
+      case Compression.None: return p.data;
+      default: return undefined;
+    }
+  } catch { return undefined; }
+}
+
+const sameBytes = (a: Uint8Array, b: Uint8Array) => a.byteLength === b.byteLength && Buffer.from(a.buffer, a.byteOffset, a.byteLength).equals(Buffer.from(b.buffer, b.byteOffset, b.byteLength));
+
+/** Counts chunks added, removed or changed between two versions of one region file. */
+export function changedChunks(before: Uint8Array | undefined, after: Uint8Array | undefined): number {
+  const a = before ? RegionFile.parse(before) : RegionFile.empty();
+  const b = after ? RegionFile.parse(after) : RegionFile.empty();
+  const pa = (a as unknown as { payloads: Map<number, { compression: Compression; data: Uint8Array }> }).payloads;
+  const pb = (b as unknown as { payloads: Map<number, { compression: Compression; data: Uint8Array }> }).payloads;
+  let n = 0;
+  for (const i of new Set([...pa.keys(), ...pb.keys()])) {
+    const x = pa.get(i), y = pb.get(i);
+    if (!x || !y) { n++; continue; }
+    if (x.compression === y.compression && sameBytes(x.data, y.data)) continue;
+    const rx = inflatePayload(x), ry = inflatePayload(y);
+    if (!rx || !ry || !sameBytes(rx, ry)) n++;
+  }
+  return n;
+}

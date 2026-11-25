@@ -388,6 +388,9 @@ md-list-item[hidden] { display: none; }
 /* ---------- update ready banner ---------- */
 .update-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 0 12px 8px; padding: 12px 16px; border-radius: 24px; background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); animation: me-rise .4s cubic-bezier(.2,0,0,1) both; }
 .update-banner[hidden] { display: none; }
+.update-banner.soon { background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface); }
+.update-banner.soon .ub-icon { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
+.update-banner.soon md-linear-progress { margin-top: 8px; width: 100%; --md-linear-progress-track-shape: 4px; }
 .ub-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 20px; background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); font-size: 20px; }
 .ub-text { flex: 1 1 260px; display: flex; flex-direction: column; } .ub-text small { opacity: .85; }
 .update-banner a { color: inherit; font-weight: 600; }

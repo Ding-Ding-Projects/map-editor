@@ -21,6 +21,7 @@ interface DesktopBridge {
 const desktopBridge = (window as unknown as { mapEditorDesktop?: DesktopBridge }).mapEditorDesktop;
 let upd: UpdState | undefined;
 let updLater = false;
+let updSoonHidden = false;
 let busy = 0; // edits in progress; a restart waits until they finish
 import { colorPicker, applyRainbowSpeed } from './colorpicker.js';
 import { RAINBOW } from './color.js';
@@ -349,6 +350,16 @@ function updateText(u: UpdState | undefined): string {
 function updateBanner() {
   const el = document.getElementById('update-banner');
   if (!el) return;
+  // Update coming soon: a quiet card while the download runs. Hide keeps it away until the next download.
+  if (upd?.state === 'downloading' && !updSoonHidden) {
+    el.hidden = false;
+    el.classList.add('soon');
+    el.innerHTML = `<span class="ub-icon" aria-hidden="true">↓</span><span class="ub-text"><b>${esc(tx('updSoon'))}</b><small>${esc(tx('updSoonBody'))}</small>
+      <md-linear-progress indeterminate aria-label="${esc(tx('updSoon'))}"></md-linear-progress></span><md-text-button id="ub-hide">${esc(tx('updHide'))}</md-text-button>`;
+    el.querySelector('#ub-hide')!.addEventListener('click', () => { updSoonHidden = true; updateBanner(); document.getElementById('cmd')?.focus(); });
+    return;
+  }
+  el.classList.remove('soon');
   if (!upd || upd.state !== 'ready' || updLater) { el.hidden = true; el.innerHTML = ''; return; }
   const u = upd;
   el.hidden = false;
@@ -662,8 +673,27 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
       view.querySelectorAll('[data-row].picked').forEach((r) => r.classList.remove('picked'));
       view.querySelectorAll<HTMLElement>('[data-row]')[i]?.classList.add('picked');
       detailEl.innerHTML = `<small class="h-kind">${esc(e.action)}</small><h2>${esc(e.message)}</h2>
-        <dl><dt>${esc(tx('hWhen'))}</dt><dd>${esc(new Date(e.time * 1000).toLocaleString('en-GB'))}</dd><dt>${esc(tx('hCommit'))}</dt><dd><code>${esc(e.sha)}</code></dd><dt>${esc(tx('hPosition'))}</dt><dd>${esc(tx('hPositionValue', { n: i + 1, m: entries.length }))}</dd></dl>
-        <div class="row-actions">${i > 0 ? `<md-filled-tonal-button id="hd-roll">${esc(tx('rollBack'))}</md-filled-tonal-button>` : `<span class="muted">${esc(tx('hLatest'))}</span>`}<md-outlined-button id="hd-copy">${esc(tx('hCopySha'))}</md-outlined-button></div>`;
+        <dl><dt>${esc(tx('hWhen'))}</dt><dd>${esc(new Date(e.time * 1000).toLocaleString('en-GB'))}</dd><dt>${esc(tx('hCommit'))}</dt><dd><code>${esc(e.sha)}</code></dd><dt>${esc(tx('hPosition'))}</dt><dd>${esc(tx('hPositionValue', { n: i + 1, m: entries.length }))}</dd>
+        <dt>${esc(tx('hChanges'))}</dt><dd id="hd-stats" aria-live="polite">${esc(tx('hCounting'))}</dd></dl>
+        ${i > 0 ? '' : `<p class="muted">${esc(tx('hLatest'))}</p>`}<div class="row-actions">${i > 0 ? `<md-filled-tonal-button id="hd-roll">${esc(tx('rollBack'))}</md-filled-tonal-button>` : ''}<md-outlined-button id="hd-open-copy">${esc(tx('hOpenCopy'))}</md-outlined-button><md-outlined-button id="hd-copy">${esc(tx('hCopySha'))}</md-outlined-button></div>`;
+      const DIM_NAME: Record<string, string> = { overworld: tx('overworld'), nether: tx('nether'), end: tx('end') };
+      api<{ stats: { files: number; regions: number; chunks: number; dimensions: string[] } }>(`/api/history/stats?sha=${e.sha}`).then(({ stats: st }) => {
+        const el = detailEl.querySelector('#hd-stats'); if (!el) return;
+        const count = (n: number, one: Parameters<typeof tx>[0], many: Parameters<typeof tx>[0]) => (n === 1 ? tx(one) : tx(many, { n }));
+        const f = count(st.files, 'nFile', 'nFiles');
+        el.textContent = st.chunks ? tx('hStats', { c: count(st.chunks, 'nChunk', 'nChunks'), r: count(st.regions, 'nRegion', 'nRegions'), d: st.dimensions.map((x) => DIM_NAME[x] ?? x).join(', '), f }) : tx('hStatsNoChunks', { f });
+      }, (err) => { const el = detailEl.querySelector('#hd-stats'); if (el) el.textContent = tx('hStatsFail', { e: (err as Error).message }); });
+      detailEl.querySelector('#hd-open-copy')!.addEventListener('click', async (ev) => {
+        const b = ev.currentTarget as HTMLElement & { disabled: boolean }; b.disabled = true;
+        try {
+          const r = await api<{ path: string; name: string }>('/api/history/copy', { method: 'POST', body: { sha: e.sha } });
+          notify(tx('hCopyMade', { name: r.name }), false, { label: tx('hCopyOpen'), run: async () => {
+            const o = await api('/api/worlds/open', { method: 'POST', body: { path: r.path } });
+            world = { ...o.info }; dim = 'overworld'; fitPending = true; prefs.tab = 'editor'; savePrefs(); render();
+          } });
+          play('success');
+        } catch (err) { notify((err as Error).message, true); } finally { b.disabled = false; }
+      });
       detailEl.querySelector('#hd-copy')!.addEventListener('click', () => navigator.clipboard?.writeText(e.sha).then(() => notify(tx('copied'))));
       detailEl.querySelector('#hd-roll')?.addEventListener('click', () => (view.querySelector(`[data-sha="${CSS.escape(e.sha)}"]`) as HTMLElement | null)?.click());
     };
@@ -1030,7 +1060,7 @@ document.addEventListener('keydown', (e) => {
 (async () => {
   applyTheme();
   if (desktopBridge?.updates) {
-    desktopBridge.updates.onState((u) => { if (u.state === 'ready' && (upd?.state !== 'ready' || upd.version !== u.version)) updLater = false; upd = u; updateBanner(); const t = document.getElementById('upd-text'); if (t) t.textContent = updateText(u); });
+    desktopBridge.updates.onState((u) => { if (u.state === 'ready' && (upd?.state !== 'ready' || upd.version !== u.version)) updLater = false; if (u.state === 'downloading' && upd?.state !== 'downloading') updSoonHidden = false; upd = u; updateBanner(); const t = document.getElementById('upd-text'); if (t) t.textContent = updateText(u); });
     desktopBridge.updates.state().then((u) => { upd = u; updateBanner(); }).catch(() => undefined);
   }
   enableClearControls((field) => tx('clearField', { field }));

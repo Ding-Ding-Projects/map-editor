@@ -9,6 +9,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Local edit history in the app data folder, append-only restore, refuses worlds that already contain their own `.git` (tests).
 - [x] Server API: health with build provenance, first account becomes owner (atomic, race tested), sign-in, world roots guard, edits, top-down render, history and restore (end-to-end tests).
 - [x] History search, From and To date filters combined with the action chips and a shown count; checked in headless Chrome.
+- [x] History details count what each entry changed (chunks, region files, dimensions, files), and Open as a copy writes the world at any entry into a new folder beside it with its own name, leaving the world and its history untouched (server tests and headless Chrome).
 - [ ] Settings, account and instance records in the same history (today: world edits only).
 - [ ] Passkey sign-in (today: password, scrypt hashed).
 - [ ] Bedrock Edition worlds (Amulet supports them; not ported).
@@ -19,7 +20,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Electron shell runs the shared server on loopback and loads the shared UI (bundle builds).
 - [x] Squirrel.Windows installers for Map Editor and Map Editor Deploy built in CI, checked as NotSigned, published in release v0.1.0-build.12.
 - [ ] Installer run and app launched on a real Windows PC.
-- [ ] Auto-update from the release feed with a restart banner, and "Update coming soon".
+- [x] Auto-update from the release feed with a restart banner, and an "Update coming soon" card with Hide while the download runs (editor and deploy app; checked in headless Chrome). Verified end to end on Windows: the installed previous release updated itself from the feed.
 - [x] Native folder picker for worlds outside `.minecraft/saves` (Browse folder… in the desktop app; not yet run on Windows).
 
 ## Phase 3: Docker-hosted web app

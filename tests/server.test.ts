@@ -89,6 +89,25 @@ describe('server', () => {
     expect((await call('/api/history/restore', { method: 'POST', body: { sha: entries[1].sha } })).status).toBe(200);
     const restored = new Uint8Array(await (await call('/api/render?dim=overworld&cx=0&cz=0&w=1&h=1')).arrayBuffer());
     expect([...restored.slice(0, 4)]).toEqual([...before.slice(0, 4)]);
+
+    // Per-entry stats: the fill touched one chunk in one overworld region file.
+    const fill = entries[0];
+    const stats = (await (await call(`/api/history/stats?sha=${fill.sha}`)).json()).stats;
+    expect(stats).toEqual({ files: 1, regions: 1, chunks: 1, dimensions: ['overworld'] });
+    expect((await call('/api/history/stats?sha=nope')).status).toBe(400);
+
+    // Open as a copy: the world as it was after the fill, in a new folder next to it, original untouched.
+    const copy = await (await call('/api/history/copy', { method: 'POST', body: { sha: fill.sha } })).json();
+    expect(path.basename(copy.path)).toBe(`Survival at ${fill.sha.slice(0, 7)}`);
+    expect(copy.name).toBe(`Survival Island (at ${fill.sha.slice(0, 7)})`);
+    const again = await (await call('/api/history/copy', { method: 'POST', body: { sha: fill.sha } })).json();
+    expect(path.basename(again.path)).toBe(`Survival at ${fill.sha.slice(0, 7)} (2)`);
+    const names = (await (await call('/api/worlds')).json()).worlds.map((w: { name: string }) => w.name).sort();
+    expect(names).toEqual(['Survival Island', `Survival Island (at ${fill.sha.slice(0, 7)})`, `Survival Island (at ${fill.sha.slice(0, 7)})`]);
+    expect((await call('/api/worlds/open', { method: 'POST', body: { path: copy.path } })).status).toBe(200);
+    const copied = new Uint8Array(await (await call('/api/render?dim=overworld&cx=0&cz=0&w=1&h=1')).arrayBuffer());
+    expect([...copied.slice(0, 3)]).toEqual([63, 104, 201]);
+    expect((await call('/api/worlds/open', { method: 'POST', body: { path: worldDir } })).status).toBe(200);
   });
 
   it('validates operation input', async () => {

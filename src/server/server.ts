@@ -9,7 +9,7 @@ import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { Accounts } from './auth.js';
 import { EditSession, type OperationRequest } from '../core/session.js';
-import { discoverWorlds, isWorldFolder, type Dimension } from '../core/world.js';
+import { discoverWorlds, isWorldFolder, setLevelName, worldInfo, type Dimension } from '../core/world.js';
 import { volume, MAX_OPERATION_BLOCKS, OPERATIONS } from '../core/ops.js';
 import { importWorldZip, exportWorldZip, createFlatWorld } from '../core/archive.js';
 import { createWriteStream } from 'node:fs';
@@ -286,6 +286,26 @@ export async function createServer(opts: ServerOptions) {
       const { sha } = await body(req);
       if (typeof sha !== 'string' || !/^[0-9a-f]{40}$/.test(sha)) throw new HttpError(400, 'sha must be a full commit id');
       return send(200, { entry: await session.restore(sha) });
+    }
+    if (p === '/api/history/stats' && req.method === 'GET') {
+      const sha = url.searchParams.get('sha') ?? '';
+      if (!/^[0-9a-f]{40}$/.test(sha)) throw new HttpError(400, 'sha must be a full commit id');
+      return send(200, { stats: await session.history.stats(sha) });
+    }
+    if (p === '/api/history/copy' && req.method === 'POST') {
+      const { sha } = await body(req);
+      if (typeof sha !== 'string' || !/^[0-9a-f]{40}$/.test(sha)) throw new HttpError(400, 'sha must be a full commit id');
+      // The copy goes next to the world, named after it and the entry, and never replaces a folder.
+      const src = path.resolve(session.world.dir);
+      const info = await worldInfo(src);
+      const base = `${path.basename(src)} at ${sha.slice(0, 7)}`;
+      let dest = path.join(path.dirname(src), base);
+      for (let n = 2; existsSync(dest); n++) dest = path.join(path.dirname(src), `${base} (${n})`);
+      if (!worldAllowed(dest)) throw new HttpError(403, 'A copy cannot be written outside the worlds folder.');
+      await session.history.copyAt(sha, dest);
+      const name = `${info.name} (at ${sha.slice(0, 7)})`;
+      await setLevelName(dest, name);
+      return send(201, { path: dest, name });
     }
     throw new HttpError(404, 'No such API route');
   }

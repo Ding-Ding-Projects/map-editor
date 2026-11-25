@@ -123,9 +123,18 @@ function stepsHtml(steps: Step[]) {
 // Update ready banner: same wording and behaviour as the editor's; restart is never automatic.
 let upd: { state: string; version?: string; notes?: string } | undefined;
 let updLater = false;
+let updSoonHidden = false;
 function showUpdate() {
   const el = document.getElementById('update-banner');
   if (!el) return;
+  // Update coming soon while the download runs; same card as the editor's.
+  if (upd?.state === 'downloading' && !updSoonHidden) {
+    el.hidden = false; el.classList.add('soon');
+    el.innerHTML = `<span class="ub-icon" aria-hidden="true">↓</span><span class="ub-text"><b>Update coming soon</b><small>A new version of Map Editor Deploy is downloading in the background. Nothing restarts until you choose.</small><md-linear-progress indeterminate aria-label="Update coming soon"></md-linear-progress></span><md-text-button id="ub-hide">Hide</md-text-button>`;
+    el.querySelector('#ub-hide')!.addEventListener('click', () => { updSoonHidden = true; showUpdate(); });
+    return;
+  }
+  el.classList.remove('soon');
   if (upd?.state !== 'ready' || updLater) { el.hidden = true; el.innerHTML = ''; return; }
   el.hidden = false;
   el.innerHTML = `<span class="ub-icon" aria-hidden="true">↻</span><span class="ub-text"><b>Map Editor Deploy ${esc(upd.version ?? '')} is ready to install</b><small>This update is not code-signed. It replaces this copy when you restart.</small></span>
@@ -133,7 +142,7 @@ function showUpdate() {
   el.querySelector('#ub-later')!.addEventListener('click', () => { updLater = true; showUpdate(); });
   el.querySelector('#ub-restart')!.addEventListener('click', () => d.updateRestart?.());
 }
-d.onUpdate?.((u: typeof upd) => { if (u?.state === 'ready') updLater = false; upd = u; showUpdate(); });
+d.onUpdate?.((u: typeof upd) => { if (u?.state === 'ready') updLater = false; if (u?.state === 'downloading' && upd?.state !== 'downloading') updSoonHidden = false; upd = u; showUpdate(); });
 d.updateState?.().then((u: typeof upd) => { upd = u; showUpdate(); }).catch(() => undefined);
 
 // Guided tour of the deploy app, same coach card as the editor.

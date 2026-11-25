@@ -6,6 +6,7 @@ import { promises as fsp } from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import git from 'isomorphic-git';
+import { changedChunks } from './region.js';
 
 export type HistoryAction = 'opened' | 'filled' | 'replaced' | 'deleted' | 'cloned' | 'waterlogged' | 'edited' | 'restored' | 'settings changed';
 
@@ -28,6 +29,22 @@ function trackable(rel: string) {
 export function historyDirFor(dataDir: string, worldPath: string) {
   const id = createHash('sha256').update(path.resolve(worldPath)).digest('hex').slice(0, 16);
   return path.join(dataDir, 'history', `${id}.git`);
+}
+
+export interface EntryStats {
+  files: number; // files added, removed or changed by this entry
+  regions: number; // region files among them
+  chunks: number; // chunks added, removed or changed inside those regions
+  dimensions: string[]; // overworld, nether, end with changes
+}
+
+/** Which dimension a region path belongs to. */
+function dimensionOf(rel: string): string | undefined {
+  if (!rel.endsWith('.mca')) return undefined;
+  if (rel.startsWith('DIM-1/')) return 'nether';
+  if (rel.startsWith('DIM1/')) return 'end';
+  if (rel.startsWith('region/')) return 'overworld';
+  return undefined;
 }
 
 export class WorldHistory {
@@ -99,6 +116,56 @@ export class WorldHistory {
     }
     for (const f of current) if (!targetSet.has(f)) await fsp.rm(path.join(this.worldPath, f), { force: true });
     return this.record('restored', `Restored to ${sha.slice(0, 7)}`);
+  }
+
+  private async treeMap(ref: string): Promise<Map<string, string>> {
+    const map = new Map<string, string>();
+    await git.walk({ ...this.opts(), trees: [git.TREE({ ref })], map: async (filepath, [entry]) => {
+      if (!entry || filepath === '.') return true;
+      if ((await entry.type()) === 'blob') map.set(filepath, await entry.oid());
+      return true;
+    } });
+    return map;
+  }
+
+  /** What one entry changed compared with the entry before it: files, region files, chunks and dimensions. */
+  async stats(sha: string): Promise<EntryStats> {
+    const { commit } = await git.readCommit({ ...this.opts(), oid: sha });
+    const after = await this.treeMap(sha);
+    const before = commit.parent[0] ? await this.treeMap(commit.parent[0]) : new Map<string, string>();
+    const changed = [...new Set([...before.keys(), ...after.keys()])].filter((f) => before.get(f) !== after.get(f));
+    let regions = 0, chunks = 0;
+    const dims = new Set<string>();
+    for (const f of changed) {
+      const dim = dimensionOf(f);
+      if (!dim) continue;
+      regions++;
+      const read = async (ref: string | undefined, has: boolean) => (ref && has ? (await git.readBlob({ ...this.opts(), oid: ref, filepath: f })).blob : undefined);
+      const n = changedChunks(await read(commit.parent[0], before.has(f)), await read(sha, after.has(f)));
+      if (n > 0) dims.add(dim);
+      chunks += n;
+    }
+    return { files: changed.length, regions, chunks, dimensions: ['overworld', 'nether', 'end'].filter((d) => dims.has(d)) };
+  }
+
+  /** Write the world as it was at an entry into a new folder, leaving this world and its history untouched. */
+  async copyAt(sha: string, dest: string): Promise<void> {
+    if (fs.existsSync(dest)) throw new Error('A folder with that name already exists.');
+    const files = await git.listFiles({ ...this.opts(), ref: sha });
+    const tmp = `${dest}.partial-${process.pid}`;
+    await fsp.mkdir(tmp, { recursive: true });
+    try {
+      for (const f of files) {
+        const { blob } = await git.readBlob({ ...this.opts(), oid: sha, filepath: f });
+        const p = path.join(tmp, f);
+        await fsp.mkdir(path.dirname(p), { recursive: true });
+        await fsp.writeFile(p, blob);
+      }
+      await fsp.rename(tmp, dest);
+    } catch (e) {
+      await fsp.rm(tmp, { recursive: true, force: true });
+      throw e;
+    }
   }
 
   /** Copy the history to a portable bundle folder the person chooses. */

@@ -47,6 +47,18 @@ export async function worldInfo(dir: string): Promise<WorldInfo> {
   };
 }
 
+/** Rename the world inside level.dat (the name Minecraft and the worlds list show). */
+export async function setLevelName(dir: string, name: string): Promise<void> {
+  const { nbt } = await import('./nbt.js');
+  const level = await readLevelDat(dir);
+  const data = getCompound(level.tag, 'Data');
+  if (!data) throw new Error('level.dat has no Data compound');
+  data.value.set('LevelName', nbt.string(name));
+  const file = path.join(dir, 'level.dat');
+  await fs.writeFile(file + '.tmp', gzipSync(writeNbt(level)));
+  await fs.rename(file + '.tmp', file);
+}
+
 /** Find world folders one level below each given folder (for example `.minecraft/saves`). */
 export async function discoverWorlds(roots: string[]): Promise<WorldInfo[]> {
   const out: WorldInfo[] = [];
