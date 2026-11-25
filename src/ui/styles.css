@@ -904,3 +904,19 @@ body { background: var(--md-sys-color-surface-container); }
 .fold-toggle:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; }
 #hf-body[hidden] { display: none; }
 .set-row md-outlined-text-field { flex: 1 1 200px; min-width: 0; }
+/* Deploy app, one instance: a status hero, grouped actions and a console that looks like one. */
+.manage-card { flex: 0 1 380px; display: flex; flex-direction: column; gap: 14px; border-radius: 36px 12px 36px 12px; background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.manage-title { display: flex; align-items: center; gap: 12px; }
+.manage-title h1 { margin: 0; font-family: 'Roboto Flex', sans-serif; font-size: clamp(32px, 4vw, 48px); line-height: 1; font-variation-settings: 'wdth' 122, 'wght' 900; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.manage-title .state-dot { width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 0 0 6px color-mix(in srgb, currentColor 14%, transparent); }
+.manage-stats > div { border-radius: 18px; background: color-mix(in srgb, var(--md-sys-color-on-primary-container) 9%, transparent); }
+.manage-card .row-actions { gap: 8px; }
+.manage-card .muted { color: inherit; opacity: .8; }
+.log-card { flex: 999 1 420px; padding: 0; overflow: hidden; border-radius: 28px; background: var(--md-sys-color-inverse-surface, #2e312c); color: var(--md-sys-color-inverse-on-surface, #eff2e9); }
+.log-card .log-head { padding: 12px 16px; background: color-mix(in srgb, #000 22%, transparent); }
+.log-card .log { margin: 0; padding: 16px; min-height: 360px; background: transparent; color: inherit; font: 13px/1.5 'Roboto Mono', monospace; }
+.log-card md-outlined-button { --md-outlined-button-label-text-color: currentColor; --md-outlined-button-icon-color: currentColor; --md-outlined-button-outline-color: color-mix(in srgb, currentColor 45%, transparent); --md-outlined-button-hover-label-text-color: currentColor; --md-outlined-button-focus-label-text-color: currentColor; --md-outlined-button-pressed-label-text-color: currentColor; }
+/* Extensions: cards with a badge that answers the pointer, like the tool cards. */
+.ext-card { border-radius: 28px; transition: border-radius .25s cubic-bezier(.2,0,0,1), background-color .2s; }
+.ext-card:hover, .ext-card:focus-within { border-radius: 36px 14px 36px 14px; }
+@media (prefers-reduced-motion: reduce) { .ext-card { transition: none; } }

@@ -32,7 +32,7 @@ const STATE_LABEL: Record<string, string> = { running: 'Running', stopped: 'Stop
 async function manage(main: Element, i: Instance) {
   const url = `http://${i.host}:${i.port}/`;
   main.innerHTML = `<div class="editor manage">
-    <section class="card tool manage-card"><md-text-button id="back">← All instances</md-text-button>
+    <section class="card tool manage-card"><md-text-button id="back" data-icon="back">All instances</md-text-button>
       <div class="manage-title"><span class="state-dot" id="dot"></span><h1 class="md-typescale-headline-large">${esc(i.name)}</h1></div>
       <div class="about-stats manage-stats"><div><small>State</small><b id="st">…</b></div><div><small>Version</small><b>${esc(i.version)}</b></div><div class="wide"><small>Link</small><code>${esc(url)}</code></div></div>
       <div class="row-actions" role="group" aria-label="Instance actions">
