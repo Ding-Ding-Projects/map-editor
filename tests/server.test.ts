@@ -145,6 +145,17 @@ describe('server', () => {
     expect(entries.map((e: { action: string }) => e.action)).toEqual(['restored', 'filled', 'opened']);
   });
 
+  it('keeps an activity record of accounts, worlds and settings', async () => {
+    const { events } = await (await call('/api/activity')).json();
+    const messages = events.map((e: { kind: string; message: string }) => `${e.kind}: ${e.message}`);
+    expect(messages).toContain('account: Created the owner account');
+    expect(messages.some((m: string) => m.startsWith('world: Made Survival at'))).toBe(true);
+    expect((await call('/api/activity', { method: 'POST', body: { kind: 'settings', message: 'Dark theme on' } })).status).toBe(201);
+    expect((await call('/api/activity', { method: 'POST', body: { kind: 'account', message: 'Pretend sign-in' } })).status).toBe(400);
+    expect((await (await call('/api/activity')).json()).events[0]).toMatchObject({ kind: 'settings', message: 'Dark theme on' });
+    expect(JSON.stringify(events)).not.toMatch(/correct horse|another long password|wrong password!!/);
+  });
+
   it('refuses non-JSON state-changing requests', async () => {
     const r = await fetch(base + '/api/auth/logout', { method: 'POST', headers: { 'content-type': 'text/plain' }, body: 'x' });
     expect(r.status).toBe(415);

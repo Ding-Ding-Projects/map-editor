@@ -334,7 +334,7 @@
    "x": 1520,
    "y": 0,
    "w": 420,
-   "text": "Edit history. Try: action filter chips, select a point; Tweaks dark, seed, motion.\nStands for the private Git history kept beside app data, append-only restore.\nIn the app: Edits and Details panels with their own saved layout, list, search, From and To dates, action filters with counts, shown count, details with full commit id, roll back, copy commit id. Also: Open as a copy (a new folder beside the world, renamed in game, original untouched) and per-point stats (chunks, region files, dimensions, files).",
+   "text": "Edit history. Try: action filter chips, select a point; Tweaks dark, seed, motion.\nStands for the private Git history kept beside app data, append-only restore.\nIn the app: Edits and Details panels with their own saved layout, list, search, From and To dates, action filters with counts, shown count, details with full commit id, roll back, copy commit id. Also: Open as a copy, per-point stats and an Activity panel (accounts, settings, extensions, worlds; also with no world open).",
    "fill": "yellow",
    "page": "history"
   },

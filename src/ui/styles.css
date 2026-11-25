@@ -597,3 +597,14 @@ canvas#map[data-mode="pick"] { cursor: copy; } canvas#map[data-mode="goto"] { cu
 .teleport-flash { outline: 3px solid var(--md-sys-color-tertiary); outline-offset: 4px; border-radius: 16px; animation: me-teleport 1.6s cubic-bezier(.2,0,0,1) 1; }
 @keyframes me-teleport { 0%, 40%, 80% { outline-color: var(--md-sys-color-tertiary); } 20%, 60% { outline-color: transparent; } 100% { outline-color: transparent; } }
 @media (prefers-reduced-motion: reduce) { .teleport-flash { animation: none; } }
+
+/* Activity record */
+.activity { padding: 20px 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; }
+.activity h2 { margin: 0; }
+.act-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.act-list li { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: 16px; background: var(--md-sys-color-surface-container); }
+.act-list li[hidden] { display: none; }
+.act-kind { flex: none; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 10px; background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+.act-kind.k-account { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
+.act-kind.k-world { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.act-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; } .act-text b { overflow-wrap: anywhere; } .act-text small { color: var(--md-sys-color-on-surface-variant); }

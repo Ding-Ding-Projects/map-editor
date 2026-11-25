@@ -10,7 +10,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Server API: health with build provenance, first account becomes owner (atomic, race tested), sign-in, world roots guard, edits, top-down render, history and restore (end-to-end tests).
 - [x] History search, From and To date filters combined with the action chips and a shown count; checked in headless Chrome.
 - [x] History details count what each entry changed (chunks, region files, dimensions, files), and Open as a copy writes the world at any entry into a new folder beside it with its own name, leaving the world and its history untouched (server tests and headless Chrome).
-- [ ] Settings, account and instance records in the same history (today: world edits only).
+- [x] Settings, account and instance records: the server keeps an append-only activity record (owner created, sign-ins, failed sign-ins, sign-outs, settings changes reported by the page, extension installs, consent, removal and the master switch, worlds created, uploaded and copied) as one commit per event in a local Git history in the data folder, never with passwords; History shows it as a searchable Activity panel with kind filters, also when no world is open. Map Editor Deploy keeps its own record of deploys, duplicates, drive writes and instance actions, listed under Instances. Unit and server tests; checked in headless Chrome.
 - [ ] Passkey sign-in (today: password, scrypt hashed).
 - [ ] Bedrock Edition worlds (Amulet supports them; not ported).
 - [ ] 3D view, slice view, biome editing, import and export of structures.

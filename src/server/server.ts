@@ -2,6 +2,7 @@
 // image and the appliance run it on the LAN. Same API, same UI.
 import { DimSum } from './dimsum.js';
 import { Extensions, PERMISSIONS, permissionKey, ReplaceNeeded } from './extensions.js';
+import { ActivityLog, type ActivityKind } from './activity.js';
 import http from 'node:http';
 import { promises as fs, existsSync } from 'node:fs';
 import path from 'node:path';
@@ -76,6 +77,9 @@ export function lanAddresses(): string[] {
 export async function createServer(opts: ServerOptions) {
   const accounts = new Accounts(path.join(opts.dataDir, 'accounts'));
   const dimsum = new DimSum(opts.dataDir, opts.fetchImpl);
+  const activity = new ActivityLog(opts.dataDir);
+  // Recording never blocks or fails the request it describes.
+  const note = (kind: ActivityKind, who: string, message: string) => { activity.record(kind, who, message).catch(() => undefined); };
   const extensions = new Extensions(opts.extensionsDir ?? path.join(here, '..', 'extensions'), opts.dataDir);
   const build = await readBuildInfo();
   let session: EditSession | undefined;
@@ -116,19 +120,29 @@ export async function createServer(opts: ServerOptions) {
       if (result === 'taken') throw new HttpError(409, 'This Map Editor already has an owner. Sign in instead.');
       const t = accounts.startSession(name);
       res.setHeader('set-cookie', `me_session=${t}; HttpOnly; SameSite=Strict; Path=/; Max-Age=1209600`);
+      note('account', name, 'Created the owner account');
       return send(201, { name, role: 'owner' });
     }
     if (p === '/api/auth/login' && req.method === 'POST') {
       const { name, password } = await body(req);
-      if (!(await accounts.verify(String(name ?? ''), String(password ?? '')))) throw new HttpError(401, 'Name or password is wrong.');
+      if (!(await accounts.verify(String(name ?? ''), String(password ?? '')))) { note('account', String(name ?? ''), 'A sign-in failed (wrong name or password)'); throw new HttpError(401, 'Name or password is wrong.'); }
       const t = accounts.startSession(name);
+      note('account', name, 'Signed in');
       res.setHeader('set-cookie', `me_session=${t}; HttpOnly; SameSite=Strict; Path=/; Max-Age=1209600`);
       return send(200, { name });
     }
-    if (p === '/api/auth/logout' && req.method === 'POST') { accounts.endSession(token); res.setHeader('set-cookie', 'me_session=; Path=/; Max-Age=0'); return send(200, {}); }
+    if (p === '/api/auth/logout' && req.method === 'POST') { if (user) note('account', user.name, 'Signed out'); accounts.endSession(token); res.setHeader('set-cookie', 'me_session=; Path=/; Max-Age=0'); return send(200, {}); }
 
     if (!user) throw new HttpError(401, 'Sign in first.');
 
+    if (p === '/api/activity' && req.method === 'GET') return send(200, { events: await activity.list() });
+    if (p === '/api/activity' && req.method === 'POST') {
+      // The page reports settings changes (they live in each browser); only these kinds are accepted from it.
+      const { kind, message } = await body(req);
+      if (kind !== 'settings' && kind !== 'instance') throw new HttpError(400, 'Only settings and instance activity can be recorded from the page.');
+      if (typeof message !== 'string' || !message.trim()) throw new HttpError(400, 'Give the activity a message.');
+      return send(201, { event: await activity.record(kind, user.name, message) });
+    }
     if (p === '/api/worlds' && req.method === 'GET') return send(200, { roots: opts.worldRoots, worlds: await discoverWorlds(opts.worldRoots) });
     if (p === '/api/worlds/upload' && req.method === 'POST') {
       const root = opts.worldRoots[0];
@@ -144,6 +158,7 @@ export async function createServer(opts: ServerOptions) {
         await pipeline(req, createWriteStream(tmp));
         const name = decodeURIComponent(String(req.headers['x-file-name'] ?? 'Uploaded world'));
         const dir = await importWorldZip(tmp, root, name);
+        note('world', user.name, `Uploaded world ${path.basename(dir)}`);
         return send(201, { path: dir, name: path.basename(dir) });
       } catch (e) {
         throw new HttpError(size > limit ? 413 : 400, size > limit ? 'That file is larger than 4 GiB.' : (e as Error).message);
@@ -156,6 +171,7 @@ export async function createServer(opts: ServerOptions) {
       if (typeof name !== 'string' || !name.trim() || name.length > 80) throw new HttpError(400, 'Give the world a name of 1 to 80 characters.');
       await fs.mkdir(root, { recursive: true });
       const dir = await createFlatWorld(root, name);
+      note('world', user.name, `Created flat world ${path.basename(dir)}`);
       return send(201, { path: dir, name: path.basename(dir) });
     }
     if (p === '/api/worlds/download' && req.method === 'GET') {
@@ -195,7 +211,7 @@ export async function createServer(opts: ServerOptions) {
       // Only the desktop app (which runs for one person on their own computer) may read any folder.
       if (!opts.allowAnyPath) throw new HttpError(403, 'Adding from a folder is only available in the desktop app. Upload a .zip instead.');
       const { path: src, replace } = await body(req);
-      try { const m = await extensions.installFolder(String(src ?? ''), replace === true); return send(201, { id: m.id, name: m.name, version: m.version }); }
+      try { const m = await extensions.installFolder(String(src ?? ''), replace === true); note('extension', user.name, `Installed extension ${m.id} ${m.version}`); return send(201, { id: m.id, name: m.name, version: m.version }); }
       catch (e) {
         if (e instanceof ReplaceNeeded) return send(409, { replace: true, id: e.id, installed: e.installed, incoming: e.incoming, error: e.message });
         throw new HttpError(400, (e as Error).message);
@@ -203,7 +219,7 @@ export async function createServer(opts: ServerOptions) {
     }
     if (p === '/api/extensions/add-url' && req.method === 'POST') {
       const { url: link, replace, sha256 } = await body(req);
-      try { const m = await extensions.installUrl(String(link ?? ''), replace === true, opts.fetchImpl, typeof sha256 === 'string' ? sha256 : undefined); return send(201, { id: m.id, name: m.name, version: m.version, sha256: m.sha256 }); }
+      try { const m = await extensions.installUrl(String(link ?? ''), replace === true, opts.fetchImpl, typeof sha256 === 'string' ? sha256 : undefined); note('extension', user.name, `Installed extension ${m.id} ${m.version}`); return send(201, { id: m.id, name: m.name, version: m.version, sha256: m.sha256 }); }
       catch (e) {
         if (e instanceof ReplaceNeeded) return send(409, { replace: true, id: e.id, installed: e.installed, incoming: e.incoming, error: e.message });
         throw new HttpError(400, (e as Error).message);
@@ -212,11 +228,13 @@ export async function createServer(opts: ServerOptions) {
     if (p === '/api/extensions/remove' && req.method === 'POST') {
       const { id } = await body(req);
       try { await extensions.remove(String(id ?? '')); } catch (e) { throw new HttpError(400, (e as Error).message); }
+      note('extension', user.name, `Removed extension ${String(id)}`);
       return send(200, { ok: true });
     }
     if (p === '/api/extensions/master' && req.method === 'POST') {
       const { on } = await body(req);
       await extensions.setMaster(on === true);
+      note('extension', user.name, on === true ? 'Turned extensions on' : 'Turned every extension off');
       return send(200, { on: on === true });
     }
     if (p === '/api/extensions/runs' && req.method === 'GET') return send(200, { runs: await extensions.recentRuns() });
@@ -228,6 +246,7 @@ export async function createServer(opts: ServerOptions) {
     if (p === '/api/extensions/enable' && req.method === 'POST') {
       const { id, enabled, permissionKey: key } = await body(req);
       try { await extensions.setEnabled(String(id ?? ''), enabled === true, typeof key === 'string' ? key : undefined); } catch (e) { throw new HttpError(409, (e as Error).message); }
+      note('extension', user.name, `${enabled === true ? 'Allowed and switched on' : 'Switched off'} extension ${String(id)}`);
       return send(200, { ok: true });
     }
     if (!session) throw new HttpError(409, 'Open a world first.');
@@ -312,6 +331,7 @@ export async function createServer(opts: ServerOptions) {
       await session.history.copyAt(sha, dest);
       const name = `${info.name} (at ${sha.slice(0, 7)})`;
       await setLevelName(dest, name);
+      note('world', user.name, `Made ${path.basename(dest)} from ${path.basename(src)} at ${sha.slice(0, 7)}`);
       return send(201, { path: dest, name });
     }
     throw new HttpError(404, 'No such API route');

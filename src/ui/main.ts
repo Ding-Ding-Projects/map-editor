@@ -48,6 +48,20 @@ interface SettingsChange { at: string; keys: Tracked[]; before: Partial<Prefs>; 
 let lastSaved: Partial<Prefs> = pick(prefs);
 function pick(p: Prefs): Partial<Prefs> { const o: Record<string, unknown> = {}; for (const k of TRACKED) o[k] = p[k]; return o as Partial<Prefs>; }
 function loadSettingsHistory(): SettingsChange[] { try { const v = JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]'); return Array.isArray(v) ? v : []; } catch { return []; } }
+// Settings changes go to the server's activity record too, gathered for a moment so a slider drag is one entry.
+let settingsPending: string[] = [];
+let settingsTimer: ReturnType<typeof setTimeout> | undefined;
+function reportSettings(changes: string[]) {
+  if (!user) return;
+  settingsPending.push(...changes);
+  clearTimeout(settingsTimer);
+  settingsTimer = setTimeout(() => {
+    const byKey = new Map<string, string>(); for (const c of settingsPending) byKey.set(c.split(':')[0], c);
+    settingsPending = [];
+    api('/api/activity', { method: 'POST', body: { kind: 'settings', message: `Changed ${[...byKey.values()].join('; ')}`.slice(0, 300) } }).catch(() => undefined);
+  }, 1500);
+}
+
 function savePrefs() {
   const now = pick(prefs);
   const keys = TRACKED.filter((k) => JSON.stringify(now[k]) !== JSON.stringify(lastSaved[k]));
@@ -59,6 +73,7 @@ function savePrefs() {
       localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0, 200)));
     }
   } catch { /* storage blocked: keep in memory */ }
+  if (keys.length) reportSettings(keys.map((k) => `${k}: ${JSON.stringify(lastSaved[k])} → ${JSON.stringify(now[k])}`));
   lastSaved = now;
 }
 /** Accepts only known settings with the right types; returns how many were applied. */
@@ -804,9 +819,51 @@ async function editorView(view: HTMLElement): Promise<void> {
   notesPanel(notesEl);
 }
 
+/** Activity panel: accounts, settings, extensions and worlds from the server's activity record. */
+function activityPanel(): HTMLElement {
+  const el = document.createElement('section');
+  el.className = 'card panel-scroll activity';
+  el.innerHTML = `<h2 class="md-typescale-headline-small">${esc(tx('activity'))}</h2><p class="muted">${esc(tx('activityNote'))}</p><div id="act"><md-linear-progress indeterminate aria-label="Loading"></md-linear-progress></div>`;
+  void (async () => {
+    try {
+      const { events } = await api<{ events: Array<{ time: number; kind: string; who: string; message: string; sha?: string }> }>('/api/activity');
+      const host = el.querySelector('#act')!;
+      const kinds = [...new Set(events.map((e) => e.kind))];
+      host.innerHTML = `<div id="aq-host"></div><md-chip-set aria-label="${esc(tx('activityKinds'))}">${kinds.map((k) => `<md-filter-chip data-k="${esc(k)}" label="${esc(tx(`act_${k}` as Key))} · ${events.filter((e) => e.kind === k).length}"></md-filter-chip>`).join('')}</md-chip-set>
+        <p class="muted" id="acount" aria-live="polite"></p>
+        <ol class="act-list">${events.map((e) => `<li data-k="${esc(e.kind)}" data-text="${esc(`${e.message} ${e.who} ${e.kind}`.toLowerCase())}"><span class="act-kind k-${esc(e.kind)}">${esc(tx(`act_${e.kind}` as Key))}</span><span class="act-text"><b>${esc(e.message)}</b><small>${esc(e.who)} · ${esc(new Date(e.time * 1000).toLocaleString('en-GB'))}${e.sha ? ` · <code>${esc(e.sha.slice(0, 7))}</code>` : ''}</small></span></li>`).join('')}</ol>
+        ${events.length ? '' : `<p class="muted">${esc(tx('activityNone'))}</p>`}`;
+      const box = searchBox('activity-search', tx('searchActivity'), rx);
+      host.querySelector('#aq-host')!.replaceWith(box.el);
+      const rows = Array.from(host.querySelectorAll<HTMLElement>('.act-list li'));
+      const on = new Set<string>();
+      let run = 0;
+      const filter = async () => {
+        const my = ++run;
+        const hits = await box.filter(rows.map((r) => r.dataset.text!)) ?? rows.map(() => false);
+        if (my !== run) return;
+        let shown = 0;
+        rows.forEach((r, i) => { const ok = hits[i] && (!on.size || on.has(r.dataset.k!)); r.hidden = !ok; if (ok) shown++; });
+        host.querySelector('#acount')!.textContent = tx('activityCount', { n: shown, m: rows.length });
+      };
+      host.querySelectorAll<HTMLElement & { selected: boolean }>('[data-k]').forEach((c) => { if (c.tagName === 'MD-FILTER-CHIP') c.addEventListener('click', () => { setTimeout(() => { if (c.selected) on.add(c.dataset.k!); else on.delete(c.dataset.k!); void filter(); }); }); });
+      box.onChange(() => { void filter(); });
+      void filter();
+    } catch (err) { el.querySelector('#act')!.textContent = (err as Error).message; }
+  })();
+  return el;
+}
+
 async function historyView(view: HTMLElement, embedded = false): Promise<void> {
-  if (!world) { prefs.tab = 'worlds'; return render(); }
-  // Two docked panels: the filterable list of edits, and the details of the selected edit.
+  if (!world && embedded) return;
+  if (!world) {
+    // Without an open world, History still shows the activity record.
+    view.innerHTML = '<div id="dock" class="dock"></div>';
+    mountWorkspace(view.querySelector<HTMLElement>('#dock')!, { activity: activityPanel() }, { activity: tx('activity') }, document.documentElement.dataset.theme === 'dark',
+      { key: 'history-noworld', arrange: [['activity']], active: 'activity' }, prefs.layoutLocked);
+    return;
+  }
+  // Docked panels: the filterable list of edits, the details of the selected edit, and the activity record.
   view.innerHTML = embedded ? '' : '<div id="dock" class="dock"></div>';
   const listEl = document.createElement('section');
   listEl.className = 'card panel-scroll';
@@ -816,8 +873,8 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
   detailEl.innerHTML = `<p class="muted">${esc(tx('hPick'))}</p>`;
   // Inside the editor's own History panel the list stands alone; the History tab docks list and details.
   if (embedded) { listEl.className = 'card'; view.append(listEl); }
-  else mountWorkspace(view.querySelector<HTMLElement>('#dock')!, { edits: listEl, details: detailEl }, { edits: tx('hEdits'), details: tx('hDetails') }, document.documentElement.dataset.theme === 'dark',
-    { key: 'history', arrange: [['edits'], ['details', { ref: 'edits', dir: 'right' }, 420]], active: 'edits' }, prefs.layoutLocked);
+  else mountWorkspace(view.querySelector<HTMLElement>('#dock')!, { edits: listEl, details: detailEl, activity: activityPanel() }, { edits: tx('hEdits'), details: tx('hDetails'), activity: tx('activity') }, document.documentElement.dataset.theme === 'dark',
+    { key: 'history', arrange: [['edits'], ['details', { ref: 'edits', dir: 'right' }, 420], ['activity', { ref: 'details', dir: 'within' }]], active: 'edits' }, prefs.layoutLocked);
   const outer = view;
   view = listEl;
   try {

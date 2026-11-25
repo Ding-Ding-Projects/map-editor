@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('deploy', {
   vmware: (o: unknown) => ipcRenderer.invoke('deploy-vmware', o),
   duplicateSuggest: (name: string) => ipcRenderer.invoke('duplicate-suggest', name),
   duplicate: (name: string, o: unknown) => ipcRenderer.invoke('duplicate', name, o),
+  activity: () => ipcRenderer.invoke('activity'),
   disks: () => ipcRenderer.invoke('disks'),
   flash: (image: string, disk: string, typed: string) => ipcRenderer.invoke('flash', image, disk, typed),
   open: (url: string) => ipcRenderer.invoke('open', url),

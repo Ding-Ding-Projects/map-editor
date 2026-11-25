@@ -181,7 +181,12 @@ async function render() {
       <p class="muted">Only instances this app created are listed.</p>
       ${list.length ? `<md-list>${list.map((i) => `<md-list-item><div slot="headline">${esc(i.name)} · ${esc(i.target)} · ${esc(i.version)}</div>
         <div slot="supporting-text">http://${esc(i.host)}:${i.port}/ · <span data-state="${esc(i.name)}">checking…</span></div>
-        <md-filled-tonal-button slot="end" data-manage="${esc(i.name)}">Manage</md-filled-tonal-button></md-list-item>`).join('')}</md-list>` : '<p>Deploy one from the Deploy view and it appears here.</p>'}</section>`;
+        <md-filled-tonal-button slot="end" data-manage="${esc(i.name)}">Manage</md-filled-tonal-button></md-list-item>`).join('')}</md-list>` : '<p>Deploy one from the Deploy view and it appears here.</p>'}</section>
+      <section class="card activity"><h2 class="md-typescale-headline-small">Activity</h2><p class="muted">Every deploy, duplicate, drive write and instance action from this app, kept in a local Git history on this computer.</p><ol class="act-list" id="act-list"><li>Loading…</li></ol></section>`;
+    d.activity?.().then((events: Array<{ time: number; message: string; who: string; sha?: string }>) => {
+      const ol = main.querySelector('#act-list'); if (!ol) return;
+      ol.innerHTML = events.length ? events.map((e) => `<li><span class="act-kind">${/failed/.test(e.message) ? 'Failed' : 'Done'}</span><span class="act-text"><b>${esc(e.message)}</b><small>${esc(e.who)} · ${esc(new Date(e.time * 1000).toLocaleString('en-GB'))}${e.sha ? ` · <code>${esc(e.sha.slice(0, 7))}</code>` : ''}</small></span></li>`).join('') : '<li>Nothing yet.</li>';
+    }).catch(() => undefined);
     main.querySelectorAll<HTMLElement>('[data-manage]').forEach((b) => b.addEventListener('click', () => { managing = b.dataset.manage; render(); }));
     for (const i of list) d.state(i.name).then((st: string) => { const el = main.querySelector(`[data-state="${CSS.escape(i.name)}"]`); if (el) el.textContent = STATE_LABEL[st] ?? st; });
     return;
