@@ -18,6 +18,12 @@ The desktop app runs the same editor as the web app, inside its own window. It s
 
 桌面程式行嘅編輯器同網頁程式係同一個，只係放喺自己嘅視窗入面。佢會喺你部電腦度開一個私人伺服器，淨係得嗰個視窗連得到，所以唔會有嘢暴露喺你個網絡度。
 
+## Open the world folder in another program
+
+With a world open, right-click the map or use the command palette and choose Open world folder in…. The app lists the editors it finds on this computer (Visual Studio Code, VSCodium, Cursor, Sublime Text, Notepad++) and the file manager, remembers your last choice, and hands over only a real world folder. If no editor is found it says so and the file manager still works.
+
+開咗世界之後，喺地圖度撳右掣，或者用指令面板，揀「用其他程式開世界資料夾…」。程式會列出喺呢部電腦搵到嘅編輯器（Visual Studio Code、VSCodium、Cursor、Sublime Text、Notepad++）同檔案總管，記住你上次揀邊個，而且只會交出真正嘅世界資料夾。搵唔到編輯器嘅話會話你知，檔案總管照樣用得。
+
 ## Install
 
 Download Setup.exe from the latest release and run it. The installer is not code-signed, so Windows SmartScreen may show a warning first; choose More info, then Run anyway. Updates arrive through the same release feed.

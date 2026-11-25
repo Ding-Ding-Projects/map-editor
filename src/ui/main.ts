@@ -21,6 +21,8 @@ type UpdState = { state: 'disabled'; reason: string } | { state: 'idle' | 'check
 interface DesktopBridge {
   pickFolder: () => Promise<string | undefined>;
   openDataFolder?: (p: string) => Promise<string>;
+  editors?: () => Promise<Array<{ id: string; name: string }>>;
+  openInEditor?: (id: string, folder: string) => Promise<string>;
   updates?: { state: () => Promise<UpdState>; check: () => Promise<UpdState>; restart: () => Promise<boolean>; onState: (fn: (s: UpdState) => void) => void };
 }
 const desktopBridge = (window as unknown as { mapEditorDesktop?: DesktopBridge }).mapEditorDesktop;
@@ -33,7 +35,7 @@ import { RAINBOW } from './color.js';
 import { blockColor } from '../core/colors.js';
 import { argbFromHex, themeFromSourceColor, applyTheme as applyM3Theme } from '@material/material-color-utilities';
 import { notesPanel as notesPanelImpl } from './notes.js';
-import { contextMenu, initMenus } from './menu.js';
+import { contextMenu, initMenus, type MenuItem } from './menu.js';
 import { iconSvg, initButtonIcons } from './icons.js';
 import { renderMarkdown } from './markdown.js';
 import { pickItem } from './select.js';
@@ -373,6 +375,24 @@ function tabSearch() {
   });
 }
 
+/** Desktop app only: hand the open world's folder to an outside editor or the file manager. The last choice is remembered. */
+const EDITOR_KEY = 'map-editor.outside-editor';
+async function openOutside(id?: string, anchor?: { x: number; y: number }) {
+  if (!desktopBridge?.openInEditor || !world) { notify(tx(world ? 'outsideDesktopOnly' : 'outsideNoWorld'), true); return; }
+  const run = async (pick: string, name: string) => {
+    try { localStorage.setItem(EDITOR_KEY, pick); } catch { /* not kept */ }
+    const err = await desktopBridge!.openInEditor!(pick, world!.path);
+    if (err) notify(tx('outsideFailed', { name, e: err }), true); else notify(tx('outsideOpened', { name }));
+  };
+  const found = await desktopBridge.editors?.().catch(() => []) ?? [];
+  const all = [...found, { id: 'files', name: tx('outsideFiles') }];
+  const hit = id && all.find((x) => x.id === id);
+  if (hit) return run(hit.id, hit.name);
+  let last = ''; try { last = localStorage.getItem(EDITOR_KEY) ?? ''; } catch { /* none */ }
+  if (!found.length) notify(tx('outsideNone'));
+  contextMenu(anchor?.x ?? innerWidth / 2 - 140, anchor?.y ?? 120, tx('outsideTitle'), all.map((x) => [x.name, () => { void run(x.id, x.name); }] as MenuItem), undefined, all.findIndex((x) => x.id === last));
+}
+
 function paletteCommands(): Command[] {
   const go = (t: string) => () => { prefs.closedTabs = prefs.closedTabs.filter((x) => x !== t); prefs.tab = t; savePrefs(); render(); };
   const cmds: Command[] = [];
@@ -399,6 +419,7 @@ function paletteCommands(): Command[] {
   cmds.push({ id: 'motion', label: tx('reduceMotion'), where: `${tx('settings')} › Appearance`, toggle: { get: () => prefs.reduceMotion, set: (v) => { prefs.reduceMotion = v; savePrefs(); applyTheme(); } } });
   for (const [l, label] of [['en', 'English'], ['yue', '粵語'], ['both', 'EN + 粵']] as const) cmds.push({ id: `lang-${l}`, label: `${tx('language')}: ${label}`, where: `${tx('settings')} › ${tx('language')}`, run: () => { prefs.lang = l; savePrefs(); render(); } });
   cmds.push({ id: 'notes', label: tx('notifications'), where: 'Header', run: () => toggleNoteCentre() });
+  if (desktopBridge?.openInEditor && world) cmds.push({ id: 'outside', label: tx('outsideTitle'), where: world.name, run: () => { void openOutside(); } });
   cmds.push({ id: 'welcome', label: tx('welcome'), where: `${tx('settings')}`, run: () => { prefs.onboarded = false; prefs.onboardStep = 0; savePrefs(); render(); } });
   // Every setting can be teleported to (Shift+Enter or the arrow): toggles get it as a second action,
   // and settings that are not switches get a row of their own that teleports.
@@ -1019,6 +1040,7 @@ async function editorView(view: HTMLElement): Promise<void> {
     [tx('menuGoto'), () => { setMode('goto'); openGoto(b.x, b.z); }, MAP_MODE_KEYS.goto],
     ...MAP_MODES.filter((k) => k !== 'goto' && k !== mapMode).map((k) => [`${tx('menuMode')}: ${tx(`mode_${k}` as Key)}`, () => setMode(k), MAP_MODE_KEYS[k]] as [string, () => void, string]),
     [tx('undo'), () => document.querySelector<HTMLElement>('#undo')?.click(), UNDO_KEY],
+    ...(desktopBridge?.openInEditor ? [[tx('outsideTitle'), () => { void openOutside(undefined, { x: cx, y: cy }); }] as [string, () => void]] : []),
     [tx('paletteHint'), () => showPalette(), PALETTE_KEY],
   ], canvas);
   canvas.addEventListener('contextmenu', (e) => { e.preventDefault(); mapMenu(e.clientX, e.clientY, toBlock(e as unknown as PointerEvent)); });

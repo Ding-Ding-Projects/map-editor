@@ -6,7 +6,7 @@ lands; anything not rechecked keeps its last audited status.
 
 Re-audited on 2026-11-25 after the changes of that day.
 
-Counts (126 features): built 14 / partial 82 / unbuilt 16 / not applicable 14
+Counts (126 features): built 14 / partial 83 / unbuilt 15 / not applicable 14
 
 
 ## Language, voice, and personalization
@@ -89,7 +89,7 @@ Counts (126 features): built 14 / partial 82 / unbuilt 16 / not applicable 14
 `minecraft-server-manager` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/ui/tools.ts server.properties editor (12 common fields) | MISSING: server creation, flavour/plugin install and management; the four targets (local process, local Docker, SSH process, SSH Docker); Java/Bedrock version discovery and compatibility matrix; typed per-version config; start/stop/recovery
 `minecraft-world-generator` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: only a flat-world creator exists (src/core/archive.ts `createFlatWorld`), unrelated to server-driven generation | MISSING: generator in a server tab; per-version jar option extraction; 100 x 100 chunk default with drawing canvas; Folder/ZIP output with Browse; in-app EULA acceptance; batched pre-generation
 `ollama-suite` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: server.ts `/api/ollama/models`, `/api/ollama/ask`; tools.ts Local AI helper | MISSING: one-click managed Ollama install and missing-runtime recovery (error text says to install it yourself); Model Store with full catalogue and tags; hardware-fit verdicts; batch pull cart; chat sessions with attachments; guided troubleshooter; profile launch with rollback; site
-`external-editor` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: none (no editor detection or VS Code hand-off in src/) | MISSING: editor detection and choice, persisted choice, open world folder/file, open any export in VS Code, no-editor message
+`external-editor` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/desktop/editors.ts (detection of five editors by known place and PATH), src/desktop/main.ts `open-in-editor` (world folders only, no shell text from the page), main.ts `openOutside` (map right-click and palette, remembered choice, no-editor message), tests/editors.test.ts | MISSING: opening a single file or an export in the editor; not run on a real Windows PC
 `download-handoff` | APPLIES: no | STATUS: N-A | EVIDENCE: no browser-extension download capture in this product | MISSING: -
 `forge-publishing` | APPLIES: no | STATUS: N-A | EVIDENCE: the app does not publish repositories | MISSING: -
 `progress-recovery` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/ui/worlds.ts upload progress, src/ui/takeover.ts failure card with retry and Copy details, Deploy app "Try port N+1" | MISSING: progress inside the starting dialog for new world, structure place, extension install; submit disabling/re-entry guard on every dialog; optional slow phases as explicit choices; re-authentication offer on a refused credential
