@@ -30,16 +30,16 @@ import { notesPanel as notesPanelImpl } from './notes.js';
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
 
 // ---------- state ----------
-interface Prefs extends I18nState { dark: boolean; reduceMotion: boolean; largeText: boolean; dimSum: boolean; narrate: boolean; narrateRate: number; darkSchedule: boolean; darkFrom: string; darkTo: string; editLock: boolean; tourOffered: boolean; tourResume: { name: string; step: number } | null; sounds: boolean; soundVolume: number; settingsSection: string; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
+interface Prefs extends I18nState { dark: boolean; reduceMotion: boolean; largeText: boolean; dimSum: boolean; takeovers: boolean; narrate: boolean; narrateRate: number; darkSchedule: boolean; darkFrom: string; darkTo: string; editLock: boolean; tourOffered: boolean; tourResume: { name: string; step: number } | null; sounds: boolean; soundVolume: number; settingsSection: string; closedTabs: string[]; tab: string; seed: string; rainbowSpeed: number; onboarded: boolean; onboardStep: number }
 const PREFS_KEY = 'map-editor.prefs.v1';
 const DEFAULT_SEED = '#4c8c4a';
-const defaults: Prefs = { lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, largeText: false, dimSum: true, narrate: false, narrateRate: 10, darkSchedule: false, darkFrom: '19:00', darkTo: '07:00', editLock: false, tourOffered: false, tourResume: null, sounds: true, soundVolume: 40, settingsSection: 'language', closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
+const defaults: Prefs = { lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, largeText: false, dimSum: true, takeovers: true, narrate: false, narrateRate: 10, darkSchedule: false, darkFrom: '19:00', darkTo: '07:00', editLock: false, tourOffered: false, tourResume: null, sounds: true, soundVolume: 40, settingsSection: 'language', closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
 function loadPrefs(): Prefs { try { return { ...defaults, ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') }; } catch { return { ...defaults }; } }
 let prefs = loadPrefs();
 // Settings history: every saved change to a user-facing setting keeps the previous values,
 // newest first, so any change can be restored (and the restore is recorded too).
 const HISTORY_KEY = 'map-editor.settings-history.v1';
-const TRACKED = ['lang', 'funnyEn', 'funnyYue', 'dark', 'reduceMotion', 'largeText', 'dimSum', 'narrate', 'narrateRate', 'darkSchedule', 'darkFrom', 'darkTo', 'editLock', 'sounds', 'soundVolume', 'seed', 'rainbowSpeed'] as const;
+const TRACKED = ['lang', 'funnyEn', 'funnyYue', 'dark', 'reduceMotion', 'largeText', 'takeovers', 'dimSum', 'narrate', 'narrateRate', 'darkSchedule', 'darkFrom', 'darkTo', 'editLock', 'sounds', 'soundVolume', 'seed', 'rainbowSpeed'] as const;
 type Tracked = typeof TRACKED[number];
 interface SettingsChange { at: string; keys: Tracked[]; before: Partial<Prefs>; after: Partial<Prefs> }
 let lastSaved: Partial<Prefs> = pick(prefs);
@@ -470,7 +470,7 @@ function authView(view: HTMLElement) {
 
 function worldsScreen(view: HTMLElement) {
   return worldsView(view, {
-    api, notify, tx, esc, play,
+    api, notify, tx, esc, play, takeovers: () => prefs.takeovers,
     browse: desktopBridge?.pickFolder,
     open: async (w) => {
       const r = await api('/api/worlds/open', { method: 'POST', body: { path: w.path } });
@@ -786,7 +786,7 @@ function settingsView(view: HTMLElement) {
       <div class="set-times" data-find="${esc(tx('darkSchedule'))} ${esc(tx('darkFrom'))} ${esc(tx('darkTo'))}"><md-outlined-text-field id="dfrom" type="time" label="${esc(tx('darkFrom'))}" value="${prefs.darkFrom}"></md-outlined-text-field><md-outlined-text-field id="dto" type="time" label="${esc(tx('darkTo'))}" value="${prefs.darkTo}"></md-outlined-text-field></div>${sw('ds', 'dimSum', 'dimSumNote', prefs.dimSum)}
       <div class="set-row seed-row" data-find="${esc(tx('seed'))}"><span><b>${esc(tx('seed'))}</b></span><span class="seed-now"><span class="seed-swatch ${prefs.seed === RAINBOW ? 'rainbow' : ''}" style="background:${prefs.seed === RAINBOW ? 'none' : esc(prefs.seed)}"></span><code>${esc(prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed)}</code><md-text-button id="seed-reset">${esc(tx('reset'))}</md-text-button></span></div>
       <div id="seed-picker" data-find="${esc(tx('seed'))} colour color"></div>`,
-    comfort: `<div class="row-actions" data-find="${esc(tx('tourTake'))} ${esc(tx('tourThisPage'))}"><md-filled-tonal-button id="set-tour">${esc(tx('tourTake'))}</md-filled-tonal-button></div>${sw('rm', 'reduceMotion', 'reduceMotionNote', prefs.reduceMotion)}${sw('lt', 'largeText', 'largeTextNote', prefs.largeText)}${sw('elock', 'editLock', 'editLockNote', prefs.editLock)}`,
+    comfort: `<div class="row-actions" data-find="${esc(tx('tourTake'))} ${esc(tx('tourThisPage'))}"><md-filled-tonal-button id="set-tour">${esc(tx('tourTake'))}</md-filled-tonal-button></div>${sw('rm', 'reduceMotion', 'reduceMotionNote', prefs.reduceMotion)}${sw('lt', 'largeText', 'largeTextNote', prefs.largeText)}${sw('elock', 'editLock', 'editLockNote', prefs.editLock)}${sw('tko', 'takeovers', 'takeoversNote', prefs.takeovers)}`,
     backup: `<p data-find="${esc(tx('exportSettings'))} ${esc(tx('importSettings'))}">${esc(tx('settingsSaved'))}</p>
       <div class="row-actions"><md-filled-tonal-button id="exp">${esc(tx('exportSettings'))}</md-filled-tonal-button><md-outlined-button id="imp">${esc(tx('importSettings'))}</md-outlined-button><input id="imp-file" type="file" accept="application/json,.json" hidden></div>
       <h3 data-find="${esc(tx('settingsHistory'))}">${esc(tx('settingsHistory'))}</h3><ol class="set-history" id="sh"></ol>`,
@@ -849,6 +849,7 @@ function settingsView(view: HTMLElement) {
   view.querySelector('#nar-try')!.addEventListener('click', () => narrate(tx('narrateSample'), true));
   view.querySelector('#dsched')!.addEventListener('change', (e) => { prefs.darkSchedule = sel(e); savePrefs(); applyTheme(); });
   for (const [id, k] of [['#dfrom', 'darkFrom'], ['#dto', 'darkTo']] as const) view.querySelector(id)!.addEventListener('change', () => { const v = (view.querySelector(id) as HTMLInputElement).value; if (/^([01]\d|2[0-3]):[0-5]\d$/.test(v)) { prefs[k] = v; savePrefs(); applyTheme(); } });
+  view.querySelector('#tko')!.addEventListener('change', (e) => { prefs.takeovers = sel(e); savePrefs(); });
   view.querySelector('#elock')!.addEventListener('change', (e) => { prefs.editLock = sel(e); savePrefs(); applyTheme(); notify(tx(prefs.editLock ? 'editLockOn' : 'editLockOff')); });
   const showSeed = () => { const s = view.querySelector<HTMLElement>('.seed-swatch')!; s.classList.toggle('rainbow', prefs.seed === RAINBOW); s.style.background = prefs.seed === RAINBOW ? '' : prefs.seed; view.querySelector('.seed-now code')!.textContent = prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed; };
   colorPicker(view.querySelector<HTMLElement>('#seed-picker')!, {
@@ -873,7 +874,7 @@ function settingsView(view: HTMLElement) {
   const sh = view.querySelector<HTMLElement>('#sh')!;
   const hist = loadSettingsHistory();
   const fmt = (k: Tracked, v: unknown) => k === 'seed' && v === RAINBOW ? tx('rainbow') : typeof v === 'boolean' ? (v ? 'on' : 'off') : String(v);
-  const name: Record<Tracked, string> = { narrate: tx('narrate'), narrateRate: tx('narrateRate'), darkSchedule: tx('darkSchedule'), darkFrom: tx('darkFrom'), darkTo: tx('darkTo'), editLock: tx('editLock'), dimSum: tx('dimSum'), sounds: tx('soundEffects'), soundVolume: tx('soundVolume'), lang: tx('secLanguage'), funnyEn: tx('funnyEn'), funnyYue: tx('funnyYue'), dark: tx('dark'), reduceMotion: tx('reduceMotion'), largeText: tx('largeText'), seed: tx('seed'), rainbowSpeed: tx('rainbow') };
+  const name: Record<Tracked, string> = { takeovers: tx('takeovers'), narrate: tx('narrate'), narrateRate: tx('narrateRate'), darkSchedule: tx('darkSchedule'), darkFrom: tx('darkFrom'), darkTo: tx('darkTo'), editLock: tx('editLock'), dimSum: tx('dimSum'), sounds: tx('soundEffects'), soundVolume: tx('soundVolume'), lang: tx('secLanguage'), funnyEn: tx('funnyEn'), funnyYue: tx('funnyYue'), dark: tx('dark'), reduceMotion: tx('reduceMotion'), largeText: tx('largeText'), seed: tx('seed'), rainbowSpeed: tx('rainbow') };
   sh.innerHTML = hist.length ? hist.slice(0, 50).map((h, i) => `<li data-find="${esc(h.keys.map((k) => name[k]).join(' '))}"><span><b>${h.keys.map((k) => `${esc(name[k])}: ${esc(fmt(k, h.before[k]))} → ${esc(fmt(k, h.after[k]))}`).join(' · ')}</b><small>${esc(new Date(h.at).toLocaleString())}</small></span><md-text-button data-restore="${i}">${esc(tx('restore'))}</md-text-button></li>`).join('') : `<li class="muted">${esc(tx('noSettingsHistory'))}</li>`;
   sh.querySelectorAll<HTMLElement>('[data-restore]').forEach((b) => b.addEventListener('click', () => {
     const h = hist[Number(b.dataset.restore)]; if (!h) return;

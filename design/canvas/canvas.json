@@ -374,7 +374,7 @@
    "x": 3640,
    "y": 0,
    "w": 420,
-   "text": "Install success and failure takeovers for the deploy app. Try: Tweak state, seed, motion.\nIn the deploy app: both takeovers as drawn. Success: link, version, time taken, Open, Copy link, closes after 8 s unless hovered or focused. Failure: stays, step log with the exact error, Try port N+1 when the port is taken (else Try again), Copy details, Dismiss; focus kept inside, Esc closes. Not yet: the same takeovers in the editor app.",
+   "text": "Install success and failure takeovers for the deploy app. Try: Tweak state, seed, motion.\nIn the deploy app: both takeovers as drawn. Success: link, version, time taken, Open, Copy link, closes after 8 s unless hovered or focused. Failure: stays, step log with the exact error, Try port N+1 when the port is taken (else Try again), Copy details, Dismiss; focus kept inside, Esc closes. The editor app uses the same shared takeover for world uploads (Ready to edit, Open in the editor; failure with the exact reason, Choose another, Copy details), switchable in Settings \u203a Comfort.",
    "fill": "yellow",
    "page": "feedback"
   },

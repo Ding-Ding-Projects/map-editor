@@ -1,12 +1,15 @@
 // Worlds screen: list, upload a .zip, new flat world, download, browse (desktop), and every stage.
 // Matches the "Worlds" design board.
 import type { Key } from './i18n.js';
+import { showTakeover } from './takeover.js';
 
 export interface WorldSummary { name: string; path: string; versionName?: string; dimensions: string[] }
 export interface WorldsContext {
   api: <T = any>(path: string, init?: { method?: string; body?: unknown }) => Promise<T>;
   notify: (text: string, error?: boolean, action?: { label: string; run: () => void }) => void;
   play?: (cue: 'create' | 'success') => void;
+  /** Full-screen result cards for uploads (Settings › Comfort and focus can turn them off). */
+  takeovers?: () => boolean;
   tx: (k: Key, v?: Record<string, string | number>) => string;
   esc: (s: unknown) => string;
   open: (w: WorldSummary) => Promise<void>;
@@ -100,18 +103,29 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
       fill.style.width = `${Math.round((e.loaded / e.total) * 100)}%`;
       text.textContent = e.loaded < e.total ? `${(e.loaded / 1e6).toFixed(1)} of ${(e.total / 1e6).toFixed(1)} MB` : tx('unpacking');
     };
+    const t0 = Date.now();
     xhr.onload = () => {
-      let j: { name?: string; error?: string } = {};
+      let j: { name?: string; path?: string; error?: string } = {};
       try { j = JSON.parse(xhr.responseText); } catch { /* not JSON */ }
       status.innerHTML = '';
-      if (xhr.status === 201) { c.notify(tx('uploaded', { name: j.name ?? file.name })); c.play?.('create'); load(); }
-      else showError(j.error ?? `HTTP ${xhr.status}`);
+      if (xhr.status === 201) {
+        c.notify(tx('uploaded', { name: j.name ?? file.name })); c.play?.('create'); load();
+        if (c.takeovers?.()) showTakeover({ kind: 'ok', chip: tx('tkUploaded'), title: tx('tkReady'), lead: tx('tkUploadLead', { name: j.name ?? file.name }),
+          stats: [{ label: tx('tkFile'), value: file.name, code: true }, { label: tx('tkSize'), value: `${(file.size / 1e6).toFixed(1)} MB` }, { label: tx('tkTook'), value: `${Math.max(1, Math.round((Date.now() - t0) / 1000))} s` }],
+          actions: [{ label: tx('tkOpenWorld'), primary: true, run: (close) => { close(); if (j.path) void c.open({ name: j.name ?? file.name, path: j.path, dimensions: [] }); } }, { label: tx('tkClose'), run: (close) => close() }],
+          autoClose: { seconds: 8, text: (n) => tx('tkCloses', { n }), held: tx('tkHeld') } });
+      } else showError(j.error ?? `HTTP ${xhr.status}`, file);
     };
-    xhr.onerror = () => { status.innerHTML = ''; showError(tx('offlineBody')); };
+    xhr.onerror = () => { status.innerHTML = ''; showError(tx('offlineBody'), file); };
     xhr.send(file);
   });
 
-  function showError(message: string) {
+  function showError(message: string, file?: File) {
+    if (file && c.takeovers?.()) {
+      const log = `${file.name} (${(file.size / 1e6).toFixed(1)} MB)\n${message}\n${new Date().toLocaleTimeString('en-GB')}`;
+      showTakeover({ kind: 'fail', chip: tx('tkFailedChip'), title: tx('tkFailed'), lead: tx('tkUploadFailLead'), log, logLabel: tx('tkWhat'),
+        actions: [{ label: tx('chooseAnother'), primary: true, run: (close) => { close(); fileInput.click(); } }, { label: tx('tkCopy'), outlined: true, run: () => { void navigator.clipboard?.writeText(log).then(() => c.notify(tx('copied'))); } }, { label: tx('tkDismiss'), run: (close) => close() }] });
+    }
     status.innerHTML = `<div class="banner error" role="alert"><div><b>${esc(tx('uploadFailed'))}</b><p>${esc(message)}</p></div>
       <md-filled-button id="again">${esc(tx('chooseAnother'))}</md-filled-button><md-text-button id="dismiss">${esc(tx('dismiss'))}</md-text-button></div>`;
     status.querySelector('#again')!.addEventListener('click', () => fileInput.click());

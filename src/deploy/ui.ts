@@ -2,6 +2,7 @@
 import '@material/web/all.js';
 import { enableClearControls } from '../ui/clearable.js';
 import { startTour } from '../ui/tour.js';
+import { showTakeover } from '../ui/takeover.js';
 
 interface Step { label: string; state: 'waiting' | 'running' | 'done' | 'failed'; detail?: string }
 interface Disk { id: string; name: string; sizeBytes: number }
@@ -273,56 +274,19 @@ function toast(text: string, error = false) {
   if (!error) setTimeout(() => el.remove(), 8000);
 }
 
-// Full-screen takeovers from the Takeover board. Success closes itself after 8 s; failure stays
-// until it is dismissed and keeps the step log, the exact error and a retry.
-function takeover(kind: 'ok' | 'fail', html: string, opener: Element | null): { el: HTMLElement; close: () => void } {
-  const el = document.createElement('div');
-  el.className = `takeover ${kind}`;
-  el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'tk-title');
-  el.innerHTML = `<div class="tk-shapes" aria-hidden="true"><i></i><i></i><i></i></div><section>${html}</section>`;
-  const close = () => { el.remove(); document.removeEventListener('keydown', onKey, true); (opener as HTMLElement | null)?.focus?.(); };
-  const onKey = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') { e.preventDefault(); close(); }
-    if (e.key === 'Tab') { // keep focus inside the takeover
-      const f = Array.from(el.querySelectorAll<HTMLElement>('button, md-filled-button, md-outlined-button, md-text-button, a'));
-      const i = f.indexOf(document.activeElement as HTMLElement);
-      if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1]?.focus(); } else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0]?.focus(); }
-    }
-  };
-  document.addEventListener('keydown', onKey, true);
-  document.body.append(el);
-  requestAnimationFrame(() => el.querySelector<HTMLElement>('md-filled-button')?.focus());
-  return { el, close };
-}
-
+// Full-screen takeovers from the Takeover board (shared with the editor).
 function celebrate(url: string, inst: Instance, tookMs = 0) {
-  const { el, close } = takeover('ok', `<span class="tk-chip">Installed</span>
-    <h1 id="tk-title">It is live.</h1>
-    <p class="tk-lead">${esc(inst.name)} is running ${inst.target === 'docker' ? 'in Docker on this computer' : inst.target === 'docker-ssh' ? `in Docker on ${inst.sshHost ?? inst.host}` : inst.target === 'vmware' ? 'in VMware' : 'in VirtualBox'} and answered its health check.</p>
-    <div class="tk-stats"><div><small>Link</small><code>${esc(url.replace(/^https?:\/\//, '').replace(/\/$/, ''))}</code></div><div><small>Version</small><b>${esc(inst.version)}</b></div><div><small>Took</small><b>${Math.max(1, Math.round(tookMs / 1000))} s</b></div></div>
-    <div class="tk-actions"><md-filled-button id="tk-open">Open Map Editor</md-filled-button><md-outlined-button id="tk-copy">Copy link</md-outlined-button><md-text-button id="tk-close">Close (Esc)</md-text-button></div>
-    <small class="tk-note" id="tk-count">Closes by itself in 8 s.</small>`, document.activeElement);
-  el.querySelector('#tk-open')!.addEventListener('click', () => d.open(url));
-  el.querySelector('#tk-copy')!.addEventListener('click', () => navigator.clipboard?.writeText(url).then(() => toast('Link copied.')));
-  el.querySelector('#tk-close')!.addEventListener('click', close);
-  let left = 8;
-  const timer = setInterval(() => { left--; const c = el.querySelector('#tk-count'); if (!el.isConnected || left <= 0) { clearInterval(timer); if (el.isConnected) close(); return; } if (c) c.textContent = `Closes by itself in ${left} s.`; }, 1000);
-  // Hovering or focusing inside keeps it open, so it never vanishes while being read.
-  const hold = () => { clearInterval(timer); el.querySelector('#tk-count')!.textContent = 'Stays open while you use it.'; };
-  el.addEventListener('pointerenter', hold, { once: true }); el.addEventListener('focusin', (e) => { if (e.target !== el.querySelector('md-filled-button')) hold(); });
+  const where = inst.target === 'docker' ? 'in Docker on this computer' : inst.target === 'docker-ssh' ? `in Docker on ${inst.sshHost ?? inst.host}` : inst.target === 'vmware' ? 'in VMware' : 'in VirtualBox';
+  showTakeover({ kind: 'ok', chip: 'Installed', title: 'It is live.', lead: `${inst.name} is running ${where} and answered its health check.`,
+    stats: [{ label: 'Link', value: url.replace(/^https?:\/\//, '').replace(/\/$/, ''), code: true }, { label: 'Version', value: inst.version }, { label: 'Took', value: `${Math.max(1, Math.round(tookMs / 1000))} s` }],
+    actions: [{ label: 'Open Map Editor', primary: true, run: () => d.open(url) }, { label: 'Copy link', outlined: true, run: () => { void navigator.clipboard?.writeText(url).then(() => toast('Link copied.')); } }, { label: 'Close (Esc)', run: (close) => close() }],
+    autoClose: { seconds: 8, text: (n) => `Closes by itself in ${n} s.`, held: 'Stays open while you use it.' } });
 }
 
 function failTakeover(o: { what: string; error: string; steps: Step[]; retry: { label: string; run: () => void } }) {
-  const stamp = new Date().toLocaleTimeString('en-GB');
-  const log = [...o.steps.map((s) => `${s.state === 'failed' ? '✗' : s.state === 'done' ? '✓' : '·'} ${s.label}${s.detail ? ` — ${s.detail}` : ''}`), '', o.error, `at ${stamp}`].join('\n').trim();
-  const { el, close } = takeover('fail', `<span class="tk-chip">Install failed · stays until you close it</span>
-    <h1 id="tk-title">That did not work.</h1>
-    <p class="tk-lead">${esc(o.what)} Nothing else on this computer was changed.</p>
-    <pre class="tk-log" tabindex="0" aria-label="What happened">${esc(log)}</pre>
-    <div class="tk-actions"><md-filled-button id="tk-retry">${esc(o.retry.label)}</md-filled-button><md-outlined-button id="tk-copy">Copy details</md-outlined-button><md-text-button id="tk-close">Dismiss (Esc)</md-text-button></div>`, document.activeElement);
-  el.querySelector('#tk-retry')!.addEventListener('click', () => { close(); o.retry.run(); });
-  el.querySelector('#tk-copy')!.addEventListener('click', () => navigator.clipboard?.writeText(log).then(() => toast('Details copied.')));
-  el.querySelector('#tk-close')!.addEventListener('click', close);
+  const log = [...o.steps.map((s) => `${s.state === 'failed' ? '✗' : s.state === 'done' ? '✓' : '·'} ${s.label}${s.detail ? ` — ${s.detail}` : ''}`), '', o.error, `at ${new Date().toLocaleTimeString('en-GB')}`].join('\n').trim();
+  showTakeover({ kind: 'fail', chip: 'Install failed · stays until you close it', title: 'That did not work.', lead: `${o.what} Nothing else on this computer was changed.`, log, logLabel: 'What happened',
+    actions: [{ label: o.retry.label, primary: true, run: (close) => { close(); o.retry.run(); } }, { label: 'Copy details', outlined: true, run: () => { void navigator.clipboard?.writeText(log).then(() => toast('Details copied.')); } }, { label: 'Dismiss (Esc)', run: (close) => close() }] });
 }
 
 enableClearControls((field) => `Clear ${field}`);
