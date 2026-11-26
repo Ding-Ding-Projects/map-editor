@@ -195,6 +195,25 @@ jobs:
       - uses: actions/download-artifact@v4
         continue-on-error: true
         with: { name: appliance-pi, path: assets/appliance-pi }
+      - name: Guide as phone-sized PDFs for the release (the release still goes out if this step fails)
+        continue-on-error: true
+        timeout-minutes: 6
+        run: |
+          npm ci --no-audit --no-fund --ignore-scripts
+          echo '[]' > site/releases.json
+          SITE_BASE=/map-editor/ node site/build.mjs
+          mkdir -p /tmp/serve assets/guide && ln -s "$PWD/site/dist" /tmp/serve/map-editor
+          (cd /tmp/serve && python3 -m http.server 8765 >/dev/null 2>&1 &) ; sleep 2
+          google-chrome --headless=new --no-sandbox --disable-gpu --no-pdf-header-footer \
+            --print-to-pdf=assets/guide/map-editor-guide-phone.pdf http://127.0.0.1:8765/map-editor/phone/
+          test -s assets/guide/map-editor-guide-phone.pdf
+          # The Cantonese edition needs a Chinese font on the runner, or the PDF would be empty boxes.
+          if sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o DPkg::Lock::Timeout=120 install -y -qq fonts-noto-cjk >/dev/null; then
+            google-chrome --headless=new --no-sandbox --disable-gpu --no-pdf-header-footer \
+              --print-to-pdf=assets/guide/map-editor-guide-phone-yue.pdf http://127.0.0.1:8765/map-editor/phone-yue/
+            test -s assets/guide/map-editor-guide-phone-yue.pdf || rm -f assets/guide/map-editor-guide-phone-yue.pdf
+          fi
+          ls -l assets/guide
       - name: Publish one normal release for this commit
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
@@ -222,7 +241,7 @@ jobs:
           mkdir -p assets
           # Squirrel names every package RELEASES; give each app's feed its own name so both upload.
           for d in assets/desktop/*/; do [ -f "$d/RELEASES" ] && mv "$d/RELEASES" "$d/RELEASES-$(basename "$d")"; done
-          mapfile -d '' FILES < <(find assets -type f \( -name '*.exe' -o -name 'RELEASES-*' -o -name '*.nupkg' -o -name '*.ova' -o -name '*.img.xz' -o -name 'SHA256SUMS' -o -name 'SHA256SUMS-rpi' -o -name 'image-digest.txt' \) -print0)
+          mapfile -d '' FILES < <(find assets -type f \( -name '*.exe' -o -name 'RELEASES-*' -o -name '*.nupkg' -o -name '*.ova' -o -name '*.img.xz' -o -name 'map-editor-guide-phone*.pdf' -o -name 'SHA256SUMS' -o -name 'SHA256SUMS-rpi' -o -name 'image-digest.txt' \) -print0)
           # Never publish a release without its Windows installers.
           printf '%s\n' "${FILES[@]}" | grep -q 'Map.EditorSetup.exe$' || { echo 'Map.EditorSetup.exe is missing; not publishing a release.'; exit 1; }
           # GitHub now and then answers 403 to release creation for a moment; try three times, and
