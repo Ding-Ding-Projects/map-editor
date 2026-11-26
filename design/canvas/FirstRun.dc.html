@@ -103,6 +103,9 @@ button:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offse
       <sc-if value="{{isWorld}}" hint-placeholder-val="{{ false }}">
         <div style="display: flex; flex-direction: column; gap: 16px">
           <h1 style="margin: 0; font-size: 36px; line-height: 44px; font-weight: 500">Open your first world</h1>
+          <p role="status" style="margin: 0; color: {{t.onSurfaceVariant}}">{{foundText}}</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center"><button onClick="{{makeWorld}}" style="{{makeStyle}}">Make a practice world now</button><button onClick="{{makeFail}}" style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-size: 13px">Try it failing</button></div>
+          <p role="status" style="margin: 0; font-weight: 600; color: {{madeColor}}">{{madeText}}</p>
           <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
             <button style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start; padding: 20px; border-radius: 16px; border: 0; background: {{t.secondaryContainer}}; color: {{t.onSecondaryContainer}}; text-align: left">
               <span style="font-size: 16px; font-weight: 600">Survival Island</span><span style="font-size: 14px">Found in .minecraft/saves · Java 1.21.4</span>
@@ -157,6 +160,11 @@ class Component extends DCLogic {
     return {
       t, i, steps, langs, modes,
       bar: 'height: 4px; width: ' + Math.round((i / 5) * 100) + '%; background: ' + t.primary,
+      foundText: 'Worlds found now: ' + (this.state.made === 'ok' ? 2 : 1) + ', in .minecraft/saves.',
+      makeWorld: () => { if (this.state.made !== 'ok') this.setState({ made: 'ok' }); }, makeFail: () => this.setState({ made: 'bad' }),
+      makeStyle: 'height: 44px; padding: 0 20px; border-radius: 22px; border: 0; font-weight: 700; ' + (this.state.made === 'ok' ? 'background: ' + t.surfaceContainerHighest + '; color: ' + t.onSurfaceVariant + '; cursor: default' : 'background: ' + t.secondaryContainer + '; color: ' + t.onSecondaryContainer),
+      madeText: this.state.made === 'ok' ? 'Made Practice world: a flat grass world, 128 by 128 blocks. It is on the Worlds screen, ready to open.' : this.state.made === 'bad' ? 'The practice world was not made: this server has no worlds folder. Nothing was changed; you can try again or carry on.' : '',
+      madeColor: this.state.made === 'bad' ? (t.error ?? '#FFB4AB') : t.primary,
       isLang: i === 0, isFocus: i === 1 || i === 2 || i === 4, isOwner: i === 3, isWorld: i === 5,
       nextLabel: i === 5 ? 'Open editor' : 'Next',
       next: () => this.setState({ i: Math.min(5, i + 1) }),
