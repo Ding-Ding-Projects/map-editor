@@ -1275,3 +1275,5 @@ md-list-item[hidden], .act-list > li[hidden] { display: none !important; }
 .bp-swatch[hidden] { display: none !important; } .bp-shown { margin: 6px 0 0; }
 
 .bin-list > li[hidden] { display: none !important; } .bin-dialog .search-box { margin: 8px 0; }
+
+.bp-body .bp-grid { margin-top: 10px; } .bp-note { margin: 12px 0 0; font-size: 13px; }

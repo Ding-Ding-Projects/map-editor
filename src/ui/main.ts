@@ -1232,10 +1232,10 @@ async function editorView(view: HTMLElement): Promise<void> {
     const list = bedrock ? [...pickedBlocks, ...['minecraft:air', ...worldBlocks].filter((b) => !pickedBlocks.includes(b))] : [...pickedBlocks, ...PALETTE_BLOCKS.filter((b) => !pickedBlocks.includes(b))];
     blocksEl.querySelector('.bp-body')?.remove();
     const body = document.createElement('div'); body.className = 'bp-body'; blocksEl.append(body);
-    body.innerHTML = `<p class="muted">${esc(tx(bedrock ? 'bedrockEditorNote' : 'paletteNote'))}</p><div class="bp-grid" role="list">${list.map((b) => {
+    body.innerHTML = `<div class="bp-grid" role="list">${list.map((b) => {
       const [r, g, bl] = blockColor(b.split('[')[0]);
       return `<button type="button" role="listitem" class="bp-swatch${pickedBlocks.includes(b) ? ' picked' : ''}" data-pb="${esc(b)}" title="${esc(b)}" aria-label="${esc(b.slice(10))}"><span style="background: rgb(${r} ${g} ${bl})"></span><small>${esc(b.slice(b.indexOf(':') + 1).replace(/\[(.*)\]$/, ' ($1)').replace(/_/g, ' '))}</small></button>`;
-    }).join('')}</div>`;
+    }).join('')}</div><p class="muted bp-note">${esc(tx(bedrock ? 'bedrockEditorNote' : 'paletteNote'))}</p>`; // the swatches come first; the note explains them underneath
     blocksEl.querySelectorAll<HTMLElement>('[data-pb]').forEach((sw) => sw.addEventListener('click', () => { useBlock(sw.dataset.pb!); status.textContent = tx('blockSet', { block: sw.dataset.pb! }); }));
     void filterPalette();
   }

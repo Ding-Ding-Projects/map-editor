@@ -108,3 +108,10 @@ above). These checks still need a person, a browser session or hardware:
 - Not yet tried on a real Windows PC: opening the world folder in an outside editor (detection and the hand-off are unit tested and checked with a stand-in in a browser).
 - There is no way to delete a world from the app, and so no bulk delete; this is left out on purpose until it is asked for.
 - Code-signed extension sources are not planned: this project does not sign code.
+
+## Releases and workflow changes
+
+- Do not push a change to a file under `.github/workflows/` while an earlier Build and release run is still publishing. The run for `79a3f98` built everything and was then refused at the publish step, apparently because its commit's workflow file differed from the one at the tip of `main`; that commit never got a release of its own.
+- The step that attaches the guide PDF to a release must not install packages. Installing a Chinese font there took six minutes and delayed v0.1.209.
+- `tests/markdown.test.ts` has a timing check. It failed twice on a slow build machine before the link pattern was made linear; if it fails again, look for a pattern that rescans, not for a higher limit.
+
