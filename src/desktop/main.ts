@@ -33,6 +33,7 @@ if (!squirrel) app.whenReady().then(async () => {
   });
   win = new BrowserWindow({
     width: 1440, height: 900, minWidth: 360, minHeight: 600, title: 'Map Editor', backgroundColor: '#10140F',
+    icon: path.join(__dirname, '..', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false },
   });
   // Opens a folder in Explorer, but only inside this app's own data folder (the extensions folder).

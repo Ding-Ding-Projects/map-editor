@@ -215,7 +215,7 @@ jobs:
             echo
             echo "Workflow started: ${{ needs.meta.outputs.started }}"
             echo "Workflow completed: $DONE"
-            echo "Workflow duration: ${DUR}s"
+            printf 'Workflow duration: %02d:%02d:%02d (%ss)\n' $((DUR / 3600)) $((DUR % 3600 / 60)) $((DUR % 60)) "$DUR"
           } > notes.md
           mkdir -p assets
           # Squirrel names every package RELEASES; give each app's feed its own name so both upload.

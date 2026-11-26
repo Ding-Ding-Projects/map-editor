@@ -27,7 +27,7 @@ const squirrel = handleSquirrelEvent();
 if (!squirrel) app.whenReady().then(() => {
   startUpdater('MapEditorDeploy', () => win, () => working === 0);
   win = new BrowserWindow({
-    width: 1280, height: 900, minWidth: 360, title: 'Map Editor Deploy', backgroundColor: '#10140F',
+    width: 1280, height: 900, minWidth: 360, title: 'Map Editor Deploy', backgroundColor: '#10140F', icon: path.join(__dirname, '..', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false },
   });
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:\/\//.test(url)) shell.openExternal(url); return { action: 'deny' }; });

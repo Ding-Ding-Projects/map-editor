@@ -65,5 +65,6 @@ for (const app of ['desktop', 'deploy']) {
 }
 await build({ ...common, entryPoints: [path.join(root, 'src/deploy/ui.ts')], outfile: path.join(dist, 'deploy/ui.js'), format: 'esm', platform: 'browser', target: 'es2022', minify: true });
 copyFileSync(path.join(root, 'src/deploy/index.html'), path.join(dist, 'deploy/index.html'));
+copyFileSync(path.join(root, 'assets/icon.png'), path.join(dist, 'icon.png')); // window icon where the program file carries none (Linux, development)
 copyFileSync(path.join(root, 'src/ui/styles.css'), path.join(dist, 'deploy/app.css'));
 console.log(`Built ${version} at commit ${commit}`);
