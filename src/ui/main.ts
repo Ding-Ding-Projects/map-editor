@@ -60,6 +60,10 @@ interface Prefs extends I18nState { appName: string; emojiDialogs: boolean; filt
 const PREFS_KEY = 'map-editor.prefs.v1';
 const DEFAULT_SEED = '#4c8c4a';
 const defaults: Prefs = { appName: '', emojiDialogs: false, filtersCollapsed: false, tones: {}, focusMode: false, schoolMode: false, lang: 'en', funnyEn: 5, funnyYue: 5, dark: matchMedia('(prefers-color-scheme: dark)').matches, reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, largeText: false, dimSum: true, takeovers: true, lockedSettings: [], layoutLocked: false, tabsLocked: false, settingsLocked: false, quietHours: false, quietFrom: '22:00', quietTo: '07:00', narrate: false, narrateRate: 10, darkSchedule: false, darkFrom: '19:00', darkTo: '07:00', editLock: false, tourOffered: false, tourResume: null, sounds: true, soundVolume: 40, settingsSection: 'language', closedTabs: [], tab: 'worlds', seed: DEFAULT_SEED, rainbowSpeed: 3, onboarded: false, onboardStep: 0 };
+/** Settings switch id → the preference it turns on and off. */
+const SWITCH_PREF: Record<string, keyof Prefs> = { dark: 'dark', ds: 'dimSum', dsched: 'darkSchedule', elock: 'editLock', emoji: 'emojiDialogs', focus: 'focusMode', llock: 'layoutLocked', lt: 'largeText', nar: 'narrate', quiet: 'quietHours', rm: 'reduceMotion', school: 'schoolMode', slock: 'settingsLocked', snd: 'sounds', tko: 'takeovers', tlock: 'tabsLocked' };
+/** Preferences whose built-in value is read from the device. */
+const DEVICE_DEFAULT = new Set<keyof Prefs>(['dark', 'reduceMotion']);
 function loadPrefs(): Prefs { try { return { ...defaults, ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') }; } catch { return { ...defaults }; } }
 let prefs = loadPrefs();
 // Settings history: every saved change to a user-facing setting keeps the previous values,
@@ -1750,7 +1754,14 @@ function settingsView(view: HTMLElement) {
   const sec = SECTIONS.some(([id]) => id === prefs.settingsSection) ? prefs.settingsSection : 'language';
   // Every switch can be locked on its own, so it cannot be changed by accident (here or in the palette).
   const lockedSet = new Set(prefs.lockedSettings);
-  const sw = (id: string, label: Key, note: Key, on: boolean) => { const locked = lockedSet.has(id); return `<div class="set-row${locked ? ' locked' : ''}" data-find="${esc(tx(label))} ${esc(tx(note))}"><label for="${id}"><span><b>${esc(tx(label))}</b><small>${esc(tx(locked ? 'settingLocked' : note))}</small></span></label>
+  // Where the value comes from: the built-in choice, or the person's own change, always naming the built-in one.
+  const fromLine = (id: string, on: boolean) => {
+    const key = SWITCH_PREF[id]; if (!key) return '';
+    const base = Boolean(defaults[key]); const device = DEVICE_DEFAULT.has(key);
+    const v = txWith(on === base ? (device ? 'fromDevice' : 'fromBuiltIn') : (device ? 'fromYouDevice' : 'fromYou'), { v: base ? 'wordOn' : 'wordOff' });
+    return `<small class="set-from${on === base ? '' : ' changed'}" data-from="${on === base ? 'built-in' : 'you'}">${esc(v)}</small>`;
+  };
+  const sw = (id: string, label: Key, note: Key, on: boolean) => { const locked = lockedSet.has(id); return `<div class="set-row${locked ? ' locked' : ''}" data-find="${esc(tx(label))} ${esc(tx(note))}"><label for="${id}"><span><b>${esc(tx(label))}</b><small>${esc(tx(locked ? 'settingLocked' : note))}</small>${fromLine(id, on)}</span></label>
     <md-icon-button class="set-lock" data-lock="${id}" data-name="${esc(tx(label))}" aria-pressed="${locked}" aria-label="${esc(tx(locked ? 'unlockSetting' : 'lockSetting', { name: tx(label) }))}" title="${esc(tx(locked ? 'unlockSetting' : 'lockSetting', { name: tx(label) }))}">${locked ? LOCK_SVG : UNLOCK_SVG}</md-icon-button>
     <md-switch id="${id}" ${on ? 'selected' : ''} ${locked ? 'disabled' : ''} aria-label="${esc(tx(label))}"></md-switch></div>`; };
   const body: Record<string, string> = {
@@ -1862,6 +1873,11 @@ function settingsView(view: HTMLElement) {
   view.querySelector('#dark')!.addEventListener('change', (e) => { prefs.dark = sel(e); savePrefs(); applyTheme(); });
   view.querySelector('#rm')!.addEventListener('change', (e) => { prefs.reduceMotion = sel(e); savePrefs(); applyTheme(); });
   view.querySelector('#lt')!.addEventListener('change', (e) => { prefs.largeText = sel(e); savePrefs(); applyTheme(); });
+  // After any switch changes, its "where this comes from" line is written again from the saved value.
+  view.addEventListener('change', (e) => {
+    const el = e.target as HTMLElement; const key = SWITCH_PREF[el.id]; if (!key) return;
+    setTimeout(() => { const old = el.closest('.set-row')?.querySelector('.set-from'); if (old) old.outerHTML = fromLine(el.id, Boolean(prefs[key])); }, 0);
+  });
   view.querySelector('#ds')!.addEventListener('change', (e) => { prefs.dimSum = sel(e); savePrefs(); });
   view.querySelector('#snd')!.addEventListener('change', (e) => { prefs.sounds = sel(e); savePrefs(); applyTheme(); });
   view.querySelector('#vol')!.addEventListener('change', () => { prefs.soundVolume = num('#vol'); view.querySelector('#vol-n')!.textContent = `${prefs.soundVolume}%`; savePrefs(); applyTheme(); play('success'); });
