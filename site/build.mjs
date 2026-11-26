@@ -39,14 +39,14 @@ function page(title, desc, main, active = 'guide') {
 <link rel="icon" type="image/svg+xml" href="${base}favicon.svg"><link rel="stylesheet" href="${base}site.css">
 <script>try{var l=localStorage.getItem('map-editor-site.lang');if(l==='yue'||l==='both')document.documentElement.dataset.lang=l}catch(e){}</script></head><body>
 <header class="top"><a class="brand" href="${base}"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="title">Map Editor</span></a>
-<nav aria-label="Site"><a href="${base}"${active === 'guide' ? ' aria-current="page"' : ''}>${L('Guide', '指南')}</a><a href="${base}downloads/"${active === 'downloads' ? ' aria-current="page"' : ''}>${L('Downloads', '下載')}</a><a href="${repo}/commits/main">${L('Changelog', '更新紀錄')}</a><a href="${repo}">${L('Source', '原始碼')}</a><a href="#tour" data-tour="page">${L('Take a tour', '睇下導覽')}</a></nav>
+<nav aria-label="Site"><a href="${base}"${active === 'guide' ? ' aria-current="page"' : ''}>${L('Guide', '指南')}</a><a href="${base}downloads/"${active === 'downloads' ? ' aria-current="page"' : ''}>${L('Downloads', '下載')}</a><a href="${repo}/commits/main">${L('Changelog', '更新紀錄')}</a><a href="${repo}">${L('Source', '原始碼')}</a><a href="#tour" data-tour="page">${L('Take a tour', '睇下導覽')}</a><a href="#own-words" data-own-words>${L('Your own words', '自己嘅用字')}</a></nav>
 <div class="lang-switch" role="group" aria-label="Language"><button type="button" data-set-lang="en" aria-pressed="true">English</button><button type="button" data-set-lang="yue" aria-pressed="false">粵語</button><button type="button" data-set-lang="both" aria-pressed="false">EN + 粵</button></div></header>
 <main>${main}</main>
 <footer><div><span>Map Editor ${esc(pkg.version)} · updated <time class="when" datetime="${esc(when)}">${esc(stamp)}</time> · <a href="${repo}/commit/${esc(commit)}">${esc(commit.slice(0, 7) || 'unavailable')}</a></span>
 <span>${L('This site documents and downloads Map Editor; it is not the editor. Based on Amulet Map Editor, which needs its own licence. Minecraft is a trademark of Mojang Synergies AB; not affiliated with Mojang or Microsoft.', '呢個網站係 Map Editor 嘅說明同下載頁，唔係編輯器本身。基於 Amulet Map Editor，使用要跟返佢自己嘅授權。Minecraft 係 Mojang Synergies AB 嘅商標；同 Mojang 或者 Microsoft 冇關係。')}</span></div></footer>
 <script>(function(){var k='map-editor-site.lang',d=document.documentElement;function set(l){if(l==='en')delete d.dataset.lang;else d.dataset.lang=l;d.lang=l==='yue'?'yue-Hant-HK':'en';document.querySelectorAll('[data-set-lang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.setLang===l))});try{l==='en'?localStorage.removeItem(k):localStorage.setItem(k,l)}catch(e){}}set(d.dataset.lang||'en');document.querySelectorAll('[data-set-lang]').forEach(function(b){b.addEventListener('click',function(){set(b.dataset.setLang)})})})();</script>
 <script>document.querySelectorAll('time.when').forEach(function(t){var d=new Date(t.getAttribute('datetime'));if(!isNaN(d))t.textContent=d.toLocaleString(undefined,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',timeZoneName:'short'})})</script>
-<script src="${base}tour.js" defer></script><script src="${base}dock.js" defer></script>
+<script src="${base}tour.js" defer></script><script src="${base}dock.js" defer></script><script src="${base}words.js" defer></script>
 </body></html>`;
 }
 
@@ -80,6 +80,7 @@ mkdirSync(out, { recursive: true });
 copyFileSync(path.join(here, 'site.css'), path.join(out, 'site.css'));
 copyFileSync(path.join(here, 'tour.js'), path.join(out, 'tour.js'));
 // The article workspace: dockview bundled into one script (its styles come with it).
+buildSync({ entryPoints: [path.join(here, 'words.entry.ts')], bundle: true, minify: true, format: 'iife', target: 'es2020', outfile: path.join(out, 'words.js'), logLevel: 'silent' });
 buildSync({ entryPoints: [path.join(here, 'dock.entry.js')], bundle: true, minify: true, format: 'iife', target: 'es2020', outfile: path.join(out, 'dock.js'), logLevel: 'silent' });
 copyFileSync(path.join(here, 'favicon.svg'), path.join(out, 'favicon.svg'));
 copyFileSync(path.join(root, 'social-preview.png'), path.join(out, previewName)); // byte-identical to the file at the repository root
