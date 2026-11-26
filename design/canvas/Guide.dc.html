@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map Editor guide</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,400..1000&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button,a{font:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.moving .rise{animation:rise .55s cubic-bezier(.2,0,0,1) both}
+.moving li.rise:nth-child(2){animation-delay:.05s}.moving li.rise:nth-child(3){animation-delay:.1s}.moving li.rise:nth-child(4){animation-delay:.15s}.moving li.rise:nth-child(5){animation-delay:.2s}.moving li.rise:nth-child(6){animation-delay:.25s}
+.moving .mark{animation:spin 18s linear infinite}
+.moving .entry{transition:border-radius .22s cubic-bezier(.2,0,0,1),background-color .2s}
+.moving .entry:hover{border-radius:12px}
+.still *{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div class="{{motionClass}}" style="min-height: 900px; padding: 24px; box-sizing: border-box; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif; font-size: 14px">
+  <div style="max-width: 1360px; margin: 0 auto; display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 24px; align-items: start">
+    <aside class="rise" aria-label="Articles" style="display: flex; flex-direction: column; gap: 12px">
+      <h1 style="margin: 0; font-size: 57px; line-height: 56px; font-weight: 950; letter-spacing: -2px; font-variation-settings: 'wdth' 120">Guide</h1>
+      <p style="margin: 0; color: {{t.onSurfaceVariant}}; font-size: 16px">The whole guide, kept inside the app. It opens without a network.</p>
+      <div role="group" aria-label="Search the guide" style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{finds}}" as="f" hint-placeholder-count="4"><button onClick="{{f.pick}}" aria-pressed="{{f.on}}" style="{{f.style}}">{{f.label}}</button></sc-for></div>
+      <sc-for list="{{groups}}" as="g" hint-placeholder-count="3"><div><div style="margin: 10px 0 4px; font-size: 12px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: {{t.onSurfaceVariant}}">{{g.name}}</div>
+        <sc-for list="{{g.items}}" as="a" hint-placeholder-count="2"><button class="entry" onClick="{{a.open}}" aria-current="{{a.on}}" style="{{a.style}}">{{a.title}}</button></sc-for></div></sc-for>
+      <p role="status" style="display: {{none}}; margin: 0; color: {{t.onSurfaceVariant}}">Nothing matches.</p>
+    </aside>
+    <article class="rise" style="padding: 32px 36px; border-radius: 40px 40px 40px 12px; background: {{t.surfaceContainerLow}}; max-width: 720px">
+      <div style="font-weight: 800; color: {{t.primary}}">{{art.group}}</div>
+      <h2 style="margin: 4px 0 8px; font-size: 45px; line-height: 48px; font-weight: 950; letter-spacing: -1px; font-variation-settings: 'wdth' 115">{{art.title}}</h2>
+      <p style="margin: 0 0 20px; font-size: 18px; line-height: 26px">{{art.lead}}</p>
+      <sc-for list="{{sections}}" as="s" hint-placeholder-count="3"><section style="margin: 0 0 18px"><h3 style="margin: 0 0 4px; font-size: 20px; font-weight: 900">{{s.h}}</h3><p style="margin: 0; font-size: 16px; line-height: 25px; color: {{t.onSurfaceVariant}}">{{s.body}}</p></section></sc-for>
+      <a href="https://ding-ding-projects.github.io/map-editor/" style="color: {{t.primary}}; font-weight: 700">Open this article on the website, with pictures</a>
+    </article>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"seed":{"editor":"color","default":"#4C8C4A"},"motion":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? true;
+    const t = dark ? {
+      primary:'#8FD88A', onPrimary:'#00390A', primaryContainer:'#1B5220', onPrimaryContainer:'#AAF5A4', secondaryContainer:'#3B4B38', onSecondaryContainer:'#D6E8CF',
+      tertiaryContainer:'#1F4D53', onTertiaryContainer:'#BCEBF2', surface:'#10140F', surfaceContainerLow:'#181D17', surfaceContainerHigh:'#262B25', onSurface:'#E0E4DA', onSurfaceVariant:'#C2C9BD', outline:'#8C9388'
+    } : {
+      primary:'#2E6B2C', onPrimary:'#FFFFFF', primaryContainer:'#AFF4A6', onPrimaryContainer:'#002204', secondaryContainer:'#D6E8CF', onSecondaryContainer:'#111F0F',
+      tertiaryContainer:'#BCEBF2', onTertiaryContainer:'#001F23', surface:'#F7FBF1', surfaceContainerLow:'#F1F5EB', surfaceContainerHigh:'#E5EAE0', onSurface:'#181D17', onSurfaceVariant:'#42493F', outline:'#72796E'
+    };
+    const seed = this.props.seed ?? '#4C8C4A';
+    if (seed.toLowerCase() !== '#4c8c4a') { t.primary = seed; t.onPrimary = '#FFFFFF'; }
+    const articles = [
+      { slug: 'desktop-app', group: 'Ways to run it', title: 'Desktop app', lead: 'A Windows app that opens worlds straight from your .minecraft saves folder.', sections: [['Updates', 'The installed app looks for a newer version when it starts and every four hours, and downloads it in the background while you keep working.'], ['What it does', 'The same editor as the web app, inside its own window. Nothing is exposed to your network.'], ['Open the world folder in another program', 'Right-click the map or use the palette. The app lists the editors it finds and the file manager.']] },
+      { slug: 'web-app', group: 'Ways to run it', title: 'Docker web app', lead: 'One container on your network, used from any browser.', sections: [['Start it', 'One command pulls the image and starts it with your worlds folder.'], ['Accounts', 'The first person to open it becomes the owner.']] },
+      { slug: 'worlds', group: 'Using the editor', title: 'Getting worlds in and out', lead: 'Upload a world as a .zip, download it again, or start a new flat world.', sections: [['Select several, and the bin', 'Tick worlds, then download them or move them to the bin. Nothing is deleted, and Bin puts them back.'], ['Bedrock Edition worlds', 'Upload a .mcworld file and download it again, ready for the game.']] },
+      { slug: 'edit-history', group: 'Using the editor', title: 'Edit history', lead: 'Every edit is saved to a private history so it can always be undone.', sections: [['Edits and details', 'Pick an edit to see its time, its id and what changed, then roll back or open a copy.'], ['Export', 'Tick edits to export just those.']] },
+      { slug: 'languages', group: 'Settings', title: 'Languages and tone', lead: 'English, Hong Kong Cantonese or both, each with its own funny level.', sections: [['Three modes', 'Every label, message and article follows the mode you choose.'], ['Funny levels', 'They change wording only. Facts and warnings stay the same.']] },
+    ];
+    const q = (this.state?.q ?? '').toLowerCase();
+    const current = this.state?.slug ?? 'desktop-app';
+    const shown = articles.filter((a) => !q || (a.title + ' ' + a.lead + ' ' + a.sections.flat().join(' ')).toLowerCase().includes(q));
+    const groups = [...new Set(shown.map((a) => a.group))].map((g) => ({ name: g, items: shown.filter((a) => a.group === g).map((a) => ({ title: a.title, on: String(a.slug === current), open: () => this.setState({ slug: a.slug }),
+      style: 'display: block; width: 100%; text-align: left; height: 44px; padding: 0 16px; border: 0; border-radius: ' + (a.slug === current ? '22px 22px 22px 8px' : '22px') + '; font-weight: 700; background: ' + (a.slug === current ? t.secondaryContainer : 'transparent') + '; color: ' + (a.slug === current ? t.onSecondaryContainer : t.onSurface) })) }));
+    const art = articles.find((a) => a.slug === current) ?? articles[0];
+    const sections = art.sections.map(([h, body]) => ({ h, body }));
+    const none = shown.length ? 'none' : 'block';
+    const cur = this.state?.q ?? '';
+    const finds = [['', 'Everything'], ['bin', 'Search: bin'], ['undo', 'Search: undo'], ['docker', 'Search: docker']].map(([v, label]) => ({ label, on: String(cur === v), pick: () => this.setState({ q: v }),
+      style: 'height: 36px; padding: 0 14px; border-radius: ' + (cur === v ? '10px' : '18px') + '; border: 1px solid ' + t.outline + '; font-weight: 700; background: ' + (cur === v ? t.primary : 'transparent') + '; color: ' + (cur === v ? t.onPrimary : t.onSurface) }));
+    return { t, motionClass: (this.props.motion ?? true) ? 'moving' : 'still', groups, art, sections, none, finds };
+  }
+}
+</script>
+</body>
+</html>

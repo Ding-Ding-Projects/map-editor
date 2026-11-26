@@ -47,6 +47,10 @@
    "name": "Tools"
   },
   {
+   "id": "guide",
+   "name": "Guide"
+  },
+  {
    "id": "mobile",
    "name": "Phone"
   },
@@ -204,6 +208,16 @@
    "page": "tools",
    "is_interactive": true
   },
+  "Guide.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Guide: the articles inside the app",
+   "expand": "fill",
+   "page": "guide",
+   "is_interactive": true
+  },
   "SiteHome.dc.html": {
    "x": 0,
    "y": 0,
@@ -230,6 +244,7 @@
   "About.dc.html",
   "Tour.dc.html",
   "Tools.dc.html",
+  "Guide.dc.html",
   "SiteHome.dc.html"
  ],
  "notes": {
@@ -308,12 +323,20 @@
   "t9": {
    "x": 0,
    "y": -300,
+   "text": "Guide",
+   "kind": "title1",
+   "maxW": 2400,
+   "page": "guide"
+  },
+  "t10": {
+   "x": 0,
+   "y": -300,
    "text": "Phone",
    "kind": "title1",
    "maxW": 2400,
    "page": "mobile"
   },
-  "t10": {
+  "t11": {
    "x": 0,
    "y": -300,
    "text": "Deploy app",
@@ -321,7 +344,7 @@
    "maxW": 2400,
    "page": "deploy"
   },
-  "t11": {
+  "t12": {
    "x": 0,
    "y": -300,
    "text": "Docs site",
@@ -448,6 +471,14 @@
    "text": "Tools tab. Try: Encode and Decode; Tweaks dark, seed, motion.\nIn the app: Base64 for text and files up to 20 MiB, JSON to TypeScript (lists merged, missing keys optional), coordinates (chunk, place in chunk, region file, Nether and Overworld), all in the page with a tour. Not yet: general file converter, Ollama suite, server manager. Also: file converter (PNG, JPEG, WebP; NBT to JSON), server.properties editor, local AI helper through Ollama (not tried against a running Ollama). Every button now carries an icon chosen from its own words; narrow map panels show icon-only tools; badges on tool cards and deploy targets; lists as soft tiles. Since then: a Sketch board with seven pens, a partial eraser, straight lines with Shift, undo and redo, and SVG or PNG export.",
    "fill": "yellow",
    "page": "tools"
+  },
+  "n_guide": {
+   "x": 1520,
+   "y": 0,
+   "w": 420,
+   "text": "Guide tab: the articles bundled in the app, offline. Try: pick an article, press a search chip; Tweaks dark, seed, motion.\nIn the app: all 13 articles in English, Cantonese or both, own search with the regex builder, related links, a palette row per article; the deploy wizard has the same view.",
+   "fill": "yellow",
+   "page": "guide"
   },
   "n_sitehome": {
    "x": 1520,
