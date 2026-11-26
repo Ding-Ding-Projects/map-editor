@@ -83,6 +83,16 @@
    "expand": "fill",
    "page": "worlds"
   },
+  "WorldsSelect.dc.html": {
+   "x": 2020,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Worlds: select several, and the bin",
+   "expand": "fill",
+   "page": "worlds",
+   "is_interactive": true
+  },
   "FirstRun.dc.html": {
    "x": 0,
    "y": 0,
@@ -188,6 +198,16 @@
    "expand": "fill",
    "page": "about"
   },
+  "SupportDesk.dc.html": {
+   "x": 2020,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Support desk",
+   "expand": "fill",
+   "page": "about",
+   "is_interactive": true
+  },
   "Tour.dc.html": {
    "x": 0,
    "y": 0,
@@ -231,6 +251,7 @@
  "order": [
   "Main.dc.html",
   "Worlds.dc.html",
+  "WorldsSelect.dc.html",
   "FirstRun.dc.html",
   "History.dc.html",
   "Settings.dc.html",
@@ -242,6 +263,7 @@
   "Deploy.dc.html",
   "DeployManage.dc.html",
   "About.dc.html",
+  "SupportDesk.dc.html",
   "Tour.dc.html",
   "Tools.dc.html",
   "Guide.dc.html",
@@ -368,6 +390,14 @@
    "fill": "yellow",
    "page": "worlds"
   },
+  "n_worldsselect": {
+   "x": 3540,
+   "y": 0,
+   "w": 420,
+   "text": "Select mode and the bin on the Worlds screen. Try: tick worlds, Select all, Invert, Move to bin (the open world is skipped and the line says so), then Put back; Tweaks dark, seed, motion.\nIn the app: tick boxes with Shift+click and Ctrl+A, Download selected, Move to bin behind the two-key confirmation, a bin folder inside the worlds folder, nothing ever deleted.",
+   "fill": "yellow",
+   "page": "worlds"
+  },
   "n_firstrun": {
    "x": 1360,
    "y": 0,
@@ -453,6 +483,14 @@
    "y": 0,
    "w": 420,
    "text": "About and changelog. Tweaks dark, seed, motion.\nStands for version provenance from the running build and a changelog generated from the real commit history at build time, each entry with its SHA, searchable.\nBeing built. Also: the changelog search has its regex builder; Update coming soon card. Since then: a Guide tab bundles all 13 articles in the app, offline, in English, Cantonese or both, with its own search; the changelog and notifications export as CSV, JSON, Markdown or HTML. Also: each change opens to its full note (safe Markdown), and a release code name from the public dim sum catalogue sits under the version tiles. Report a problem now opens a support desk that lists exactly what is attached and keeps tickets on the device.",
+   "fill": "yellow",
+   "page": "about"
+  },
+  "n_supportdesk": {
+   "x": 3540,
+   "y": 0,
+   "w": 420,
+   "text": "Support desk, opened from About, the Help menu or the palette. Try: fold What is attached, Save ticket, Delete; Tweaks dark, seed, motion.\nIn the app: the list of attached facts with the line saying nothing else is added, tickets kept on the device, Copy, Open as an issue; the deploy wizard has the same desk.",
    "fill": "yellow",
    "page": "about"
   },

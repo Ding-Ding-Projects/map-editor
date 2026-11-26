@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map Editor worlds: select and bin</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,400..1000&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button,a{font:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.moving .rise{animation:rise .55s cubic-bezier(.2,0,0,1) both}
+.moving li.rise:nth-child(2){animation-delay:.05s}.moving li.rise:nth-child(3){animation-delay:.1s}.moving li.rise:nth-child(4){animation-delay:.15s}.moving li.rise:nth-child(5){animation-delay:.2s}.moving li.rise:nth-child(6){animation-delay:.25s}
+.moving .mark{animation:spin 18s linear infinite}
+.moving .entry{transition:border-radius .22s cubic-bezier(.2,0,0,1),background-color .2s}
+.moving .entry:hover{border-radius:12px}
+.still *{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div class="{{motionClass}}" style="min-height: 900px; padding: 24px; box-sizing: border-box; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif; font-size: 14px">
+  <div style="max-width: 1360px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px">
+    <header class="rise" style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap">
+      <h1 style="margin: 0; font-size: 57px; line-height: 56px; font-weight: 950; letter-spacing: -2px; font-variation-settings: 'wdth' 120">Worlds</h1>
+      <span style="flex: 1"></span>
+      <button onClick="{{toggle}}" aria-pressed="{{selectingText}}" style="height: 40px; padding: 0 20px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 700">{{selectLabel}}</button>
+      <button onClick="{{openBin}}" style="display: {{binShow}}; height: 40px; padding: 0 16px; border-radius: 20px; border: 0; background: transparent; color: {{t.primary}}; font-weight: 700">Bin ({{binCount}})</button>
+    </header>
+    <div class="rise" role="toolbar" aria-label="Select" style="display: {{barShow}}; align-items: center; flex-wrap: wrap; gap: 8px 16px; padding: 10px 12px 10px 20px; border-radius: 24px; background: {{t.secondaryContainer}}; color: {{t.onSecondaryContainer}}">
+      <b>{{countText}}</b><span style="flex: 1 1 240px; font-size: 13px; opacity: .8">Click worlds to select them. Shift+click selects a range, Ctrl+A selects all, Esc leaves.</span>
+      <button onClick="{{all}}" style="height: 36px; padding: 0 12px; border: 0; border-radius: 18px; background: transparent; color: inherit; font-weight: 700">Select all</button>
+      <button onClick="{{invert}}" style="height: 36px; padding: 0 12px; border: 0; border-radius: 18px; background: transparent; color: inherit; font-weight: 700">Invert</button>
+      <button style="height: 40px; padding: 0 18px; border: 0; border-radius: 20px; background: rgba(0,0,0,.12); color: inherit; font-weight: 700">Download selected</button>
+      <button onClick="{{toBin}}" style="height: 40px; padding: 0 18px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: inherit; font-weight: 700">Move to bin</button>
+    </div>
+    <p role="status" style="display: {{reportShow}}; margin: 0; color: {{t.onSurfaceVariant}}">{{report}}</p>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+      <sc-for list="{{cards}}" as="w" hint-placeholder-count="6"><article class="rise entry" onClick="{{w.pick}}" style="{{w.style}}">
+        <div style="position: relative; height: 120px; border-radius: 20px; background: linear-gradient(135deg, #3e6b30 0 40%, #567f3f 40% 55%, #d8cfa3 55% 62%, #2c5a86 62% 72%, #4a7a38 72%)"><span aria-hidden="true" style="display: {{w.boxShow}}; position: absolute; top: 10px; left: 10px; width: 24px; height: 24px; border-radius: 6px; background: {{w.boxFill}}; border: 2px solid #fff; color: #fff; font-weight: 900; text-align: center; line-height: 20px">{{w.tick}}</span></div>
+        <h2 style="margin: 8px 6px 0; font-size: 20px; font-weight: 900">{{w.name}}</h2><p style="margin: 0 6px; color: {{t.onSurfaceVariant}}">Java 1.21.4 · Overworld</p>
+        <div style="margin: 8px 4px 0; height: 40px; border-radius: 20px; background: {{t.primary}}; color: {{t.onPrimary}}; font-weight: 700; display: grid; place-items: center">Open</div></article></sc-for>
+    </div>
+    <section aria-label="Bin" style="display: {{binPanel}}; max-width: 620px; padding: 24px; border-radius: 28px; background: {{t.surfaceContainerHigh}}">
+      <h2 style="margin: 0 0 6px; font-size: 24px; font-weight: 500">Bin</h2>
+      <p style="margin: 0 0 10px; color: {{t.onSurfaceVariant}}">Worlds here are kept on disk until you put them back. This app never deletes them.</p>
+      <sc-for list="{{binned}}" as="b" hint-placeholder-count="2"><div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; margin-top: 6px; border-radius: 16px; background: {{t.surfaceContainerLow}}"><b style="flex: 1">{{b.name}}</b><button onClick="{{b.back}}" style="height: 40px; padding: 0 18px; border: 0; border-radius: 20px; background: {{t.secondaryContainer}}; color: {{t.onSecondaryContainer}}; font-weight: 700">Put back</button></div></sc-for>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"seed":{"editor":"color","default":"#4C8C4A"},"motion":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? true;
+    const t = dark ? {
+      primary:'#8FD88A', onPrimary:'#00390A', primaryContainer:'#1B5220', onPrimaryContainer:'#AAF5A4', secondaryContainer:'#3B4B38', onSecondaryContainer:'#D6E8CF',
+      tertiaryContainer:'#1F4D53', onTertiaryContainer:'#BCEBF2', surface:'#10140F', surfaceContainerLow:'#181D17', surfaceContainerHigh:'#262B25', onSurface:'#E0E4DA', onSurfaceVariant:'#C2C9BD', outline:'#8C9388'
+    } : {
+      primary:'#2E6B2C', onPrimary:'#FFFFFF', primaryContainer:'#AFF4A6', onPrimaryContainer:'#002204', secondaryContainer:'#D6E8CF', onSecondaryContainer:'#111F0F',
+      tertiaryContainer:'#BCEBF2', onTertiaryContainer:'#001F23', surface:'#F7FBF1', surfaceContainerLow:'#F1F5EB', surfaceContainerHigh:'#E5EAE0', onSurface:'#181D17', onSurfaceVariant:'#42493F', outline:'#72796E'
+    };
+    const seed = this.props.seed ?? '#4C8C4A';
+    if (seed.toLowerCase() !== '#4c8c4a') { t.primary = seed; t.onPrimary = '#FFFFFF'; }
+    const names = ['Club Server', 'Flat World', 'Castle Build', 'Redstone Lab', 'Survival 2024', 'Skyblock'];
+    const st = this.state ?? {};
+    const selecting = st.selecting ?? true;
+    const sel = st.sel ?? [1, 2];
+    const bin = st.bin ?? [];
+    const open = 0; // the first world is the one that is open
+    const here = names.map((n, i) => i).filter((i) => !bin.includes(i));
+    const set = (x) => this.setState(x);
+    const cards = here.map((i) => ({ name: names[i], tick: sel.includes(i) ? '✓' : '', boxShow: selecting ? 'block' : 'none', boxFill: sel.includes(i) ? t.primary : 'rgba(0,0,0,.25)',
+      pick: () => selecting && set({ sel: sel.includes(i) ? sel.filter((k) => k !== i) : [...sel, i] }),
+      style: 'padding: 10px 10px 14px; border-radius: 28px; cursor: ' + (selecting ? 'pointer' : 'default') + '; background: ' + (selecting && sel.includes(i) ? t.primaryContainer : t.surfaceContainerLow) + '; color: ' + (selecting && sel.includes(i) ? t.onPrimaryContainer : t.onSurface) + '; outline: ' + (selecting && sel.includes(i) ? '3px solid ' + t.primary : 'none') + '; outline-offset: -3px' }));
+    const toBin = () => { const moved = sel.filter((i) => i !== open && here.includes(i)); const skipped = sel.includes(open);
+      set({ bin: [...bin, ...moved], sel: [], selecting: false, report: 'Moved ' + moved.length + ' of ' + sel.length + ' to the bin.' + (skipped ? ' Not done: ' + names[open] + ': It is the world that is open.' : '') }); };
+    const binned = bin.map((i) => ({ name: names[i], back: () => set({ bin: bin.filter((k) => k !== i) }) }));
+    return { t, motionClass: (this.props.motion ?? true) ? 'moving' : 'still', cards, binned, toBin,
+      toggle: () => set({ selecting: !selecting, sel: [] }), selectingText: String(selecting), selectLabel: selecting ? 'Done' : 'Select',
+      all: () => set({ sel: sel.length === here.length ? [] : here }), invert: () => set({ sel: here.filter((i) => !sel.includes(i)) }),
+      barShow: selecting ? 'flex' : 'none', countText: sel.length + ' of ' + here.length + ' selected',
+      binShow: bin.length ? 'inline-block' : 'none', binCount: bin.length, openBin: () => set({ binOpen: !(st.binOpen ?? true) }), binPanel: bin.length && (st.binOpen ?? true) ? 'block' : 'none',
+      report: st.report ?? '', reportShow: st.report ? 'block' : 'none' };
+  }
+}
+</script>
+</body>
+</html>

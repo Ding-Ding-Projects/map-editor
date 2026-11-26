@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map Editor support desk</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,400..1000&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button,a{font:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.moving .rise{animation:rise .55s cubic-bezier(.2,0,0,1) both}
+.moving li.rise:nth-child(2){animation-delay:.05s}.moving li.rise:nth-child(3){animation-delay:.1s}.moving li.rise:nth-child(4){animation-delay:.15s}.moving li.rise:nth-child(5){animation-delay:.2s}.moving li.rise:nth-child(6){animation-delay:.25s}
+.moving .mark{animation:spin 18s linear infinite}
+.moving .entry{transition:border-radius .22s cubic-bezier(.2,0,0,1),background-color .2s}
+.moving .entry:hover{border-radius:12px}
+.still *{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div class="{{motionClass}}" style="min-height: 900px; padding: 24px; box-sizing: border-box; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif; font-size: 14px">
+  <div style="max-width: 1360px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px">
+    <section class="rise" aria-label="Report a problem" style="max-width: 640px; margin: 0 auto; padding: 28px; border-radius: 28px; background: {{t.surfaceContainerHigh}}; display: flex; flex-direction: column; gap: 14px">
+      <h1 style="margin: 0; font-size: 24px; font-weight: 500">Report a problem</h1>
+      <p style="margin: 0; color: {{t.onSurfaceVariant}}">Write what happened. The ticket stays on this device until you copy it or open it as an issue on the project page; the app sends nothing by itself.</p>
+      <div style="height: 56px; padding: 0 16px; border-radius: 12px; border: 1px solid {{t.outline}}; display: flex; align-items: center; font-size: 16px">{{subject}}</div>
+      <div style="min-height: 110px; padding: 14px 16px; border-radius: 12px; border: 1px solid {{t.outline}}; font-size: 16px; color: {{t.onSurfaceVariant}}">What you did, what you expected, what happened</div>
+      <div style="padding: 12px 16px; border-radius: 16px; background: {{t.surfaceContainerLow}}">
+        <button onClick="{{fold}}" aria-expanded="{{openText}}" style="border: 0; background: transparent; color: inherit; font-weight: 800; padding: 0">{{foldMark}} What is attached</button>
+        <ul style="display: {{listShow}}; margin: 8px 0; padding-left: 18px; font-size: 13px; line-height: 20px"><sc-for list="{{facts}}" as="f" hint-placeholder-count="7"><li><b>{{f.k}}</b> {{f.v}}</li></sc-for></ul>
+        <p style="margin: 0; font-size: 12px; color: {{t.onSurfaceVariant}}">Only the lines above are added. No world files, world names, account names, passwords or folder paths are included.</p>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <button onClick="{{save}}" style="height: 40px; padding: 0 22px; border: 0; border-radius: 20px; background: {{t.primary}}; color: {{t.onPrimary}}; font-weight: 700">Save ticket</button>
+        <button style="height: 40px; padding: 0 18px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 700">Copy</button>
+        <button style="height: 40px; padding: 0 18px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 700">Open as an issue</button>
+      </div>
+      <h2 style="margin: 6px 0 0; font-size: 15px; font-weight: 800">Tickets on this device</h2>
+      <p style="display: {{noneShow}}; margin: 0; color: {{t.onSurfaceVariant}}">No tickets yet.</p>
+      <sc-for list="{{tickets}}" as="k" hint-placeholder-count="1"><div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 14px; background: {{t.surfaceContainerLow}}"><span style="flex: 1"><b>{{k.title}}</b><br><small style="color: {{t.onSurfaceVariant}}">{{k.when}}</small></span><button onClick="{{k.drop}}" style="height: 36px; padding: 0 12px; border: 0; border-radius: 18px; background: transparent; color: {{t.primary}}; font-weight: 700">Delete</button></div></sc-for>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"seed":{"editor":"color","default":"#4C8C4A"},"motion":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? true;
+    const t = dark ? {
+      primary:'#8FD88A', onPrimary:'#00390A', primaryContainer:'#1B5220', onPrimaryContainer:'#AAF5A4', secondaryContainer:'#3B4B38', onSecondaryContainer:'#D6E8CF',
+      tertiaryContainer:'#1F4D53', onTertiaryContainer:'#BCEBF2', surface:'#10140F', surfaceContainerLow:'#181D17', surfaceContainerHigh:'#262B25', onSurface:'#E0E4DA', onSurfaceVariant:'#C2C9BD', outline:'#8C9388'
+    } : {
+      primary:'#2E6B2C', onPrimary:'#FFFFFF', primaryContainer:'#AFF4A6', onPrimaryContainer:'#002204', secondaryContainer:'#D6E8CF', onSecondaryContainer:'#111F0F',
+      tertiaryContainer:'#BCEBF2', onTertiaryContainer:'#001F23', surface:'#F7FBF1', surfaceContainerLow:'#F1F5EB', surfaceContainerHigh:'#E5EAE0', onSurface:'#181D17', onSurfaceVariant:'#42493F', outline:'#72796E'
+    };
+    const seed = this.props.seed ?? '#4C8C4A';
+    if (seed.toLowerCase() !== '#4c8c4a') { t.primary = seed; t.onPrimary = '#FFFFFF'; }
+    const st = this.state ?? {};
+    const open = st.open ?? true;
+    const list = st.list ?? [];
+    const set = (x) => this.setState(x);
+    const facts = [['Version', '0.1.170'], ['Build', '71ebe874eba8'], ['Code name', 'Classic Har Gow'], ['Language', 'en'], ['Screen', 'editor'], ['Window', '1440 × 900'], ['Browser', 'Chrome 140'], ['World edition', 'java']].map(([k, v]) => ({ k, v }));
+    const tickets = list.map((x, i) => ({ title: x, when: 'Saved just now · 0.1.170', drop: () => set({ list: list.filter((_, k) => k !== i) }) }));
+    return { t, motionClass: (this.props.motion ?? true) ? 'moving' : 'still', facts, tickets, subject: 'Fill never finishes on a 500 block box',
+      fold: () => set({ open: !open }), openText: String(open), foldMark: open ? '▾' : '▸', listShow: open ? 'block' : 'none',
+      save: () => set({ list: ['Fill never finishes on a 500 block box', ...list] }), noneShow: list.length ? 'none' : 'block' };
+  }
+}
+</script>
+</body>
+</html>
