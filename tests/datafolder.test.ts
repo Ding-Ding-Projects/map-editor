@@ -67,3 +67,19 @@ describe('extra worlds folders', () => {
     expect((await changeWorldsFolders(userData, saves, { remove: a })).folders).toEqual([]);
   });
 });
+
+describe('the window name kept for start-up', () => {
+  it('is cleaned, bounded, saved, read back and removed when cleared', async () => {
+    const { cleanWindowName, savedWindowName, saveWindowName } = await import('../src/desktop/datafolder.js');
+    const os = await import('node:os'); const fsp = await import('node:fs/promises'); const p = await import('node:path');
+    const dir = await fsp.mkdtemp(p.join(os.tmpdir(), 'me-name-'));
+    expect(cleanWindowName('  Block\n Club\u0007  ')).toBe('Block Club');
+    expect(cleanWindowName('x'.repeat(90)).length).toBe(40);
+    expect(await savedWindowName(dir)).toBe('');
+    expect(await saveWindowName(dir, ' Block  Club ')).toBe('Block Club');
+    expect(await savedWindowName(dir)).toBe('Block Club');
+    expect(await saveWindowName(dir, '')).toBe('');
+    expect(await savedWindowName(dir)).toBe('');
+  });
+});
+

@@ -113,3 +113,15 @@ export async function changeWorldsFolders(userData: string, builtIn: string, cha
   await fs.writeFile(path.join(userData, WORLDS_CONFIG), JSON.stringify({ folders: next }, null, 2));
   return { folders: next };
 }
+
+/** The owner's name for the app, kept beside the settings so the window can show it before the page loads. */
+export const cleanWindowName = (name: unknown): string => String(name ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+export async function savedWindowName(userData: string): Promise<string> {
+  try { return cleanWindowName(await fs.readFile(path.join(userData, 'window-name.txt'), 'utf8')); } catch { return ''; }
+}
+export async function saveWindowName(userData: string, name: unknown): Promise<string> {
+  const clean = cleanWindowName(name), file = path.join(userData, 'window-name.txt');
+  try { if (clean) { await fs.mkdir(userData, { recursive: true }); await fs.writeFile(file, clean, 'utf8'); } else await fs.rm(file, { force: true }); } catch { /* the title falls back to the built-in name */ }
+  return clean;
+}
+

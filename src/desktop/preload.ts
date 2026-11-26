@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('mapEditorDesktop', {
   onDataMove: (fn: (done: number, total: number) => void) => { ipcRenderer.on('data-move-progress', (_e, done, total) => fn(done, total)); },
   worldsFolder: (remove?: string): Promise<{ folders: string[]; error?: string }> => ipcRenderer.invoke('worlds-folder', remove),
   relaunch: (): Promise<void> => ipcRenderer.invoke('relaunch'),
+  rememberName: (name: string): Promise<string> => ipcRenderer.invoke('window-name', name),
   openDataRoot: (): Promise<string> => ipcRenderer.invoke('open-data-root'),
   updates: {
     state: () => ipcRenderer.invoke('update-state'),

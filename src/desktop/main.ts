@@ -8,7 +8,7 @@ import { handleSquirrelEvent } from './squirrel.js';
 import { startUpdater } from './updater.js';
 import { spawn } from 'node:child_process';
 import { detectEditors } from './editors.js';
-import { changeWorldsFolders, currentDataDir, extraWorldsFolders, moveDataDir } from './datafolder.js';
+import { changeWorldsFolders, currentDataDir, extraWorldsFolders, moveDataDir, savedWindowName, saveWindowName } from './datafolder.js';
 
 function defaultSaves() {
   if (process.platform === 'win32') return path.join(process.env.APPDATA ?? os.homedir(), '.minecraft', 'saves');
@@ -32,7 +32,7 @@ if (!squirrel) app.whenReady().then(async () => {
     staticDir: path.join(__dirname, '..', 'ui'),
   });
   win = new BrowserWindow({
-    width: 1440, height: 900, minWidth: 360, minHeight: 600, title: 'Map Editor', backgroundColor: '#10140F',
+    width: 1440, height: 900, minWidth: 360, minHeight: 600, title: (await savedWindowName(userData)) || 'Map Editor', backgroundColor: '#10140F',
     icon: path.join(__dirname, '..', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false },
   });
@@ -100,6 +100,7 @@ if (!squirrel) app.whenReady().then(async () => {
     return r;
   });
   ipcMain.handle('relaunch', () => { app.relaunch(); app.quit(); });
+  ipcMain.handle('window-name', (_e, name: unknown) => saveWindowName(userData, name));
   ipcMain.handle('open-data-root', async () => { await fs.mkdir(dataDir, { recursive: true }); return shell.openPath(dataDir); });
   ipcMain.handle('pick-folder', async () => (await dialog.showOpenDialog(win!, { title: 'Open a Minecraft world folder', properties: ['openDirectory'] })).filePaths[0]);
   // Links to other sites open in the normal browser, never inside the app window.

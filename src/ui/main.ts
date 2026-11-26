@@ -27,6 +27,7 @@ interface DesktopBridge {
   moveDataFolder?: (toDefault: boolean) => Promise<{ ok: boolean; message: string; files?: number }>;
   onDataMove?: (fn: (done: number, total: number) => void) => void;
   relaunch?: () => Promise<void>;
+  rememberName?: (name: string) => Promise<string>;
   openDataRoot?: () => Promise<string>;
   openInEditor?: (id: string, folder: string) => Promise<string>;
   updates?: { state: () => Promise<UpdState>; check: () => Promise<UpdState>; restart: () => Promise<boolean>; onState: (fn: (s: UpdState) => void) => void };
@@ -755,6 +756,7 @@ function helpMenu(anchor: HTMLElement) {
 }
 
 /** The name this copy of the app goes by: the one chosen in Settings, or the built-in name. */
+let rememberedName: string | undefined;
 const appName = () => prefs.appName.trim().slice(0, 40) || tx('appName');
 /** One emoji in front of a dialog headline, only when the person switched that on. */
 const emo = (e: string, text: string) => (prefs.emojiDialogs && !prefs.schoolMode ? `${e} ${text}` : text);
@@ -766,6 +768,8 @@ function shell() {
   const keptToasts = Array.from(document.querySelectorAll<HTMLElement>('#toasts > .toast'));
   try { (window as unknown as { tinymce?: { remove: () => void } }).tinymce?.remove(); } catch { /* nothing to remove */ }
   document.title = world ? `${world.name} · ${appName()}` : appName();
+  // Desktop app: keep the owner's name where the window can read it before the page has loaded next time.
+  if (desktopBridge?.rememberName && rememberedName !== prefs.appName) { rememberedName = prefs.appName; void desktopBridge.rememberName(prefs.appName).catch(() => undefined); }
   const open = TABS.filter((x) => !prefs.closedTabs.includes(x));
   if (!open.includes(prefs.tab as Tab)) prefs.tab = open[0] ?? 'worlds';
   app.innerHTML = `
