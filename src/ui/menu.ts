@@ -1,5 +1,6 @@
 // Right-click menus and dropdowns: one list with its own regex-builder search field.
 import { searchBox, type RegexText } from './regex.js';
+import { shownKey, ariaKey } from './shortcuts.js';
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 let deps: { rx: RegexText; search: () => string; none: () => string } | undefined;
@@ -16,7 +17,7 @@ export function contextMenu(x: number, y: number, label: string, items: MenuItem
   const box = searchBox('menu-search', deps.search(), deps.rx, { compact: true });
   const list = document.createElement('div'); list.className = 'ctx-list';
   const role = current >= 0 ? 'menuitemradio' : 'menuitem';
-  list.innerHTML = items.map(([text, , key], i) => `<button type="button" role="${role}" ${current >= 0 ? `aria-checked="${i === current}"` : ''} ${key ? `aria-keyshortcuts="${esc(key.replace(/Ctrl/g, 'Control'))}"` : ''} data-i="${i}"><span class="lbl">${esc(text)}</span>${key ? `<kbd aria-hidden="true">${esc(key)}</kbd>` : ''}</button>`).join('') + `<p class="muted ctx-none" hidden>${esc(deps.none())}</p>`;
+  list.innerHTML = items.map(([text, , key], i) => `<button type="button" role="${role}" ${current >= 0 ? `aria-checked="${i === current}"` : ''} ${key ? `aria-keyshortcuts="${esc(ariaKey(key))}"` : ''} data-i="${i}"><span class="lbl">${esc(text)}</span>${key ? `<kbd aria-hidden="true">${esc(shownKey(key))}</kbd>` : ''}</button>`).join('') + `<p class="muted ctx-none" hidden>${esc(deps.none())}</p>`;
   if (showTitle) { const h = document.createElement('p'); h.className = 'ctx-title'; h.textContent = label; m.append(h); } // a menu opened from the palette has no button beside it to say what it is
   m.append(box.el, list);
   // Inside a modal dialog the menu must be the dialog's descendant and in the top layer, or it is inert.

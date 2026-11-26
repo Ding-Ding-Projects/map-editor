@@ -44,6 +44,7 @@ import { blockColor } from '../core/colors.js';
 import { argbFromHex, themeFromSourceColor, applyTheme as applyM3Theme } from '@material/material-color-utilities';
 import { notesPanel as notesPanelImpl } from './notes.js';
 import { contextMenu, initMenus, type MenuItem } from './menu.js';
+import { TOOL_KEYS, MAP_MODE_KEYS, UNDO_KEY, PALETTE_KEY, hitKey, shownKey, ariaKey } from './shortcuts.js';
 import { iconSvg, initButtonIcons } from './icons.js';
 import { renderMarkdown } from './markdown.js';
 import { openSupportDesk } from './tickets.js';
@@ -507,9 +508,9 @@ function paletteCommands(): Command[] {
   const cmds: Command[] = [];
   for (const t of TABS) cmds.push({ id: `go-${t}`, label: `${tx('open')}: ${tx(t as Key)}`, where: 'Tabs', run: go(t) });
   for (const a of ARTICLES) cmds.push({ id: `doc-${a.slug}`, label: docTitle(a, prefs.lang), where: tx('docs'), run: () => { openDoc(a.slug); go('docs')(); } });
-  if (world) for (const [o, k] of [['fill', 'F'], ['replace', 'R'], ['delete', 'D'], ['clone', 'C'], ['waterlog', 'W'], ['biome', 'B']] as const) cmds.push({ id: `tool-${o}`, label: tx(o), where: `${tx('editor')} › Tools`, keys: k, run: () => { go('editor')(); setTimeout(() => selectTool?.(o), 50); } });
+  if (world) for (const [o, k] of Object.entries(TOOL_KEYS) as [keyof typeof TOOL_KEYS, string][]) cmds.push({ id: `tool-${o}`, label: tx(o), where: `${tx('editor')} › Tools`, keys: k, run: () => { go('editor')(); setTimeout(() => selectTool?.(o), 50); } });
   if (world) for (const m of MAP_MODES) cmds.push({ id: `map-${m}`, label: tx(`mode_${m}` as Key), where: `${tx('editor')} › ${tx('mapTools')}`, keys: MAP_MODE_KEYS[m], run: () => { go('editor')(); setTimeout(() => setMapMode?.(m), 50); } });
-  if (world) cmds.push({ id: 'undo', label: tx('undo'), where: tx('history'), keys: 'Ctrl+Z', run: () => undoLast() });
+  if (world) cmds.push({ id: 'undo', label: tx('undo'), where: tx('history'), keys: shownKey(UNDO_KEY), run: () => undoLast() });
   cmds.push({ id: 'dark', label: tx('dark'), where: `${tx('settings')} › Appearance`, toggle: { get: () => prefs.dark, set: (v) => { prefs.dark = v; savePrefs(); applyTheme(); } } });
   cmds.push({ id: 'large-text', label: tx('largeText'), where: `${tx('settings')} › ${tx('secComfort')}`, toggle: { get: () => prefs.largeText, set: (v) => { prefs.largeText = v; savePrefs(); applyTheme(); } } });
   cmds.push({ id: 'edit-lock', label: tx('editLock'), where: `${tx('settings')} › ${tx('secComfort')}`, toggle: { get: () => prefs.editLock, set: (v) => { prefs.editLock = v; savePrefs(); applyTheme(); } } });
@@ -920,8 +921,6 @@ const MAP_MODES = ['pan', 'select', 'pick', 'measure', 'goto'] as const;
 const BIOMES = ['plains', 'forest', 'cherry_grove', 'desert', 'snowy_plains', 'jungle', 'swamp', 'mushroom_fields', 'ocean', 'badlands', 'meadow', 'dark_forest'];
 type MapMode = typeof MAP_MODES[number];
 /** Keys shown in menus come from these, the same values the key handlers use. */
-const UNDO_KEY = 'Ctrl+Z', PALETTE_KEY = 'Ctrl+Shift+F';
-const MAP_MODE_KEYS: Record<MapMode, string> = { pan: 'H', select: 'S', pick: 'I', measure: 'M', goto: 'G' };
 let mapMode: MapMode = 'pan';
 /** Blocks in the Block palette panel; picked blocks are added to the front. */
 const PALETTE_BLOCKS = ['minecraft:stone_bricks', 'minecraft:oak_planks', 'minecraft:grass_block', 'minecraft:water', 'minecraft:sand', 'minecraft:glass', 'minecraft:deepslate', 'minecraft:cherry_leaves',
@@ -934,7 +933,7 @@ async function editorView(view: HTMLElement): Promise<void> {
   root.innerHTML = `<div class="editor">
     <section class="map card flat"><div class="map-bar">
         <md-chip-set aria-label="Dimension">${(world.dimensions?.length ? world.dimensions : ['overworld']).map((d) => `<md-filter-chip data-dim="${d}" label="${esc(tx(d as Key))}" ${d === dim ? 'selected' : ''}></md-filter-chip>`).join('')}</md-chip-set>
-        <span class="spacer"></span><md-filled-tonal-button id="undo" title="Ctrl+Z">${esc(tx('undo'))}</md-filled-tonal-button></div>
+        <span class="spacer"></span><md-filled-tonal-button id="undo" title="${esc(shownKey(UNDO_KEY))}" aria-keyshortcuts="${esc(ariaKey(UNDO_KEY))}">${esc(tx('undo'))}</md-filled-tonal-button></div>
       <canvas id="map" role="img" tabindex="0" aria-label="Top-down map"></canvas>
       <div class="coords md-typescale-body-small" id="coords">x 0 · z 0</div>
       <div class="map-toolbar" role="toolbar" aria-label="${esc(tx('mapTools'))}">
@@ -943,7 +942,7 @@ async function editorView(view: HTMLElement): Promise<void> {
       <div class="mt-status" id="mt-status" aria-live="polite"></div>
       <form class="goto-form" id="goto" hidden><md-outlined-text-field name="gx" type="number" label="x"></md-outlined-text-field><md-outlined-text-field name="gz" type="number" label="z"></md-outlined-text-field><md-filled-button type="submit">${esc(tx('mode_goto'))}</md-filled-button><md-text-button type="button" id="goto-x">${esc(tx('close'))}</md-text-button></form></section>
     <aside class="card tool">
-      <md-chip-set id="ops" role="radiogroup" aria-label="Tools">${(['fill', 'replace', 'delete', 'clone', 'waterlog', 'biome'] as const).filter((o) => world?.edition !== 'bedrock' || (o !== 'waterlog' && o !== 'biome')).map((o, i) => `<md-filter-chip data-op="${o}" label="${esc(tx(o))}" ${i === 0 ? 'selected' : ''}></md-filter-chip>`).join('')}</md-chip-set>
+      <md-chip-set id="ops" role="radiogroup" aria-label="Tools">${(['fill', 'replace', 'delete', 'clone', 'waterlog', 'biome'] as const).filter((o) => world?.edition !== 'bedrock' || (o !== 'waterlog' && o !== 'biome')).map((o, i) => `<md-filter-chip data-op="${o}" label="${esc(tx(o))}" title="${esc(tx(o))} (${TOOL_KEYS[o]})" aria-keyshortcuts="${TOOL_KEYS[o]}" ${i === 0 ? 'selected' : ''}></md-filter-chip>`).join('')}</md-chip-set>
       <div class="coords-grid">${(['x1', 'y1', 'z1', 'x2', 'y2', 'z2'] as const).map((k) => `<md-outlined-text-field type="number" label="${k}" name="${k}" value="${sel[k]}"></md-outlined-text-field>`).join('')}</div>
       <div id="op-fields" class="stack"></div>
       <div class="muted" id="sel-size"></div>
@@ -2020,18 +2019,12 @@ const typing = (e: KeyboardEvent) => e.composedPath().some((n) => n instanceof H
 // Crossing the phone width rebuilds the editor workspace as one tabbed group (or back to side by side).
 matchMedia(PHONE).addEventListener('change', () => { if (user && prefs.tab === 'editor') render(); });
 
-/** Does this key press match a shortcut written like the menus show it ("Ctrl+Shift+F")? One source for both. */
-function hitKey(e: KeyboardEvent, combo: string) {
-  const parts = combo.split('+'); const key = parts[parts.length - 1].toLowerCase();
-  return e.key.toLowerCase() === key && (e.ctrlKey || e.metaKey) === parts.includes('Ctrl') && e.shiftKey === parts.includes('Shift') && e.altKey === parts.includes('Alt');
-}
 document.addEventListener('keydown', (e) => {
   if (hitKey(e, PALETTE_KEY)) { e.preventDefault(); showPalette(); return; }
   if (typing(e) || document.querySelector('.palette-scrim, .onboarding')) return;
   if (hitKey(e, UNDO_KEY) && world) { e.preventDefault(); undoLast(); return; }
   if (!e.ctrlKey && !e.metaKey && !e.altKey && prefs.tab === 'editor' && selectTool) {
-    const map: Record<string, string> = { f: 'fill', r: 'replace', d: 'delete', c: 'clone', w: 'waterlog', b: 'biome' };
-    const op = map[e.key.toLowerCase()];
+    const op = Object.entries(TOOL_KEYS).find(([, k]) => k.toLowerCase() === e.key.toLowerCase())?.[0];
     if (op) { e.preventDefault(); selectTool(op); return; }
     const mode = MAP_MODES.find((m) => MAP_MODE_KEYS[m].toLowerCase() === e.key.toLowerCase());
     if (mode && setMapMode) { e.preventDefault(); setMapMode(mode); }
