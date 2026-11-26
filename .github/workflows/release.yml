@@ -222,7 +222,11 @@ jobs:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           DONE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          DUR=$(( $(date -u -d "$DONE" +%s) - $(date -u -d "${{ needs.meta.outputs.started }}" +%s) ))
+          # The start is the earliest time GitHub recorded any job of this run starting; the first job's
+          # own clock is the fallback if that cannot be read.
+          START=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs?per_page=100" --jq '[.jobs[].started_at | select(. != null)] | min' 2>/dev/null || true)
+          echo "$START" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z$' || START="${{ needs.meta.outputs.started }}"
+          DUR=$(( $(date -u -d "$DONE" +%s) - $(date -u -d "$START" +%s) ))
           {
             echo "Map Editor ${{ needs.meta.outputs.version }} built from ${{ github.sha }}."
             echo
@@ -237,7 +241,7 @@ jobs:
             # Line counts of the tracked files at this commit, from the committed counter (kinds, parts, total, exclusions).
             node scripts/line-counts.mjs || echo "Line counts: unavailable"
             echo
-            echo "Workflow started: ${{ needs.meta.outputs.started }}"
+            echo "Workflow started: $START"
             echo "Workflow completed: $DONE"
             printf 'Workflow duration: %02d:%02d:%02d (%ss)\n' $((DUR / 3600)) $((DUR % 3600 / 60)) $((DUR % 60)) "$DUR"
           } > notes.md
