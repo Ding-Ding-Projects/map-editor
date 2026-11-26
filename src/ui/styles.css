@@ -1151,3 +1151,13 @@ md-dialog.support-desk { max-block-size: min(820px, calc(100% - 32px)); }
 .worlds-actions [hidden] { display: none !important; }
 /* Bilingual labels are twice as long: the tool chips take wider columns so none is cut short. */
 [data-lang="both"] #ops { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+/* New flat world: preset tiles keep their swatch square and give long (bilingual) names room. */
+.nf-presets { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.nf-swatch, .nf-preset input { flex: none; }
+.nf-preset { min-block-size: 44px; line-height: 1.25; font-size: 14px; }
+[data-lang="both"] .nf-presets { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+md-dialog:has(#nf) { max-block-size: min(760px, calc(100% - 32px)); }
+/* Notification centre in bilingual mode: the title takes its own line so it is not broken mid-word. */
+[data-lang="both"] .note-centre { width: min(480px, calc(100vw - 32px)); }
+[data-lang="both"] .note-centre h2 { flex: 1 1 100%; font-size: 20px; }
+[data-lang="both"] .note-centre header { justify-content: flex-start; }
