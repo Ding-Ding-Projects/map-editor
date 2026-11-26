@@ -57,3 +57,16 @@ describe('what is shown is what is registered', () => {
     expect(menu).toContain('ariaKey(key)');
   });
 });
+
+describe('account button', () => {
+  it('opens a menu and never signs out on its own click', () => {
+    const at = main.indexOf("app.querySelector<HTMLElement>('#logout')?.addEventListener('click'");
+    expect(at).toBeGreaterThan(0);
+    const handler = main.slice(at, main.indexOf('\n  });', at));
+    expect(handler).toContain('contextMenu(');
+    expect(handler).toContain("tx('acctSignOut')");
+    expect(handler).toContain("tx('secAccount')");
+    // The sign-out call sits inside the menu item, not directly in the click handler.
+    expect(handler.indexOf("'/api/auth/logout'")).toBeGreaterThan(handler.indexOf("tx('acctSignOut')"));
+  });
+});

@@ -790,7 +790,7 @@ function shell() {
       </md-chip-set>
       ${user && prefs.onboarded ? `<md-icon-button id="tour-help" aria-label="${esc(tx('help'))}" title="${esc(tx('help'))}"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.7-2.5 2-2.5 4M12 17h.01"/></svg></md-icon-button>` : ''}
       ${user ? `<span class="bell-wrap"><md-icon-button id="bell" aria-label="${esc(tx('notifications'))}${notes.length ? `, ${notes.length}` : ''}"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21h4"/></svg></md-icon-button>${notes.length ? `<span class="badge">${notes.length}</span>` : ''}</span>` : ''}
-      ${user ? `<md-outlined-button id="logout" data-icon="user">${esc(user.name)}</md-outlined-button>` : ''}
+      ${user ? `<md-outlined-button id="logout" data-icon="user" title="${esc(tx('acctOpen', { name: user.name }))}" aria-label="${esc(tx('acctOpen', { name: user.name }))}" aria-haspopup="menu"><span class="acct-name">${esc(user.name)}</span></md-outlined-button>` : ''}
     </header>
     <div id="update-banner" class="update-banner" role="region" aria-label="${esc(tx('updateRegion'))}" hidden></div>
     <div class="body">
@@ -813,7 +813,14 @@ function shell() {
   app.querySelector('#bell')?.addEventListener('click', () => toggleNoteCentre());
   app.querySelector('#tour-help')?.addEventListener('click', (e) => helpMenu(e.currentTarget as HTMLElement));
   updateBanner();
-  app.querySelector('#logout')?.addEventListener('click', async () => { await api('/api/auth/logout', { method: 'POST', body: {} }); user = null; render(); });
+  // The account button opens a small menu; signing out is a choice in it, not what a tap on your own name does.
+  app.querySelector<HTMLElement>('#logout')?.addEventListener('click', (e) => {
+    const btn = e.currentTarget as HTMLElement; const r = btn.getBoundingClientRect();
+    contextMenu(r.left, r.bottom + 4, tx('acctMenu', { name: user?.name ?? '' }), [
+      [tx('secAccount'), () => showSetting('#pk-add', 'account')],
+      [tx('acctSignOut'), async () => { await api('/api/auth/logout', { method: 'POST', body: {} }); user = null; render(); }],
+    ], btn, -1, true);
+  });
 }
 
 async function render(): Promise<void> {
