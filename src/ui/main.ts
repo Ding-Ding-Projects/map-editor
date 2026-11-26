@@ -913,7 +913,7 @@ const PALETTE_BLOCKS = ['minecraft:stone_bricks', 'minecraft:oak_planks', 'minec
 let pickedBlocks: string[] = [];
 let worldBlocks: string[] = []; // Bedrock: blocks found in the open world so far
 async function editorView(view: HTMLElement): Promise<void> {
-  if (!world) { prefs.tab = 'worlds'; return render(); }
+  if (!world) { prefs.tab = 'worlds'; render(); if (user) notify(tx('editorNeedsWorld')); return; } // say why the screen changed
   const root = document.createElement('div');
   root.innerHTML = `<div class="editor">
     <section class="map card flat"><div class="map-bar">

@@ -93,7 +93,7 @@
     ]
   },
   "deploy-app": {
-    "title": "Map Editor Deploy",
+    "title": "Map Editor Deploy 部署工具",
     "group": "運行方式",
     "summary": "撳一下就將 Map Editor 放上 Docker、VirtualBox 或者 USB 手指，然後畀返條用得嘅連結你。",
     "body": [

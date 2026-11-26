@@ -32,6 +32,7 @@ const S = {
   vocabReplace: { en: 'Replace with another file…', yue: '換過另一個檔…' },
   vocabStateNone: { en: 'No file loaded; built-in wording.', yue: '未載入檔案；用緊內置用字。' },
   vocabStateOn: { en: 'Your wording is on. Entries in use: {n}.', yue: '用緊你嘅用字：{n} 項。' },
+  editorNeedsWorld: { en: 'The editor works on an open world. Open one here first.', yue: '編輯器要開咗世界先用得。喺度開一個先。' },
   historyNoWorld: { en: 'No world is open, so there are no edits to list. Open a world to see its edits and undo them here; the activity record is below.', yue: '未開世界，所以冇編輯可以列出嚟。開咗世界就可以喺度睇同復原編輯；活動記錄喺下面。' },
   vocabStateSchool: { en: 'School mode is on, so the built-in wording is shown. Your words are kept for later.', yue: '學校模式開緊，所以用內置用字。你嗰套會留低，遲啲用返。' },
   vocabStateBad: { en: 'The last file was refused; nothing changed.', yue: '上一個檔唔收；乜都冇改。' },
