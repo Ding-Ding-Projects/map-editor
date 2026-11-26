@@ -119,10 +119,14 @@
           {
             "key": "X-Map-Editor",
             "value": "1"
+          },
+          {
+            "key": "X-File-Name",
+            "value": "tower.nbt"
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/api/structure/place",
+          "raw": "{{baseUrl}}/api/structure/place?dim=overworld&x=0&y=64&z=0",
           "host": [
             "{{baseUrl}}"
           ],
@@ -130,6 +134,24 @@
             "api",
             "structure",
             "place"
+          ],
+          "query": [
+            {
+              "key": "dim",
+              "value": "overworld"
+            },
+            {
+              "key": "x",
+              "value": "0"
+            },
+            {
+              "key": "y",
+              "value": "64"
+            },
+            {
+              "key": "z",
+              "value": "0"
+            }
           ]
         },
         "body": {

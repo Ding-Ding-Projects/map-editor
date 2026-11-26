@@ -84,7 +84,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"url\": \"https://example.com/extension.zip\",\n  \"replace\": false,\n  \"sha256\": \"<sha256 of the file, 64 hex characters>\"\n}",
+          "raw": "{\n  \"url\": \"https://example.com/extension.zip\",\n  \"replace\": false,\n  \"sha256\": \"0000000000000000000000000000000000000000000000000000000000000000\"\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -216,7 +216,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"id\": \"<id from the list request>\",\n  \"command\": \"<command id from the extension list>\",\n  \"selection\": {\n    \"x1\": 0,\n    \"y1\": 64,\n    \"z1\": 0,\n    \"x2\": 7,\n    \"y2\": 64,\n    \"z2\": 7\n  }\n}",
+          "raw": "{\n  \"id\": \"<id from the list request>\",\n  \"command\": \"<command id from the extension list>\",\n  \"selection\": {\n    \"dimension\": \"overworld\",\n    \"box\": {\n      \"x1\": 0,\n      \"y1\": 64,\n      \"z1\": 0,\n      \"x2\": 7,\n      \"y2\": 64,\n      \"z2\": 7\n    }\n  }\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -252,6 +252,10 @@
           {
             "key": "X-Map-Editor",
             "value": "1"
+          },
+          {
+            "key": "X-Replace",
+            "value": "0"
           }
         ],
         "url": {

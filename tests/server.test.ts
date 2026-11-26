@@ -234,6 +234,15 @@ describe('Postman collection', () => {
     expect(names.length).toBe(routes().length);
     expect(new Set(names).size).toBe(names.length);
   });
+  it('sends the headers and address values each upload route reads', async () => {
+    // @ts-expect-error the script is plain JavaScript with no type file
+    const { UPLOAD_HEADERS, UPLOAD_QUERY, UPLOADS } = await import('../scripts/postman.mjs');
+    const { readFileSync } = await import('node:fs');
+    const server = readFileSync(new URL('../src/server/server.ts', import.meta.url), 'utf8');
+    for (const route of UPLOADS as Set<string>) expect(Object.keys(UPLOAD_HEADERS), route).toContain(route);
+    for (const list of Object.values(UPLOAD_HEADERS) as [string, string][][]) for (const [h] of list) expect(server, h).toContain(`req.headers['${h.toLowerCase()}']`);
+    expect(UPLOAD_QUERY['POST /api/structure/place'].map((q: string[]) => q[0])).toEqual(['dim', 'x', 'y', 'z']);
+  });
   it('gives every state-changing request the fields the server reads, with a real example for each', async () => {
     // @ts-expect-error the script is plain JavaScript with no type file
     const { bodyFields, collection, EXAMPLES, UPLOADS } = await import('../scripts/postman.mjs');
@@ -246,6 +255,7 @@ describe('Postman collection', () => {
       if (i.name.startsWith('GET')) { expect(i.request.body).toBeUndefined(); continue; }
       expect(i.request.description, i.name).toBeTruthy();
       if (UPLOADS.has(i.name)) { expect(i.request.body?.mode).toBe('file'); expect(i.request.header.map((h: { key: string }) => h.key)).toContain('X-Map-Editor'); continue; }
+      if (i.name === 'POST /api/extensions/run') { expect(JSON.parse(i.request.body?.raw ?? '{}').selection).toEqual({ dimension: 'overworld', box: { x1: 0, y1: 64, z1: 0, x2: 7, y2: 64, z2: 7 } }); }
       const sent = Object.keys(JSON.parse(i.request.body?.raw ?? 'null'));
       if (i.name === 'POST /api/op') expect(sent).toEqual(['op', 'dimension', 'box', 'block']);
       else expect(sent, i.name).toEqual(fields.get(i.name));

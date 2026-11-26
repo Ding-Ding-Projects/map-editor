@@ -30,6 +30,10 @@ export function bodyFields() {
 
 /** Routes that take a file as the raw body instead of JSON. */
 export const UPLOADS = new Set(['POST /api/worlds/upload', 'POST /api/extensions/upload', 'POST /api/structure/place']);
+/** Where an upload also needs values in the address: where to place a structure. */
+export const UPLOAD_QUERY = { 'POST /api/structure/place': [['dim', 'overworld'], ['x', '0'], ['y', '64'], ['z', '0']] };
+/** Extra headers the upload routes read: the name to keep, or whether an extension may replace an installed one. */
+export const UPLOAD_HEADERS = { 'POST /api/worlds/upload': [['X-File-Name', 'Practice.zip']], 'POST /api/structure/place': [['X-File-Name', 'tower.nbt']], 'POST /api/extensions/upload': [['X-Replace', '0']] };
 /** Bodies written by hand where the server reads a whole object. */
 const WHOLE = { 'POST /api/op': { op: 'fill', dimension: 'overworld', box: { x1: 0, y1: 64, z1: 0, x2: 7, y2: 64, z2: 7 }, block: 'minecraft:stone' } };
 /**
@@ -40,8 +44,8 @@ export const EXAMPLES = {
   name: 'Alex', password: 'correct horse battery', code: '123456', ticket: '<ticket from the options request>', response: {}, id: '<id from the list request>',
   model: 'llama3.2', prompt: 'How do I fill an area with stone?', kind: 'settings', message: 'Dark theme switched on', preset: 'classic', size: 4,
   paths: ['/srv/minecraft/worlds/Practice'], root: '/srv/minecraft/worlds', path: '/srv/minecraft/worlds/Practice', replace: false,
-  url: 'https://example.com/extension.zip', sha256: '<sha256 of the file, 64 hex characters>', on: true, enabled: true, permissionKey: '<permissionKey from the extension list>',
-  command: '<command id from the extension list>', selection: { x1: 0, y1: 64, z1: 0, x2: 7, y2: 64, z2: 7 }, sha: '<sha from the history list>',
+  url: 'https://example.com/extension.zip', sha256: '0000000000000000000000000000000000000000000000000000000000000000', on: true, enabled: true, permissionKey: '<permissionKey from the extension list>',
+  command: '<command id from the extension list>', selection: { dimension: 'overworld', box: { x1: 0, y1: 64, z1: 0, x2: 7, y2: 64, z2: 7 } }, sha: '<sha from the history list>',
 };
 
 export function bodyFor(key) {
@@ -59,7 +63,9 @@ export function collection() {
     const item = { name: `${r.method} ${r.path}`, request: { method: r.method, header: r.method === 'GET' ? [] : [{ key: 'Content-Type', value: 'application/json' }], url: { raw: `{{baseUrl}}${r.path}`, host: ['{{baseUrl}}'], path: r.path.split('/').filter(Boolean) } } };
     const key = `${r.method} ${r.path}`;
     if (UPLOADS.has(key)) {
-      item.request.header = [{ key: 'X-Map-Editor', value: '1' }];
+      item.request.header = [{ key: 'X-Map-Editor', value: '1' }, ...(UPLOAD_HEADERS[key] ?? []).map(([k, v]) => ({ key: k, value: v }))];
+      const query = UPLOAD_QUERY[key];
+      if (query) { item.request.url.raw += '?' + query.map(([k, v]) => `${k}=${v}`).join('&'); item.request.url.query = query.map(([k, v]) => ({ key: k, value: v })); }
       item.request.body = { mode: 'file', file: { src: '' } };
       item.request.description = 'Send the file itself as the request body (choose it under Body, binary). The X-Map-Editor header is required.';
     } else if (r.method !== 'GET') {
