@@ -26,7 +26,8 @@ function inline(text: string, base?: string): string {
   const keep: string[] = [];
   const hold = (html: string) => `\u0000${keep.push(html) - 1}\u0000`;
   let s = text.replace(/`([^`\n]+)`/g, (_m, c: string) => hold(`<code>${esc(c)}</code>`));
-  s = s.replace(/\[([^\]\n]+)\]\(([^)\s]+)\)/g, (m, label: string, href: string) => { const h = safeHref(href, base); return h ? hold(`<a href="${esc(h)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`) : hold(esc(label)); });
+  s = s.replace(/\[([^[\]\n]+)\]\(([^)\s]+)\)/g, // a label holds no bracket, so a run of '[' is passed over in one sweep instead of rescanned from each one
+     (m, label: string, href: string) => { const h = safeHref(href, base); return h ? hold(`<a href="${esc(h)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`) : hold(esc(label)); });
   s = s.replace(/\bhttps?:\/\/[^\s<>()]+[^\s<>().,;:!?]/g, (m) => { const h = safeHref(m); return h ? hold(`<a href="${esc(h)}" target="_blank" rel="noopener noreferrer">${esc(m)}</a>`) : m; });
   s = esc(s);
   s = s.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>').replace(/(^|[\s(])\*([^*\n]+)\*(?=$|[\s).,;:!?])/g, '$1<em>$2</em>').replace(/(^|[\s(])_([^_\n]+)_(?=$|[\s).,;:!?])/g, '$1<em>$2</em>').replace(/~~([^~\n]+)~~/g, '<del>$1</del>');
