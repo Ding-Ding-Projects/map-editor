@@ -1331,3 +1331,4 @@ details.set-more ul { margin: 4px 0 6px; padding-inline-start: 20px; display: gr
   .top:has(#words) .brand .title { white-space: normal; overflow: visible; text-overflow: clip; }
 }
 .card label.check:has(md-checkbox), .vd-form label.check:has(md-checkbox), p > label.check:has(md-checkbox), label.check.check:has(md-checkbox) { display: inline-flex; align-items: center; gap: 4px; min-height: 48px; cursor: pointer; }
+.ob-switch > span { display: flex; flex-direction: column; gap: 2px; flex: 1; } .ob-switch small { font-size: 13px; color: var(--md-sys-color-on-surface-variant); } label.ob-switch { min-height: 64px; padding: 8px 16px; border-radius: 20px; background: var(--md-sys-color-surface-container-high); margin: 6px 0; gap: 16px; align-items: center; cursor: pointer; }

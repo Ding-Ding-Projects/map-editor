@@ -446,7 +446,7 @@
    "x": 1360,
    "y": 0,
    "w": 420,
-   "text": "First-run wizard. Try: click steps, Back, Next, Skip, language cards, and on the last step Make a practice world now and Try it failing; Tweaks dark, seed, motion.\nStands for the in-app onboarding wizard: language and voice, comfort modes, theme colour, open a world; progress saves and resumes.\nBeing built; the owner account already exists as the sign-up screen. Sign-in is now a two-part screen: an expressive panel (headline, three points with icons, moving blocks that stop under reduced motion) beside the form; one column on phones.",
+   "text": "First-run wizard. Try: click steps, Back, Next, Skip, language cards, and on the last step Make a practice world now and Try it failing; Tweaks dark, seed, motion.\nStands for the in-app onboarding wizard: language and voice, comfort and focus (six real switches: dark theme, reduce motion, large text, focus mode, sound effects, full-screen result cards, each changing the setting at once), theme colour, your first world; progress saves and resumes. The board has the same four steps as the app.\nBeing built; the owner account already exists as the sign-up screen. Sign-in is now a two-part screen: an expressive panel (headline, three points with icons, moving blocks that stop under reduced motion) beside the form; one column on phones.",
    "fill": "yellow",
    "page": "setup"
   },

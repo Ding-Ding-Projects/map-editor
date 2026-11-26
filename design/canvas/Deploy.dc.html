@@ -22,6 +22,13 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .moving button:active{transform:scale(.97)}
 .still *{animation:none!important;transition:none!important}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+.mcb{appearance:none;-webkit-appearance:none;flex:none;width:18px;height:18px;margin:15px;border:2px solid var(--o);border-radius:3px;display:inline-grid;place-items:center;cursor:pointer}
+.mcb:checked{background:var(--p);border-color:var(--p)}
+.mcb:checked::after{content:"";width:9px;height:5px;border:solid var(--on);border-width:0 0 2px 2px;transform:rotate(-45deg) translate(1px,-1px)}
+.msw{appearance:none;-webkit-appearance:none;flex:none;width:52px;height:32px;border:2px solid var(--o);border-radius:16px;position:relative;cursor:pointer;background:transparent}
+.msw::after{content:"";position:absolute;top:50%;left:6px;width:16px;height:16px;border-radius:50%;background:var(--o);transform:translateY(-50%);transition:left .2s,width .2s,height .2s}
+.msw:checked{background:var(--p);border-color:var(--p)}
+.msw:checked::after{left:22px;width:24px;height:24px;background:var(--on)}
 </style>
 </helmet>
 <div class="{{motionClass}}" style="min-height: 960px; padding: 24px; box-sizing: border-box; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif; font-size: 14px">
@@ -113,14 +120,14 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
         <table style="width: 100%; min-width: 900px; border-collapse: collapse; font-size: 14px">
           <thead>
             <tr style="text-align: left; color: {{t.onSurfaceVariant}}; font-size: 12px">
-              <th style="padding: 12px 24px; font-weight: 500"><input type="checkbox" aria-label="Select all instances"></th>
+              <th style="padding: 12px 24px; font-weight: 500"><input type="checkbox" class="mcb" aria-label="Select all instances" style="--p: {{t.primary}}; --on: {{t.onPrimary}}; --o: {{t.outline}}; margin: 0"></th>
               <th style="padding: 12px 8px; font-weight: 500">Name</th><th style="padding: 12px 8px; font-weight: 500">Target</th><th style="padding: 12px 8px; font-weight: 500">Version</th><th style="padding: 12px 8px; font-weight: 500">Health</th><th style="padding: 12px 8px; font-weight: 500">Link</th><th style="padding: 12px 24px; font-weight: 500; text-align: right">Actions</th>
             </tr>
           </thead>
           <tbody>
             <sc-for list="{{instances}}" as="r" hint-placeholder-count="3">
               <tr style="border-top: 1px solid {{t.outlineVariant}}">
-                <td style="padding: 16px 24px"><input type="checkbox" aria-label="Select {{r.name}}"></td>
+                <td style="padding: 16px 24px"><input type="checkbox" class="mcb" aria-label="Select {{r.name}}" style="--p: {{t.primary}}; --on: {{t.onPrimary}}; --o: {{t.outline}}; margin: 0"></td>
                 <td style="padding: 16px 8px; font-weight: 600">{{r.name}}</td>
                 <td style="padding: 16px 8px; color: {{t.onSurfaceVariant}}">{{r.target}}</td>
                 <td style="padding: 16px 8px; font-family: 'Roboto Mono', monospace">{{r.version}}</td>

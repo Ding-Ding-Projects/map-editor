@@ -3,7 +3,13 @@
 import type { Key, Lang } from './i18n.js';
 import { colorPicker } from './colorpicker.js';
 
-interface Prefs { lang: Lang; funnyEn: number; funnyYue: number; dark: boolean; reduceMotion: boolean; seed: string; rainbowSpeed: number }
+interface Prefs { lang: Lang; funnyEn: number; funnyYue: number; dark: boolean; reduceMotion: boolean; largeText: boolean; focusMode: boolean; sounds: boolean; takeovers: boolean; seed: string; rainbowSpeed: number }
+
+/** The comfort step: switch id, the preference it sets, its label and its note. Each one changes the real setting at once. */
+export const COMFORT: [id: string, pref: 'dark' | 'reduceMotion' | 'largeText' | 'focusMode' | 'sounds' | 'takeovers', label: Key, note: Key][] = [
+  ['ob-dark', 'dark', 'dark', 'darkNote'], ['ob-rm', 'reduceMotion', 'reduceMotion', 'reduceMotionNote'], ['ob-lt', 'largeText', 'largeText', 'largeTextNote'],
+  ['ob-focus', 'focusMode', 'focusMode', 'focusModeNote'], ['ob-snd', 'sounds', 'soundEffects', 'soundEffectsNote'], ['ob-tko', 'takeovers', 'takeovers', 'takeoversNote'],
+];
 interface Ctx {
   tx: (k: Key, v?: Record<string, string | number>) => string;
   /** The colour picker's fixed phrases in the chosen language. */
@@ -46,10 +52,8 @@ export function onboarding(view: HTMLElement, c: Ctx) {
       body.querySelector('#ob-fen')!.addEventListener('change', (e) => { prefs.funnyEn = Number((e.target as HTMLInputElement).value); c.apply(); });
       body.querySelector('#ob-fyue')!.addEventListener('change', (e) => { prefs.funnyYue = Number((e.target as HTMLInputElement).value); c.apply(); });
     } else if (step === 1) {
-      body.innerHTML = `<label class="row ob-switch"><span><b>${esc(tx('dark'))}</b></span><md-switch id="ob-dark" ${prefs.dark ? 'selected' : ''}></md-switch></label>
-        <label class="row ob-switch"><span><b>${esc(tx('reduceMotion'))}</b></span><md-switch id="ob-rm" ${prefs.reduceMotion ? 'selected' : ''}></md-switch></label>`;
-      body.querySelector('#ob-dark')!.addEventListener('change', (e) => { prefs.dark = (e.target as HTMLInputElement & { selected: boolean }).selected; c.apply(); });
-      body.querySelector('#ob-rm')!.addEventListener('change', (e) => { prefs.reduceMotion = (e.target as HTMLInputElement & { selected: boolean }).selected; c.apply(); });
+      body.innerHTML = `<p class="muted">${esc(tx('obComfortLead'))}</p>` + COMFORT.map(([id, pref, label, note]) => `<label class="row ob-switch"><span><b>${esc(tx(label))}</b><small>${esc(tx(note))}</small></span><md-switch id="${id}" ${prefs[pref] ? 'selected' : ''} aria-label="${esc(tx(label))}"></md-switch></label>`).join('');
+      for (const [id, pref] of COMFORT) body.querySelector('#' + id)!.addEventListener('change', (e) => { prefs[pref] = (e.target as HTMLInputElement & { selected: boolean }).selected; c.apply(); });
     } else if (step === 2) {
       const holder = document.createElement('div');
       body.append(holder);

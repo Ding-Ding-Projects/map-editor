@@ -22,6 +22,13 @@ button:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offse
 .moving button:active{transform:scale(.97)}
 .still *{animation:none!important;transition:none!important}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+.mcb{appearance:none;-webkit-appearance:none;flex:none;width:18px;height:18px;margin:15px;border:2px solid var(--o);border-radius:3px;display:inline-grid;place-items:center;cursor:pointer}
+.mcb:checked{background:var(--p);border-color:var(--p)}
+.mcb:checked::after{content:"";width:9px;height:5px;border:solid var(--on);border-width:0 0 2px 2px;transform:rotate(-45deg) translate(1px,-1px)}
+.msw{appearance:none;-webkit-appearance:none;flex:none;width:52px;height:32px;border:2px solid var(--o);border-radius:16px;position:relative;cursor:pointer;background:transparent}
+.msw::after{content:"";position:absolute;top:50%;left:6px;width:16px;height:16px;border-radius:50%;background:var(--o);transform:translateY(-50%);transition:left .2s,width .2s,height .2s}
+.msw:checked{background:var(--p);border-color:var(--p)}
+.msw:checked::after{left:22px;width:24px;height:24px;background:var(--on)}
 </style>
 </helmet>
 <div class="{{motionClass}}" style="min-height: 800px; display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif">
@@ -71,7 +78,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offse
             </label>
           </div>
           <label style="display: flex; align-items: center; gap: 16px; font-size: 14px">
-            <input type="checkbox" checked="checked" style="width: 20px; height: 20px; accent-color: {{t.primary}}">Show emoji in dialogs
+            <input type="checkbox" class="mcb" checked="checked" style="--p: {{t.primary}}; --on: {{t.onPrimary}}; --o: {{t.outline}}; margin: 0">Show emoji in dialogs
           </label>
         </div>
       </sc-if>
@@ -79,24 +86,25 @@ button:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offse
       <sc-if value="{{isFocus}}" hint-placeholder-val="{{ false }}">
         <div style="display: flex; flex-direction: column; gap: 12px">
           <h1 style="margin: 0; font-size: 36px; line-height: 44px; font-weight: 500">Comfort and focus</h1>
-          <p style="margin: 0; font-size: 16px; color: {{t.onSurfaceVariant}}">Each mode is separate and off unless you turn it on.</p>
-          <sc-for list="{{modes}}" as="m" hint-placeholder-count="5">
+          <p style="margin: 0; font-size: 16px; color: {{t.onSurfaceVariant}}">Each one is separate and takes effect straight away. All of them can be changed later in Settings.</p>
+          <sc-for list="{{modes}}" as="m" hint-placeholder-count="6">
             <label style="display: flex; align-items: center; gap: 16px; min-height: 72px; padding: 0 16px; border-radius: 16px; background: {{t.surfaceContainerHigh}}">
               <span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 500">{{m.t}}</span><span style="font-size: 14px; color: {{t.onSurfaceVariant}}">{{m.d}}</span></span>
-              <input type="checkbox" role="switch" style="width: 52px; height: 32px; accent-color: {{t.primary}}">
+              <button role="switch" aria-checked="{{m.on}}" aria-label="{{m.t}}" onClick="{{m.flip}}" style="{{m.track}}"><span style="{{m.thumb}}"></span></button>
             </label>
           </sc-for>
         </div>
       </sc-if>
 
-      <sc-if value="{{isOwner}}" hint-placeholder-val="{{ false }}">
-        <div style="display: flex; flex-direction: column; gap: 16px; max-width: 480px">
-          <h1 style="margin: 0; font-size: 36px; line-height: 44px; font-weight: 500">Create the owner account</h1>
-          <p style="margin: 0; font-size: 16px; line-height: 24px; color: {{t.onSurfaceVariant}}">You are the first person here, so you become the owner. Everyone after you signs in or uses an invite from you.</p>
-          <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: {{t.onSurfaceVariant}}">Display name
-            <input value="Alex" style="height: 56px; padding: 0 16px; border-radius: 4px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-size: 16px">
-          </label>
-          <button style="height: 56px; border-radius: 28px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; font-size: 16px; font-weight: 600">Register a passkey</button>
+      <sc-if value="{{isTheme}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 16px">
+          <h1 style="margin: 0; font-size: 36px; line-height: 44px; font-weight: 500">Theme colour</h1>
+          <p style="margin: 0; font-size: 16px; color: {{t.onSurfaceVariant}}">The whole app takes its colours from this one. The full picker also has every hue, opacity, recent colours and an animated rainbow.</p>
+          <div role="group" aria-label="Theme colour" style="display: flex; gap: 16px; flex-wrap: wrap">
+            <sc-for list="{{seeds}}" as="c" hint-placeholder-count="5">
+              <button onClick="{{c.pick}}" aria-label="Colour {{c.c}}" style="{{c.style}}"></button>
+            </sc-for>
+          </div>
         </div>
       </sc-if>
 
@@ -144,7 +152,7 @@ class Component extends DCLogic {
     };
     const i = this.state.i ?? 0;
     const lang = this.state.lang ?? 'en';
-    const defs = [['Language and voice','English, 廣東話 or both'],['Comfort and focus','Five optional modes'],['Appearance','Theme, colour, size'],['Owner account','First person becomes owner'],['Extensions','Built-in helpers'],['Open a world','Then start editing']];
+    const defs = [['Language and voice','English, 粵語 or both'],['Comfort and focus','Six switches, each on its own'],['Theme colour','Pick a colour or the rainbow'],['Your first world','See what is there, make a practice one']];
     const steps = defs.map(([label, hint], n) => ({
       n: n < i ? '✓' : String(n + 1), label, hint, current: n === i ? 'step' : 'false',
       style: 'width: 100%; display: flex; gap: 12px; align-items: center; min-height: 56px; padding: 0 12px; border-radius: 28px; border: 0; color: ' + t.onSurface + '; ' + (n === i ? 'background: ' + t.secondaryContainer : 'background: transparent'),
@@ -156,18 +164,22 @@ class Component extends DCLogic {
       style: 'display: flex; flex-direction: column; gap: 4px; align-items: flex-start; padding: 20px; border-radius: 16px; text-align: left; ' + (id === lang ? 'border: 0; background: ' + t.primaryContainer + '; color: ' + t.onPrimaryContainer : 'border: 1px solid ' + t.outline + '; background: transparent; color: ' + t.onSurface),
       pick: () => this.setState({ lang: id })
     }));
-    const modes = [['Focus','Shows one obvious next action and dims the rest'],['Low stimulation','No celebration takeovers, calmer colours, no sounds'],['Time awareness','Shows elapsed time on long operations'],['One thing at a time','One tool panel open at a time'],['Momentum','Suggests the next likely step after each edit']].map(([tt, d]) => ({ t: tt, d }));
+    const modes = [['Dark theme','Follows the system until you choose.',false],['Reduce motion','Replaces animations with instant changes.',false],['Large text','Scales every label by 125%.',false],['Focus mode','Fewer interruptions: routine messages wait in the bell, no dim sum surprises, motion reduced and the panel you are in stands out. Problems still show.',false],['Sound effects','Short sounds after an edit, undo, new world or a problem. Off silences them straight away.',true],['Full-screen result cards','Show a big card when an upload finishes or fails. Off keeps the small messages only.',true]].map(([tt, d, def]) => { const on = (this.state.sw ?? {})[tt] ?? def; return { t: tt, d, on: String(on),
+      track: 'flex: none; width: 52px; height: 32px; padding: 0; border-radius: 16px; position: relative; ' + (on ? 'border: 0; background: ' + t.primary : 'border: 2px solid ' + t.outline + '; background: transparent'),
+      thumb: 'position: absolute; top: 50%; transform: translateY(-50%); border-radius: 50%; ' + (on ? 'left: 24px; width: 24px; height: 24px; background: ' + t.onPrimary : 'left: 6px; width: 16px; height: 16px; background: ' + t.outline),
+      flip: () => this.setState({ sw: { ...(this.state.sw ?? {}), [tt]: !on } }) }; });
+    const seeds = ['#4C8C4A','#2F6FA8','#B5761E','#C2557E','#5E6470'].map((c) => ({ c, pick: () => this.setState({ seedPick: c }), style: 'width: 56px; height: 56px; border-radius: 50%; background: ' + c + '; border: ' + ((this.state.seedPick ?? '#4C8C4A') === c ? '4px solid ' + t.onSurface : '0') }));
     return {
-      t, i, steps, langs, modes,
-      bar: 'height: 4px; width: ' + Math.round((i / 5) * 100) + '%; background: ' + t.primary,
+      t, i, steps, langs, modes, seeds,
+      bar: 'height: 4px; width: ' + Math.round((i / 3) * 100) + '%; background: ' + t.primary,
       foundText: 'Worlds found now: ' + (this.state.made === 'ok' ? 2 : 1) + ', in .minecraft/saves.',
       makeWorld: () => { if (this.state.made !== 'ok') this.setState({ made: 'ok' }); }, makeFail: () => this.setState({ made: 'bad' }),
       makeStyle: 'height: 44px; padding: 0 20px; border-radius: 22px; border: 0; font-weight: 700; ' + (this.state.made === 'ok' ? 'background: ' + t.surfaceContainerHighest + '; color: ' + t.onSurfaceVariant + '; cursor: default' : 'background: ' + t.secondaryContainer + '; color: ' + t.onSecondaryContainer),
       madeText: this.state.made === 'ok' ? 'Made Practice world: a flat grass world, 128 by 128 blocks. It is on the Worlds screen, ready to open.' : this.state.made === 'bad' ? 'The practice world was not made: this server has no worlds folder. Nothing was changed; you can try again or carry on.' : '',
       madeColor: this.state.made === 'bad' ? (t.error ?? '#FFB4AB') : t.primary,
-      isLang: i === 0, isFocus: i === 1 || i === 2 || i === 4, isOwner: i === 3, isWorld: i === 5,
-      nextLabel: i === 5 ? 'Open editor' : 'Next',
-      next: () => this.setState({ i: Math.min(5, i + 1) }),
+      isLang: i === 0, isFocus: i === 1, isTheme: i === 2, isWorld: i === 3,
+      nextLabel: i === 3 ? 'Finish' : 'Next',
+      next: () => this.setState({ i: Math.min(3, i + 1) }),
       back: () => this.setState({ i: Math.max(0, i - 1) })
     };
   }
