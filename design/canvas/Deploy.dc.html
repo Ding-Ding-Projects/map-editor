@@ -80,9 +80,10 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
               </div>
               <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: {{t.onSurfaceVariant}}">Worlds folder<input value="C:\Users\Alex\AppData\Roaming\.minecraft\saves" style="height: 56px; padding: 0 16px; border-radius: 4px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-family: 'Roboto Mono', monospace; font-size: 13px"></label>
               <span style="font-size: 14px; color: {{t.onSurfaceVariant}}">Port 8420 is free. The first person to open the link becomes the owner.</span>
-              <button style="height: 64px; border-radius: 32px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; font-size: 18px; font-weight: 800">Deploy</button>
-              <ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: {{t.onSurfaceVariant}}">
-                <li>{{sel.s1}}</li><li>{{sel.s2}}</li><li>Wait for the health check, up to 90 s</li><li>Show the verified LAN link</li>
+              <button onClick="{{deploy}}" style="{{goStyle}}">Deploy</button>
+              <span role="status" style="font-size: 13px; color: {{t.onSurfaceVariant}}">{{stepCount}}</span>
+              <ol aria-live="polite" style="list-style: none; margin: 0; padding: 0; display: grid; gap: 6px">
+                <sc-for list="{{steps}}" as="p" hint-placeholder-count="4"><li style="{{p.row}}"><span aria-hidden="true" style="{{p.mark}}">{{p.glyph}}</span><strong style="font-weight: 600; font-size: 14px">{{p.label}}</strong><span style="{{p.pill}}">{{p.state}}</span></li></sc-for>
               </ol>
             </div>
           </sc-if>
@@ -174,7 +175,21 @@ class Component extends DCLogic {
       name, target, version, health, link,
       pill: 'height: 28px; padding: 0 12px; border-radius: 8px; font-size: 12px; line-height: 28px; font-weight: 600; ' + (ok ? 'background: ' + t.primaryContainer + '; color: ' + t.onPrimaryContainer : 'background: ' + t.surfaceContainerHighest + '; color: ' + t.onSurfaceVariant)
     }));
+    // Progress: press Deploy to walk the steps; the button is off until they finish.
+    const at = this.state.at ?? -1; // -1 not started, 0..3 the step being worked on, 4 all done
+    const labels = [defs[sel][4], defs[sel][5], 'Wait for the health check, up to 90 s', 'Show the verified LAN link'];
+    const busy = at >= 0 && at < labels.length;
+    const steps = labels.map((label, i) => {
+      const state = at < 0 || i > at ? 'Waiting' : i === at ? 'Working' : 'Done';
+      return { label, state, glyph: state === 'Done' ? '✓' : state === 'Working' ? '…' : '',
+        row: 'display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 10px; padding: 10px 12px; border-radius: ' + (state === 'Working' ? '16px 28px 28px 16px' : '16px') + '; background: ' + (state === 'Working' ? t.primaryContainer : t.surfaceContainerHighest) + '; color: ' + (state === 'Working' ? t.onPrimaryContainer : t.onSurface) + '; opacity: ' + (state === 'Waiting' ? '.7' : '1'),
+        mark: 'width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; box-sizing: border-box; font-size: 14px; font-weight: 800; ' + (state === 'Done' ? 'background: ' + t.primary + '; color: ' + t.onPrimary : 'border: 2px solid ' + t.outline),
+        pill: 'font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: ' + t.surfaceContainerLow + '; color: ' + t.onSurface };
+    });
+    const deploy = () => { if (busy) return; this.setState({ at: 0 }); [1, 2, 3, 4].forEach((n) => setTimeout(() => this.setState({ at: n }), n * 900)); };
     return {
+      steps, deploy, stepCount: at < 0 ? 'Press Deploy to see the steps run.' : Math.min(at, labels.length) + ' of ' + labels.length + ' steps done',
+      goStyle: 'height: 64px; border-radius: 32px; border: 0; font-size: 18px; font-weight: 800; ' + (busy ? 'background: ' + t.surfaceContainerHighest + '; color: ' + t.onSurfaceVariant + '; cursor: default' : 'background: ' + t.primary + '; color: ' + t.onPrimary),
       t, views, targets, instances,
       isDeploy: view === 'Deploy', isInstances: view === 'Instances',
       isUsb: sel === 3 || sel === 4, isOther: !(sel === 3 || sel === 4),
