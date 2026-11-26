@@ -1252,3 +1252,10 @@ md-dialog:has(#nf) { max-block-size: min(760px, calc(100% - 32px)); }
 /* Scrollbars follow the theme: thin, rounded, the track clear, in every scrolling area and the window itself. */
 html { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--md-sys-color-on-surface) 35%, transparent) transparent; }
 * { scrollbar-color: inherit; }
+
+/* Editor coordinates: six narrow fields. The Clear button is smaller here and the spacing tighter so "-61" stays readable. */
+.coords-grid md-outlined-text-field { --md-outlined-text-field-leading-space: 10px; --md-outlined-text-field-trailing-space: 2px; --md-outlined-text-field-with-trailing-icon-trailing-space: 2px; }
+.coords-grid .clear-btn { --md-icon-button-state-layer-width: 28px; --md-icon-button-state-layer-height: 28px; --md-icon-button-icon-size: 16px; width: 28px; height: 28px; margin-inline: -6px -4px; }
+.coords-grid .clear-btn svg { width: 16px; height: 16px; }
+/* The docked workspace ends above the bottom edge so the window itself never scrolls by a few pixels. */
+@media (min-width: 981px) { .dock { height: calc(100dvh - 100px); } }
