@@ -4,7 +4,7 @@ import { STRINGS, t, englishOf } from '../src/ui/i18n.js';
 
 describe('button icons', () => {
   it('chooses an icon from the words on the button', () => {
-    const want: Record<string, string> = { 'Copy': 'copy', 'Download': 'download', 'Export…': 'download', 'Upload world (.zip or .mcworld)': 'upload', 'New flat world': 'plus', 'Remove': 'trash', 'Detach': 'trash',
+    const want: Record<string, string> = { 'Copy': 'copy', 'Download': 'download', 'Export…': 'download', 'Upload world (.zip or .mcworld)': 'upload', 'New flat world': 'plus', 'Remove': 'trash', 'Detach': 'unlock', 'Switch off all shown': 'power', 'Move to bin': 'trash', 'Put back': 'undo',
       'Undo': 'undo', 'Roll back': 'undo', 'Refresh': 'refresh', 'Restart to install update': 'refresh', 'Close': 'x', 'Cancel': 'x', 'Open': 'open', 'Manage': 'open', 'Take a tour': 'compass', 'Deploy': 'rocket',
       'Back': 'back', 'Next': 'next', 'OK': 'check', 'Rename': 'pencil', 'Add a passkey': 'plus', 'Choose worlds folder': 'folder', 'Pan': 'hand', 'Select': 'select', 'Pick block': 'pipette', 'Measure': 'ruler', 'Go to': 'target',
       'New virtual disk…': 'disk', 'Encode': 'play', 'Something unheard of': 'next' };

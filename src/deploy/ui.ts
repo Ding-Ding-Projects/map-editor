@@ -179,9 +179,9 @@ async function virtualDisks(main: Element) {
   async function load() {
     try {
       const disks: VDisk[] = await d.vdisks();
-      status.textContent = disks.length ? `${disks.length} attached` : 'No virtual disk is attached right now.';
+      status.textContent = disks.length ? by(`${disks.length} attached`, `掛載咗 ${disks.length} 個`) : by('No virtual disk is attached right now.', '而家冇掛載任何虛擬磁碟。');
       listEl.innerHTML = disks.map((v, i) => `<md-list-item><div slot="headline">${esc(v.file)}</div>
-        <div slot="supporting-text">${v.letters.length ? `Drive ${esc(v.letters.join(', '))}: · ` : 'No drive letter · '}${gb(v.sizeBytes)}${v.readOnly ? ' · read-only' : ''}</div>
+        <div slot="supporting-text">${esc(v.letters.length ? by(`Drive ${v.letters.join(', ')}:`, `磁碟機 ${v.letters.join('、')}:`) : by('No drive letter', '冇磁碟機代號'))} · ${gb(v.sizeBytes)}${v.readOnly ? ` · ${esc(by('read-only', '唯讀'))}` : ''}</div>
         <md-outlined-button slot="end" data-detach="${i}">Detach</md-outlined-button></md-list-item>`).join('');
       listEl.querySelectorAll<HTMLElement>('[data-detach]').forEach((b) => b.addEventListener('click', () => run({ action: 'detach', file: disks[Number(b.dataset.detach)].file }, 'Waiting for Windows permission…')));
     } catch (e) { status.textContent = (e as Error).message; listEl.innerHTML = ''; }

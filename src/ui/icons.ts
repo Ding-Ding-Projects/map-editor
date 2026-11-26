@@ -61,7 +61,7 @@ const RULES: Array<[RegExp, string]> = [
   [/download|export|save\b|template/i, 'download'], [/upload|import|add from|\.zip|\.nbt|place a|choose (appliance|a file)|open server|own logo|attach/i, 'upload'],
   [/virtual disk/i, 'disk'], [/every tab|find tabs|\ball\b.*tabs/i, 'list'],
   [/refresh|reload|retry|try again|restart|check for|update/i, 'refresh'],
-  [/\bnew\b|create|\badd\b|set up|install/i, 'plus'], [/turn off|switch off/i, 'power'], [/delete|remove|erase|detach/i, 'trash'],
+  [/\bnew\b|create|\badd\b|set up|install/i, 'plus'], [/turn off|switch off/i, 'power'], [/detach/i, 'unlock'], [/delete|remove|erase/i, 'trash'],
   [/undo|roll back|restore|reset|\blater\b/i, 'undo'],
   [/unlock/i, 'unlock'], [/\block\b/i, 'lock'], [/rename|edit\b/i, 'pencil'], [/passkey|sign in|sign out|account|authenticator/i, 'key'],
   [/folder|browse|choose/i, 'folder'], [/\bopen\b|manage|show\b|view\b|history/i, 'open'], [/search|find/i, 'search'],
