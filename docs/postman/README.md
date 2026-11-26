@@ -15,3 +15,6 @@ the two differ, so it cannot fall behind the code. Each state-changing request c
 taken from the server's code, with an example value for each. Values in angle brackets, such as an id or a ticket,
 come from an earlier request. Uploads (a world archive, an extension, a structure file) take the file itself as the
 body together with the `X-Map-Editor: 1` header.
+
+An authenticator code works once. After confirming authenticator codes with one code, wait for the app to show
+the next code before signing in or turning them off again; the same code is refused the second time.
