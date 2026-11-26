@@ -105,7 +105,7 @@ The GitHub Actions workflow builds all of these on every push and publishes one 
 
 ## How long a person would have taken
 
-The tracked source, tests, scripts, site generator, appliance scripts and workflows come to about 13,300 lines (counted with `git ls-files ... | xargs cat | wc -l` on 2026-11-25; every release note carries the count made by the build). At an assumed 50 finished, tested lines a working day for one experienced developer, that is 13,300 / 50 = about 266 working days, a little over a year. It is an estimate from one assumed rate, not a measurement.
+The tracked source, tests, scripts, site generator, appliance scripts and workflows come to about 16,700 lines, of which about 15,600 are not blank (counted with `node scripts/line-counts.mjs` on 2026-11-26, which leaves out the design export, generated pages and lock files; every release note carries the count made by the same script at that release). At an assumed 50 finished, tested lines a working day for one experienced developer, that is 13,300 / 50 = about 266 working days, a little over a year. It is an estimate from one assumed rate, not a measurement.
 
 ## Design
 
