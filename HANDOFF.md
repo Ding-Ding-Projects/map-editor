@@ -121,3 +121,46 @@ above). These checks still need a person, a browser session or hardware:
 - The step that attaches the guide PDF to a release must not install packages. Installing a Chinese font there took six minutes and delayed v0.1.209.
 - `tests/markdown.test.ts` has a timing check. It failed twice on a slow build machine before the link pattern was made linear; if it fails again, look for a pattern that rescans, not for a higher limit.
 
+## Where the work stopped on 26 November 2026
+
+The session was closed early, with work still open. Everything written is on `main`; nothing is waiting in another
+branch, checkout or stash. This section says what is finished, what is not, and what the next person should do first.
+
+### Done and read back today
+
+- The release workflow builds and publishes only. Checks run before a commit are recorded by
+  `node scripts/local-checks.mjs record` and repeated in the release notes when they match the commit.
+- Appliance image builds retry up to three times. A wording lock runs at the start of a build and before a push.
+- Settings: every switch and value says whether it is the built-in choice or the person's own, with a folded
+  explanation. First-run setup has six comfort switches. The account button opens a menu instead of signing out.
+  The tab strip and the phone bar have a New tab list. Shortcuts come from one table and show Mac keys on a Mac.
+- Deploy app: the title is never cut off; three plain checkboxes became Material ones.
+- Postman: real request bodies, one collection per area, every sendable example sent to a running server.
+- Design canvas: a new board for virtual disks; every board's labels, tabs, tools and steps brought into line with
+  the app; no private network addresses on boards. Tests hold these in place.
+- New walkthrough recordings for the app and the deploy app, each with its commit and how it was made.
+- Last release read back: v0.1.254 from `9bec503` (13 files, all jobs green).
+
+### Not finished
+
+- The release for `de960e5` was still running when the session ended. Read it back with
+  `gh api repos/Ding-Ding-Projects/map-editor/releases/latest`.
+- Feature inventory: 30 built, 74 partial, 8 not built (`docs/features/INVENTORY.md`). Each line names what is missing.
+- The design boards were compared with the app by wording and by a stand-in renderer, not screen against screen,
+  and not on the real canvas.
+- Not checked on a real Windows PC. The published documentation site was not read back.
+- Two Postman requests were not sent: registering a passkey and signing in with one.
+
+### Waiting for the maintainer
+
+- Whether to publish a sanitized copy of the maintainer's working rules in `README.md` and `AGENTS.md`. A copy was
+  prepared outside the repository and is not kept; it can be made again with the maintainer's export tool.
+- Whether to rewrite history for commit `0a4ed50`, and whether to delete release v0.1.57 and draft v0.1.78.
+- Uploading the social preview picture in the repository settings.
+
+### First steps for the next person
+
+1. `npm ci`, then `npm run build` and `node scripts/local-checks.mjs record` to confirm the tree is sound.
+2. Read `.claude/skills/map-editor-operations/SKILL.md` for how to run, drive and release.
+3. Pick the shortest "MISSING" lines in `docs/features/INVENTORY.md` first.
+
