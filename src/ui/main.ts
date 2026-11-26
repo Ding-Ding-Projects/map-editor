@@ -1252,11 +1252,12 @@ function pickBar(rows: HTMLElement[], before: Element, name: (i: number) => stri
   const bar = document.createElement('div'); bar.className = 'h-selbar'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', tx('selectMode'));
   bar.innerHTML = `<b role="status"></b><md-text-button data-pick="all">${esc(tx('selectAll'))}</md-text-button><md-text-button data-pick="inv">${esc(tx('selectInvert'))}</md-text-button><span class="muted hsel-note" hidden>${esc(tx(note))}</span>`;
   before.before(bar);
+  bar.hidden = rows.length < 2; // with one row there is nothing to choose between
   const shown = () => rows.map((r, i) => r.hidden ? -1 : i).filter((i) => i >= 0);
   const paint = () => { rows.forEach((r, i) => { r.querySelector<HTMLInputElement>('.h-pick')!.checked = picked.has(i); r.classList.toggle('ticked', picked.has(i)); }); bar.querySelector('b')!.textContent = tx('selectedN', { n: picked.size, total: rows.length }); bar.querySelector<HTMLElement>('.hsel-note')!.hidden = !picked.size; };
   rows.forEach((r, i) => {
     const box = document.createElement('input'); box.type = 'checkbox'; box.className = 'h-pick'; box.setAttribute('aria-label', tx('selectWorld', { name: name(i).slice(0, 60) }));
-    r.prepend(box);
+    box.hidden = rows.length < 2; r.prepend(box);
     box.addEventListener('click', (ev) => { ev.stopPropagation(); anchor = pickItem(picked, i, anchor, ev.shiftKey); paint(); });
   });
   bar.querySelector('[data-pick=all]')!.addEventListener('click', () => { const vis = shown(); const all = vis.length > 0 && vis.every((i) => picked.has(i)); vis.forEach((i) => { if (all) picked.delete(i); else picked.add(i); }); paint(); });
@@ -1410,6 +1411,8 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
     view.querySelector('#hsel-all')!.addEventListener('click', () => { const vis = hShown(); const all = vis.length > 0 && vis.every((i) => hPicked.has(i)); vis.forEach((i) => { if (all) hPicked.delete(i); else hPicked.add(i); }); hPaint(); });
     view.querySelector('#hsel-inv')!.addEventListener('click', () => { hShown().forEach((i) => { if (hPicked.has(i)) hPicked.delete(i); else hPicked.add(i); }); hPaint(); });
     hPaint();
+    view.querySelector<HTMLElement>('.h-selbar')!.hidden = rows.length < 2;
+    rows.forEach((r) => { r.querySelector<HTMLElement>('.h-pick')!.hidden = rows.length < 2; });
     let run = 0;
     const filter = async () => {
       const my = ++run;
