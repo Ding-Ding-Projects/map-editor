@@ -1139,3 +1139,7 @@ md-dialog.support-desk { max-block-size: min(820px, calc(100% - 32px)); }
 
 .data-folder h4 { margin: 18px 0 4px; font-size: 15px; } .wf-list { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 4px; }
 .wf-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; } .wf-list code { flex: 1 1 240px; overflow-wrap: anywhere; font-size: 13px; }
+/* Panel tabs are pills at every width (the theme variable alone does not round them). */
+.dockview-theme-m3 .dv-tabs-container .dv-tab { border-radius: 999px; margin: 6px 2px; block-size: 32px; align-self: center; }
+.dockview-theme-m3 .dv-tabs-container .dv-tab.dv-active-tab { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+.dockview-theme-m3 .dv-tabs-container .dv-tab:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 1px; }
