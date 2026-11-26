@@ -187,6 +187,20 @@ async function virtualDisks(main: Element) {
         <div slot="supporting-text">${esc(v.letters.length ? by(`Drive ${v.letters.join(', ')}:`, `磁碟機 ${v.letters.join('、')}:`) : by('No drive letter', '冇磁碟機代號'))} · ${gb(v.sizeBytes)}${v.readOnly ? ` · ${esc(by('read-only', '唯讀'))}` : ''}</div>
         <md-outlined-button slot="end" data-detach="${i}">Detach</md-outlined-button></md-list-item>`).join('');
       listEl.querySelectorAll<HTMLElement>('[data-detach]').forEach((b) => b.addEventListener('click', () => run({ action: 'detach', file: disks[Number(b.dataset.detach)].file }, 'Waiting for Windows permission…')));
+      // Search the attached disks by file, drive letter or size; it appears with two or more.
+      main.querySelector('.vd-find')?.remove();
+      if (disks.length > 1) {
+        const q = searchBox('vdisk-search', by('Search virtual disks', '搵虛擬磁碟'), paletteText, { compact: true });
+        const shownEl = document.createElement('span'); shownEl.className = 'muted'; shownEl.setAttribute('role', 'status');
+        const row = document.createElement('div'); row.className = 'inst-find vd-find'; row.append(q.el, shownEl); listEl.before(row);
+        const rows = Array.from(listEl.children) as HTMLElement[];
+        q.onChange(async () => {
+          const hits = await q.filter(disks.map((v) => `${v.file} ${v.letters.join(' ')} ${gb(v.sizeBytes)} ${v.readOnly ? 'read-only' : ''}`)) ?? disks.map(() => false);
+          rows.forEach((el, k) => { el.hidden = !hits[k]; });
+          const n = hits.filter(Boolean).length;
+          shownEl.textContent = n === disks.length ? '' : n ? by(`Showing ${n} of ${disks.length}`, `顯示緊 ${disks.length} 個入面嘅 ${n} 個`) : by('No virtual disk matches. Nothing was changed.', '冇虛擬磁碟啱。乜都冇改到。');
+        });
+      }
     } catch (e) { status.textContent = (e as Error).message; listEl.innerHTML = ''; }
   }
   main.querySelector('#vd-refresh')!.addEventListener('click', () => { status.textContent = 'Loading…'; void load(); });

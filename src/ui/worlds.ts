@@ -122,6 +122,13 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
       dlg.innerHTML = `<div slot="headline">${esc(tx('binTitle'))}</div><form slot="content" id="bin-form" method="dialog"><p class="muted">${esc(tx('binNote'))}</p>
         <ol class="bin-list">${items.length ? items.map((it, i) => `<li><span class="desk-text"><b>${esc(it.name)}</b><small>${esc(it.binnedAt ? new Date(it.binnedAt).toLocaleString('en-GB') : '')} · <code>${esc(it.root)}</code></small></span><md-filled-tonal-button type="button" data-restore="${i}">${esc(tx('binRestore'))}</md-filled-tonal-button></li>`).join('') : `<li class="muted">${esc(tx('binEmpty'))}</li>`}</ol></form>
         <div slot="actions"><md-text-button form="bin-form" value="close">${esc(tx('close'))}</md-text-button></div>`;
+      if (c.rx && items.length > 1) {
+        const q = searchBox('bin-search', tx('binSearch'), c.rx, { compact: true });
+        const rows = Array.from(dlg.querySelectorAll<HTMLElement>('.bin-list > li'));
+        dlg.querySelector('.bin-list')!.before(q.el);
+        const none = document.createElement('p'); none.className = 'muted'; none.setAttribute('role', 'status'); none.hidden = true; none.textContent = tx('binNoMatch'); dlg.querySelector('.bin-list')!.after(none);
+        q.onChange(async () => { const hits = await q.filter(items.map((it) => `${it.name} ${it.root} ${it.binnedAt ?? ''}`)) ?? items.map(() => false); rows.forEach((el, k) => { el.hidden = !hits[k]; }); none.hidden = hits.some(Boolean); });
+      }
       dlg.querySelectorAll<HTMLElement>('[data-restore]').forEach((b) => b.addEventListener('click', async () => {
         const it = items[Number(b.dataset.restore)];
         try { const r = await c.api<{ name: string }>('/api/worlds/restore', { method: 'POST', body: { root: it.root, id: it.id } }); c.notify(tx('binRestored', { name: r.name })); await draw(); await load(); }

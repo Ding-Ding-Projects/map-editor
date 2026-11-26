@@ -1273,3 +1273,5 @@ html { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--md-sys-c
 md-list-item[hidden], .act-list > li[hidden] { display: none !important; }
 
 .bp-swatch[hidden] { display: none !important; } .bp-shown { margin: 6px 0 0; }
+
+.bin-list > li[hidden] { display: none !important; } .bin-dialog .search-box { margin: 8px 0; }
