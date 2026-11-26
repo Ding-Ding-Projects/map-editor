@@ -6,7 +6,7 @@ lands; anything not rechecked keeps its last audited status.
 
 Re-audited on 2026-11-25 after the changes of that day.
 
-Counts (126 features): built 21 / partial 81 / unbuilt 10 / not applicable 14
+Counts (126 features): built 22 / partial 80 / unbuilt 10 / not applicable 14
 
 
 ## Language, voice, and personalization
@@ -152,7 +152,7 @@ Counts (126 features): built 21 / partial 81 / unbuilt 10 / not applicable 14
 ## Repository records and README
 
 `tabbed-readme` | APPLIES: yes | STATUS: BUILT | EVIDENCE: README.md (intro, site link, contents line, quick start, `<details>` sections), LICENSE, CONTRIBUTING.md, SECURITY.md, CODE_OF_CONDUCT.md | MISSING: -
-`human-time-estimate` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: README.md "How long a person would have taken" (about 13,300 lines, 50 lines a day, 13,300 / 50 = about 266 working days, labelled an estimate) | MISSING: the new line has not yet been read back from a published release. (scripts/line-counts.mjs `estimateDays` prints a range, 30 to 80 lines a day, from the count made in the release's own run; README states the same range; tests/line-counts.test.ts.)
+`human-time-estimate` | APPLIES: yes | STATUS: BUILT | EVIDENCE: README.md "How long a person would have taken" (about 13,300 lines, 50 lines a day, 13,300 / 50 = about 266 working days, labelled an estimate) | MISSING: nothing. (Read back on v0.1.219: about 208 to 554 working days for 16,614 lines that are not blank.) (scripts/line-counts.mjs `estimateDays` prints a range, 30 to 80 lines a day, from the count made in the release's own run; README states the same range; tests/line-counts.test.ts.)
 `sanitized-instruction-copy` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: AGENTS.md has only the vocabulary block and three working notes | MISSING: labelled sanitized mirror of the shared instructions in README.md and AGENTS.md and a check that fails when it drifts
 `agents-md-vocabulary-block` | APPLIES: yes | STATUS: BUILT | EVIDENCE: AGENTS.md `## Agent conversation vocabulary` (text matches the canonical wording; byte-exactness not machine-checked) | MISSING: -
 `vocabulary-hash-lock` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: none | MISSING: scripts/check-vocabulary.mjs wired into build.bat and a pre-push hook through core.hooksPath
