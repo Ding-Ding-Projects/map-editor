@@ -1213,3 +1213,8 @@ md-dialog:has(#nf) { max-block-size: min(760px, calc(100% - 32px)); }
 
 /* Tour card: in the two-language mode the buttons may need a second line rather than leaving the card. */
 .tour-card footer { flex-wrap: wrap; row-gap: 6px; }
+
+/* Deploy app, manage screen: say so while the live log is still empty; keep the state readable in two languages. */
+.log-empty { margin: 0; padding: 20px 24px; color: color-mix(in srgb, currentColor 70%, transparent); font-size: 14px; }
+.log-empty + .log:empty { display: none; }
+[data-lang="both"] .manage-stats b { font-size: 16px; line-height: 22px; word-break: keep-all; }

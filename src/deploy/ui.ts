@@ -70,6 +70,7 @@ async function manage(main: Element, i: Instance) {
         <md-outlined-button id="a-restart">Restart</md-outlined-button><md-outlined-button id="a-update">Update</md-outlined-button><md-outlined-button id="a-dup">Duplicate</md-outlined-button><md-outlined-button id="a-remove" class="danger">Remove</md-outlined-button></div>
       <p class="muted">Duplicate makes a second instance on the same computer with the same version and worlds folder, its own port and fresh accounts. Remove stops it and deletes its Compose file. Worlds and data are kept unless you also choose Delete data.</p></section>
     <section class="card log-card"><div class="log-head"><b>Live log</b><span class="spacer"></span><md-outlined-button id="pause">Pause</md-outlined-button><md-outlined-button id="copy">Copy</md-outlined-button></div>
+      <p class="log-empty" id="log-empty">Waiting for the first log line. Lines appear here as the instance writes them.</p>
       <pre id="log" class="log" aria-live="off"></pre></section></div>`;
   let state = 'unknown', paused = false;
   const lines: string[] = [];
@@ -87,7 +88,7 @@ async function manage(main: Element, i: Instance) {
     if (r.ok && action === 'remove') { managing = undefined; d.logsStop(); render(); return; }
     refresh();
   };
-  d.onLog((l: string) => { lines.push(l); if (lines.length > 2000) lines.shift(); if (!paused && logEl.isConnected) { logEl.textContent = lines.join('\n'); logEl.scrollTop = logEl.scrollHeight; } });
+  d.onLog((l: string) => { main.querySelector('#log-empty')?.remove(); lines.push(l); if (lines.length > 2000) lines.shift(); if (!paused && logEl.isConnected) { logEl.textContent = lines.join('\n'); logEl.scrollTop = logEl.scrollHeight; } });
   d.logsStart(i.name);
   main.querySelector('#back')!.addEventListener('click', () => { managing = undefined; d.logsStop(); render(); });
   main.querySelector('#a-open')!.addEventListener('click', () => d.open(url));

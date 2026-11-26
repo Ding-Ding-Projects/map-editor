@@ -210,6 +210,7 @@ export const YUE: Record<string, string> = {
   "The file was created but is not attached.": "檔案已經建立，但係未掛載。",
   "Nothing was changed.": "冇更改任何嘢。",
   "Sound effects": "音效",
+  "Waiting for the first log line. Lines appear here as the instance writes them.": "等緊第一行記錄。實例一寫記錄，呢度就會出。",
   "Your own words": "自己嘅用字",
   "Find commands (Ctrl+Shift+F)": "搵指令（Ctrl+Shift+F）",
   "Views": "畫面",
