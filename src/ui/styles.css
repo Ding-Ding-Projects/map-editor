@@ -1293,3 +1293,14 @@ md-list-item[hidden], .act-list > li[hidden] { display: none !important; }
 /* Changelog heading: title, code name, the fold button and the search each take their own row. */
 .cl-head .fold-bar, .cl-head #cl-fold { flex-basis: 100%; margin: 0; }
 .cl-head #cl-fold { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .cl-head #cl-fold[hidden] { display: none; }
+
+/* Deploy app: the messages button with its count, and the list it opens. */
+.msgs-btn { position: relative; }
+.msgs-btn .badge { position: absolute; inset-block-start: -2px; inset-inline-end: -2px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; border-radius: 9px; display: grid; place-items: center; font-size: 11px; font-weight: 800; background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); }
+.msgs-btn .badge[hidden] { display: none; }
+.msgs-body { display: grid; gap: 10px; min-width: min(520px, 80vw); } .msgs-body p { margin: 0; }
+.msgs-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 50vh; overflow: auto; }
+.msgs-list > li { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 16px; background: var(--md-sys-color-surface-container-high); }
+.msgs-list > li.error { background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); }
+.msgs-list > li[hidden] { display: none; }
+.msgs-list .act-text { display: grid; } .msgs-list small { opacity: .8; }

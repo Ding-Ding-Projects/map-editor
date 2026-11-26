@@ -293,7 +293,7 @@ async function render() {
   app.innerHTML = `<header class="top"><div class="brand"><div class="logo" aria-hidden="true"></div><div>
       <div class="md-typescale-headline-medium title">Put Map Editor on your network</div>
       <div class="muted" id="prov"></div></div></div>
-    <md-chip-set class="views"><md-filter-chip id="v-deploy" label="Deploy" ${view === 'deploy' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-inst" label="Instances" ${view === 'instances' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-disks" label="Virtual disks" ${view === 'disks' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-guide" label="Guide" ${view === 'guide' ? 'selected' : ''}></md-filter-chip></md-chip-set><md-text-button id="tour">Take a tour</md-text-button><button type="button" id="cmd" class="icon-btn" aria-label="Find commands (Ctrl+Shift+F)" title="Find commands (Ctrl+Shift+F)" aria-keyshortcuts="Control+Shift+F">${iconSvg('search', 20)}</button><button type="button" id="words" class="icon-btn" aria-label="Your own words" title="Your own words">${iconSvg('pencil', 20)}</button>${langSwitch()}<button type="button" id="snd" class="icon-btn" aria-pressed="${soundsOn}" aria-label="Sound effects" title="Sound effects">${iconSvg('sound', 20)}</button></header>
+    <md-chip-set class="views"><md-filter-chip id="v-deploy" label="Deploy" ${view === 'deploy' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-inst" label="Instances" ${view === 'instances' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-disks" label="Virtual disks" ${view === 'disks' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-guide" label="Guide" ${view === 'guide' ? 'selected' : ''}></md-filter-chip></md-chip-set><md-text-button id="tour">Take a tour</md-text-button><button type="button" id="cmd" class="icon-btn" aria-label="Find commands (Ctrl+Shift+F)" title="Find commands (Ctrl+Shift+F)" aria-keyshortcuts="Control+Shift+F">${iconSvg('search', 20)}</button><button type="button" id="msgs" class="icon-btn msgs-btn" aria-label="Messages" title="Messages">${iconSvg('list', 20)}<span class="badge" ${unread ? '' : 'hidden'}>${unread || ''}</span></button><button type="button" id="words" class="icon-btn" aria-label="Your own words" title="Your own words">${iconSvg('pencil', 20)}</button>${langSwitch()}<button type="button" id="snd" class="icon-btn" aria-pressed="${soundsOn}" aria-label="Sound effects" title="Sound effects">${iconSvg('sound', 20)}</button></header>
     <div id="update-banner" class="update-banner" role="region" aria-label="Update" hidden></div>
     <div class="body"><main class="view" id="main"></main></div><div id="toasts" class="toasts"></div>`;
   showUpdate();
@@ -515,12 +515,43 @@ async function render() {
   }
 }
 
+// Every message shown is also kept in a list for this run of the app, so one that has gone can be read again.
+const messages: Array<{ text: string; error: boolean; at: string }> = [];
+let unread = 0;
+const paintBadge = () => { const b = document.querySelector('#msgs .badge'); if (b) { b.textContent = unread ? String(Math.min(unread, 99)) : ''; (b as HTMLElement).hidden = !unread; } };
+function openMessages() {
+  document.querySelector('#msgs-dlg')?.remove();
+  unread = 0; paintBadge();
+  const dlg = document.createElement('md-dialog') as HTMLElement & { show: () => void; close: () => void };
+  dlg.id = 'msgs-dlg';
+  dlg.innerHTML = `<div slot="headline">${esc(by('Messages', '訊息'))}</div><div slot="content" class="msgs-body"><p class="muted">${esc(by('Messages from this run of the app, newest first. They are not kept after it closes; the Activity list on Instances is the lasting record.', '呢次開程式期間嘅訊息，新嘅排先。關咗程式就唔會留低；「實例」入面嘅活動記錄先係長期紀錄。'))}</p>
+    <ol class="msgs-list">${messages.length ? messages.map((m) => `<li class="${m.error ? 'error' : ''}"><span class="act-kind">${esc(m.error ? by('Problem', '問題') : by('Note', '通知'))}</span><span class="act-text"><b>${esc(m.text)}</b><small>${esc(m.at)}</small></span></li>`).join('') : `<li class="muted">${esc(by('No messages yet.', '暫時未有訊息。'))}</li>`}</ol></div>
+    <div slot="actions">${messages.length ? `<md-text-button id="msgs-clear">${esc(by('Clear the list', '清空清單'))}</md-text-button>` : ''}<md-text-button id="msgs-close">${esc(by('Close', '關閉'))}</md-text-button></div>`;
+  document.body.append(dlg);
+  if (messages.length > 1) {
+    const q = searchBox('deploy-message-search', by('Search messages', '搵訊息'), paletteText, { compact: true });
+    const rows = Array.from(dlg.querySelectorAll<HTMLElement>('.msgs-list > li'));
+    dlg.querySelector('.msgs-list')!.before(q.el);
+    q.onChange(async () => { const hits = await q.filter(messages.map((m) => `${m.text} ${m.at}`)) ?? messages.map(() => false); rows.forEach((el, k) => { el.hidden = !hits[k]; }); });
+  }
+  dlg.querySelector('#msgs-close')!.addEventListener('click', () => dlg.close());
+  dlg.querySelector('#msgs-clear')?.addEventListener('click', () => { messages.length = 0; dlg.close(); });
+  dlg.addEventListener('closed', () => dlg.remove());
+  dlg.show();
+}
+document.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('#msgs')) openMessages(); });
+
 function toast(text: string, error = false) {
+  messages.unshift({ text, error, at: new Date().toLocaleTimeString('en-GB') }); if (messages.length > 200) messages.length = 200;
+  if (!document.querySelector('#msgs-dlg')) { unread++; paintBadge(); }
   play(error ? 'error' : 'success');
   const el = document.createElement('div');
   el.className = `toast${error ? ' error' : ''}`; el.setAttribute('role', error ? 'alert' : 'status');
   el.innerHTML = `<span>${esc(text)}</span>`;
   const x = document.createElement('md-text-button'); x.textContent = 'Close'; x.addEventListener('click', () => el.remove()); el.append(x);
+  // The same message again replaces the one already showing instead of stacking under it.
+  for (const old of Array.from(document.querySelectorAll<HTMLElement>('#toasts .toast'))) if (old.dataset.text === text) old.remove();
+  el.dataset.text = text;
   document.getElementById('toasts')!.prepend(el);
   if (!error) setTimeout(() => el.remove(), 8000);
 }
@@ -668,6 +699,7 @@ function deployCommands(): Command[] {
     { id: 'support', label: 'Report a problem', where: 'Help', run: () => { void supportDesk(); } },
     { id: 'setup', label: 'Run first-time setup again', where: 'Help', run: () => { obSave({ step: 0, done: false }); void render(); } },
     { id: 'words', label: 'Your own words', where: 'Settings', run: () => ownWords() },
+    { id: 'msgs', label: 'Messages', where: 'Help', run: () => openMessages() },
     { id: 'snd', label: 'Sound effects', where: 'Settings, live', toggle: { get: () => soundsOn, set: (v) => { if (v !== soundsOn) document.querySelector<HTMLElement>('#snd')?.click(); } } },
     ...(['en', 'yue', 'both'] as const).map((l) => ({ id: `lang-${l}`, label: `Language: ${l === 'en' ? 'English' : l === 'yue' ? '粵語' : 'English + 粵語'}`, where: 'Settings', run: () => switchLang(l) })),
   ];

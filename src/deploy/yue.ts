@@ -210,6 +210,7 @@ export const YUE: Record<string, string> = {
   "The file was created but is not attached.": "檔案已經建立，但係未掛載。",
   "Nothing was changed.": "冇更改任何嘢。",
   "Sound effects": "音效",
+  "Messages": "訊息",
   "The check could not run": "檢查做唔到",
   "Nothing was changed. Press Check now to try again, or carry on: each target checks its own tools when you deploy.": "乜都冇改到。撳「而家檢查」再試，或者照去下一步：每個目標部署嗰陣都會自己檢查工具。",
   "Waiting for the first log line. Lines appear here as the instance writes them.": "等緊第一行記錄。實例一寫記錄，呢度就會出。",
