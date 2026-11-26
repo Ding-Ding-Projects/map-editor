@@ -22,3 +22,19 @@ describe('support tickets', () => {
     expect(new URL(long).searchParams.get('body')!.endsWith('(cut here: paste the rest from the copied ticket)')).toBe(true); expect(long.length).toBeLessThan(6500);
   });
 });
+
+describe('exporting saved reports', () => {
+  it('writes one Markdown file with every report and its facts, newest first', async () => {
+    const { ticketsMarkdown } = await import('../src/ui/tickets.js');
+    const ctx = { version: '0.1.178', commit: 'abc1234', language: 'en', screen: 'worlds', window: '1440 × 900', browser: 'Chrome 140' };
+    const md = ticketsMarkdown([
+      { id: 'b', time: '2026-11-26T06:00:00.000Z', title: 'Second\nreport', details: 'It froze.', context: ctx },
+      { id: 'a', time: '2026-11-25T06:00:00.000Z', title: 'First report', details: '', context: ctx },
+    ], 'Saved reports');
+    expect(md.startsWith('# Saved reports\n\n## Second report\n\n2026-11-26T06:00:00.000Z')).toBe(true);
+    expect(md.indexOf('## Second report')).toBeLessThan(md.indexOf('## First report'));
+    expect(md).toContain('It froze.');
+    expect(md).toContain('0.1.178');
+    expect(md.split('\n---\n').length).toBe(2);
+  });
+});

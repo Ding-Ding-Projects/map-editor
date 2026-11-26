@@ -480,6 +480,7 @@ function supportDesk() {
     context: () => ({ version: health?.version ?? 'unavailable', commit: health?.commit ?? 'unavailable', codeName: health?.codeName?.en, language: prefs.lang, screen: prefs.tab, window: `${innerWidth} × ${innerHeight}`,
       browser: (navigator.userAgent.match(/(Edg|Chrome|Firefox|Safari)\/[\d.]+/) ?? [navigator.userAgent.slice(0, 60)])[0].replace('/', ' ') + (desktopBridge ? ' (desktop app)' : ''), world: world?.edition ?? (world ? 'java' : undefined) }),
     tx: (k, v) => tx(k as Key, v), esc, notify, confirm: (text, ok) => askConfirm(text, ok),
+    openData: desktopBridge?.openDataRoot ? () => { void desktopBridge!.openDataRoot!().then((err) => { if (err) notify(err, true); }); } : undefined,
   });
 }
 

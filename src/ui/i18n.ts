@@ -475,6 +475,8 @@ const S = {
   deskOpenIssue: { en: 'Open as an issue', yue: '開做 issue' },
   deskSaved: { en: 'Tickets on this device', yue: '呢部機上面嘅單' },
   deskNone: { en: 'No tickets yet.', yue: '仲未有單。' },
+  deskExport: { en: 'Export tickets…', yue: '匯出工單…' },
+  deskExported: { en: 'Tickets exported as one Markdown file. Tickets in it: {n}.', yue: '工單匯出咗做一個 Markdown 檔。入面有 {n} 張。' },
   deskSavedMsg: { en: 'Ticket saved on this device.', yue: '張單儲存咗喺呢部機。' },
   deskNeedSubject: { en: 'Give the ticket a short summary first.', yue: '請先寫個簡短標題。' },
   deskDelete: { en: 'Delete', yue: '刪除' },

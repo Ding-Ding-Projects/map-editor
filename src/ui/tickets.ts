@@ -30,7 +30,13 @@ export function issueUrl(t: Ticket): string {
   return `${ISSUES_URL}?title=${encodeURIComponent(t.title.trim().slice(0, 200))}&body=${encodeURIComponent(body)}`;
 }
 
-interface Desk { context: () => TicketContext; tx: (k: string, v?: Record<string, string | number>) => string; esc: (s: unknown) => string; notify: (text: string, error?: boolean) => void; confirm: (text: string, ok: string) => Promise<boolean> }
+/** Every saved report as one Markdown file: newest first, each with its attached facts. Nothing else is added. */
+export function ticketsMarkdown(list: Ticket[], heading: string): string {
+  const one = (t: Ticket) => `## ${t.title.replace(/\s+/g, ' ').trim()}\n\n${t.time}\n\n${ticketText(t)}`;
+  return `# ${heading}\n\n${list.map(one).join('\n\n---\n\n')}\n`;
+}
+
+interface Desk { context: () => TicketContext; tx: (k: string, v?: Record<string, string | number>) => string; esc: (s: unknown) => string; notify: (text: string, error?: boolean) => void; confirm: (text: string, ok: string) => Promise<boolean>; openData?: () => void }
 
 export function openSupportDesk(d: Desk): void {
   document.querySelector('.support-desk')?.remove();
@@ -46,6 +52,7 @@ export function openSupportDesk(d: Desk): void {
       <details class="desk-attached" open><summary>${esc(tx('deskAttached'))}</summary><ul>${contextLines(ctx).map(([k, v]) => `<li><b>${esc(k)}</b> ${esc(v)}</li>`).join('')}</ul><p class="muted">${esc(tx('deskDisclosure'))}</p></details>
       <div class="row-actions"><md-filled-button id="desk-save" type="button">${esc(tx('deskSave'))}</md-filled-button><md-outlined-button id="desk-copy" type="button">${esc(tx('deskCopy'))}</md-outlined-button><md-outlined-button id="desk-open" type="button">${esc(tx('deskOpenIssue'))}</md-outlined-button></div>
       <h3>${esc(tx('deskSaved'))}</h3><ol class="desk-list" id="desk-list"></ol>
+      <div class="row-actions"><md-outlined-button id="desk-export" type="button">${esc(tx('deskExport'))}</md-outlined-button>${d.openData ? `<md-text-button id="desk-data" type="button">${esc(tx('dataFolderOpen'))}</md-text-button>` : ''}</div>
     </form>
     <div slot="actions"><md-text-button form="desk-form" value="close">${esc(tx('close'))}</md-text-button></div>`;
   document.body.append(dlg);
@@ -73,6 +80,13 @@ export function openSupportDesk(d: Desk): void {
   dlg.querySelector('#desk-save')!.addEventListener('click', () => { const t = draft(); if (!t) return; saveTickets([t, ...loadTickets()]); field('title').value = ''; field('details').value = ''; d.notify(tx('deskSavedMsg')); draw(); });
   dlg.querySelector('#desk-copy')!.addEventListener('click', () => { const t = draft(); if (t) copy(t); });
   dlg.querySelector('#desk-open')!.addEventListener('click', () => { const t = draft(); if (t) open(t); });
+  dlg.querySelector('#desk-export')!.addEventListener('click', () => {
+    const all = loadTickets();
+    if (!all.length) { d.notify(tx('deskNone'), true); return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([ticketsMarkdown(all, tx('deskSaved'))], { type: 'text/markdown' })); a.download = 'map-editor-tickets.md'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    d.notify(tx('deskExported', { n: all.length }));
+  });
+  dlg.querySelector('#desk-data')?.addEventListener('click', () => d.openData!());
   dlg.addEventListener('closed', () => dlg.remove());
   draw();
   dlg.show();
