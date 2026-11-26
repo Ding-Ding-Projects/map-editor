@@ -70,7 +70,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
         <h2 style="margin: 0 0 8px; font-size: 28px; line-height: 36px; font-weight: 700">Appearance</h2>
         <sc-for list="{{toggles}}" as="g" hint-placeholder-count="5">
           <div style="display: flex; align-items: center; gap: 16px; min-height: 72px; padding: 0 4px; border-bottom: 1px solid {{t.outlineVariant}}">
-            <span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 600">{{g.t}}</span><span style="font-size: 13px; color: {{t.onSurfaceVariant}}">{{g.d}}</span><span style="{{g.fromStyle}}">{{g.from}}</span></span>
+            <span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 600">{{g.t}}</span><span style="font-size: 13px; color: {{t.onSurfaceVariant}}">{{g.d}}</span><span style="{{g.fromStyle}}">{{g.from}}</span><button aria-expanded="{{g.more}}" onClick="{{g.flipMore}}" style="align-self: flex-start; margin: 2px 0 0 -10px; height: 32px; padding: 0 10px; border: 0; border-radius: 16px; background: transparent; color: {{t.primary}}; font-size: 13px; font-weight: 600">More about this setting</button><sc-if value="{{g.more}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; line-height: 1.45; color: {{t.onSurfaceVariant}}; padding: 0 0 8px 10px">Saved in this browser on this device. Every change is kept in Settings history, where it can be put back. The padlock stops it from being changed by accident.</span></sc-if></span>
             <button role="switch" aria-checked="{{g.on}}" aria-label="{{g.t}}" onClick="{{g.flip}}" style="{{g.track}}"><span style="{{g.thumb}}"></span></button>
           </div>
         </sc-for>
@@ -131,6 +131,7 @@ class Component extends DCLogic {
     const word = (v) => (v ? 'On' : 'Off');
     const toggles = Object.keys(on).map((k) => ({
       t: k, d: desc[k], on: on[k],
+      more: (this.state.more ?? '') === k, flipMore: () => this.setState({ more: (this.state.more ?? '') === k ? '' : k }),
       from: (on[k] === builtIn[k] ? '' : 'You changed this. ') + 'Built-in choice: ' + (device[k] ? 'follows this device (' + word(builtIn[k]) + ')' : word(builtIn[k])),
       fromStyle: 'font-size: 12px; ' + (on[k] === builtIn[k] ? 'opacity: .85; color: ' + t.onSurfaceVariant : 'font-weight: 600; color: ' + t.primary),
       track: 'flex: none; width: 52px; height: 32px; padding: 0; border-radius: 16px; position: relative; ' + (on[k] ? 'border: 0; background: ' + t.primary : 'border: 2px solid ' + t.outline + '; background: ' + t.surfaceContainerHighest),

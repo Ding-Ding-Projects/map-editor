@@ -27,4 +27,10 @@ describe('where a setting comes from', () => {
     expect([...table.matchAll(/^\s{4}(\w+): \{ keys/gm)].map((m) => m[1]).sort()).toEqual([...VALUES].sort());
     for (const v of VALUES) expect(main, v).toContain(`\${valFrom('${v}')}`);
   });
+  it('folds a full explanation under every switch', () => {
+    expect(main).toContain("</md-switch>${moreAbout(id, tx(label))}</div>");
+    const fn = main.slice(main.indexOf('const moreAbout = '), main.indexOf('const sw = '));
+    for (const k of ['moreSaved', 'moreUndo', 'moreNoUndo', 'moreLock']) expect(fn).toContain(k);
+    expect(fn).toContain('<details class="set-more"><summary');
+  });
 });
