@@ -42,9 +42,10 @@ function page(title, desc, main, active = 'guide') {
 <nav aria-label="Site"><a href="${base}"${active === 'guide' ? ' aria-current="page"' : ''}>${L('Guide', '指南')}</a><a href="${base}downloads/"${active === 'downloads' ? ' aria-current="page"' : ''}>${L('Downloads', '下載')}</a><a href="${repo}/commits/main">${L('Changelog', '更新紀錄')}</a><a href="${repo}">${L('Source', '原始碼')}</a><a href="#tour" data-tour="page">${L('Take a tour', '睇下導覽')}</a></nav>
 <div class="lang-switch" role="group" aria-label="Language"><button type="button" data-set-lang="en" aria-pressed="true">English</button><button type="button" data-set-lang="yue" aria-pressed="false">粵語</button><button type="button" data-set-lang="both" aria-pressed="false">EN + 粵</button></div></header>
 <main>${main}</main>
-<footer><div><span>Map Editor ${esc(pkg.version)} · updated ${esc(stamp)} · <a href="${repo}/commit/${esc(commit)}">${esc(commit.slice(0, 7) || 'unavailable')}</a></span>
+<footer><div><span>Map Editor ${esc(pkg.version)} · updated <time class="when" datetime="${esc(when)}">${esc(stamp)}</time> · <a href="${repo}/commit/${esc(commit)}">${esc(commit.slice(0, 7) || 'unavailable')}</a></span>
 <span>${L('This site documents and downloads Map Editor; it is not the editor. Based on Amulet Map Editor, which needs its own licence. Minecraft is a trademark of Mojang Synergies AB; not affiliated with Mojang or Microsoft.', '呢個網站係 Map Editor 嘅說明同下載頁，唔係編輯器本身。基於 Amulet Map Editor，使用要跟返佢自己嘅授權。Minecraft 係 Mojang Synergies AB 嘅商標；同 Mojang 或者 Microsoft 冇關係。')}</span></div></footer>
 <script>(function(){var k='map-editor-site.lang',d=document.documentElement;function set(l){if(l==='en')delete d.dataset.lang;else d.dataset.lang=l;d.lang=l==='yue'?'yue-Hant-HK':'en';document.querySelectorAll('[data-set-lang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.setLang===l))});try{l==='en'?localStorage.removeItem(k):localStorage.setItem(k,l)}catch(e){}}set(d.dataset.lang||'en');document.querySelectorAll('[data-set-lang]').forEach(function(b){b.addEventListener('click',function(){set(b.dataset.setLang)})})})();</script>
+<script>document.querySelectorAll('time.when').forEach(function(t){var d=new Date(t.getAttribute('datetime'));if(!isNaN(d))t.textContent=d.toLocaleString(undefined,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',timeZoneName:'short'})})</script>
 <script src="${base}tour.js" defer></script><script src="${base}dock.js" defer></script>
 </body></html>`;
 }
@@ -101,7 +102,7 @@ const asset = (n) => rel?.assets.find((a) => a.name === n);
 pagePath = '';
 writeFileSync(path.join(out, 'index.html'), page('Map Editor', 'A Minecraft world editor for your desk, your whole network, or a spare PC. Every edit can be undone.', `
 <section class="hero"><div class="hero-copy">
-<span class="pill">${L('Java Edition 1.18 and newer, and Bedrock Edition', 'Java 版 1.18 或以上，同埋基岩版')} · v${esc(pkg.version)}</span>
+<span class="pill">${L('Java Edition 1.18 and newer, and Bedrock Edition', 'Java 版 1.18 或以上，同埋基岩版')} · v${esc(pkg.version)} · ${L('updated', '更新於')} <time class="when" datetime="${esc(when)}">${esc(stamp)}</time></span>
 <h1><span data-l="en" lang="en">Edit your world.<br><span>Undo anything.</span></span><span data-l="yue" lang="yue-Hant-HK">改你個世界。<br><span>改錯都返得轉頭。</span></span></h1>
 <p>${L('A Minecraft world editor for your desk, your whole network, or a spare PC. Every fill, replace and clone is saved to its own history, so nothing is ever one click from gone.', '一個 Minecraft 世界編輯器，放喺你部電腦、成個屋企網絡，或者一部閒置電腦都得。每次填充、替換同複製都會記落自己嘅歷史，唔會一撳就冇咗。')}</p>
 <p class="actions">${asset('Map.EditorSetup.exe') ? `<a class="btn filled" href="${esc(asset('Map.EditorSetup.exe').browser_download_url)}" download>${L('Download for Windows', '下載 Windows 版')} · ${esc(rel.tag_name)}</a><a class="btn outlined" href="${base}downloads/">${L('All downloads', '全部下載')}</a>` : `<a class="btn filled" href="${base}downloads/">${L('Get Map Editor', '攞 Map Editor')}</a>`}<a class="btn outlined" href="${base}web-app/">${L('Run it with Docker', '用 Docker 行')}</a></p></div>
