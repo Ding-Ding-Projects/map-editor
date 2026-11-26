@@ -1,6 +1,6 @@
 // Rich text notes for the open world, edited with TinyMCE (self-hosted, GPL licence key).
 type Api = <T = any>(path: string, init?: { method?: string; body?: unknown }) => Promise<T>;
-interface Opts { api: Api; notify: (text: string, error?: boolean) => void; dark: boolean; label: string; saved: string }
+interface Opts { api: Api; notify: (text: string, error?: boolean) => void; dark: boolean; label: string; saved: string; exportLabel?: string; exportName?: string }
 
 let loading: Promise<any> | undefined;
 function loadTiny(): Promise<any> {
@@ -30,10 +30,17 @@ export async function notesPanel(el: HTMLElement, o: Opts) {
       content_style: o.dark ? 'body { background: #0B0F0A; color: #E0E4DA; font-family: Roboto Flex, Roboto, system-ui, sans-serif; } a { color: #8FD88A; }' : 'body { background: #FFFFFF; color: #181D17; font-family: Roboto Flex, Roboto, system-ui, sans-serif; } a { color: #2E6B2C; }',
       menubar: false, branding: false, promotion: false, height: '100%', resize: false,
       plugins: 'lists link table autolink',
-      toolbar: 'undo redo | blocks | bold italic underline | bullist numlist | link table',
+      toolbar: `undo redo | blocks | bold italic underline | bullist numlist | link table${o.exportLabel ? ' | exportnotes' : ''}`,
       setup: (ed: any) => {
         // While its panel is not showing, the editor's frame has no window; its own resize handler would fail, so stop the event first.
         ed.on('ResizeWindow', (e: { stopImmediatePropagation: () => void }) => { if (!ed.getContentAreaContainer?.()?.isConnected || !ed.getWin?.()) e.stopImmediatePropagation(); }, true);
+        // Export: the notes as one HTML file that opens anywhere.
+        if (o.exportLabel) ed.ui.registry.addButton('exportnotes', { text: o.exportLabel, onAction: () => {
+          const title = (o.exportName ?? o.label).replace(/[<>&"]/g, '');
+          const html = `<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><title>${title}</title><style>body{font:16px/1.6 system-ui,sans-serif;max-width:46rem;margin:2rem auto;padding:0 1rem}table{border-collapse:collapse}td,th{border:1px solid #999;padding:4px 8px}</style></head><body>\n<h1>${title}</h1>\n${ed.getContent()}\n</body></html>\n`;
+          const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' })); a.download = `${title.replace(/[^\p{L}\p{N} _-]+/gu, '').trim() || 'notes'}.html`;
+          document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+        } });
         ed.on('input change', () => {
         clearTimeout(timer);
         timer = window.setTimeout(async () => {

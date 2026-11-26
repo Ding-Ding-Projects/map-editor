@@ -1944,7 +1944,7 @@ async function aboutView(view: HTMLElement): Promise<void> {
 }
 
 function notesPanel(el: HTMLElement) {
-  notesPanelImpl(el, { api, notify, dark: prefs.dark, label: tx('notes'), saved: tx('notesSaved') });
+  notesPanelImpl(el, { api, notify, dark: prefs.dark, label: tx('notes'), saved: tx('notesSaved'), exportLabel: tx('export'), exportName: `${world?.name ?? 'World'} notes` });
 }
 
 // ---------- keyboard ----------
