@@ -6,6 +6,12 @@
 
 Category: [Using the editor](README.md) · [Read on the website, with pictures](https://ding-ding-projects.github.io/map-editor/worlds/)
 
+## Find a world
+
+With two or more worlds, a search box sits above the cards. It looks at the name, the folder and the edition and version, and the button beside it switches to a regular expression with its builder. A line says how many are shown. Select all and Move to bin only ever act on the worlds that are showing. Worlds that share a name show their folder on the card, and a new flat world takes the name of its folder, so a second Flat World reads Flat World (2).
+
+有兩個或以上世界嗰陣，啲卡上面會有個搜尋格。佢會睇名、資料夾、版本同版本號，隔籬個掣可以轉做正則表達式，連埋砌式工具。有一行會寫顯示緊幾多個。「全選」同「掉入回收筒」只會對顯示緊嘅世界做嘢。同名嘅世界，卡上面會寫埋資料夾；新開嘅平地世界會跟資料夾個名，所以第二個 Flat World 會叫 Flat World (2)。
+
 ## Select several, and the bin
 
 Select on the Worlds screen switches on tick boxes: click or tick, Shift+click for a range, Ctrl+A for all, Invert to swap. Download selected saves each ticked world in turn. Move to bin asks with the two-key confirmation, then moves the ticked worlds, whole, into a bin folder inside the worlds folder; nothing is deleted, the open world is left alone, and a line says what was not moved and why. Bin lists them with Put back. To free the space, remove them yourself from the bin folder.

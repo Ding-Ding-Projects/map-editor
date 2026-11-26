@@ -7,6 +7,7 @@ import { invert, pickItem, selectAll } from './select.js';
 /** A file size people can read: small files in kB, the rest in MB. */
 const sizeText = (n: number) => n < 1e5 ? `${Math.max(1, Math.round(n / 1e3))} kB` : `${(n / 1e6).toFixed(1)} MB`;
 
+import { searchBox, type RegexText } from './regex.js';
 export interface WorldSummary { name: string; path: string; versionName?: string; dimensions: string[]; edition?: string }
 export interface WorldsContext {
   api: <T = any>(path: string, init?: { method?: string; body?: unknown }) => Promise<T>;
@@ -21,6 +22,8 @@ export interface WorldsContext {
   confirm?: (text: string, ok: string) => Promise<boolean>;
   /** Present only in the desktop app. */
   browse?: () => Promise<string | undefined>;
+  /** Wording for the search box and its regular-expression builder. */
+  rx?: RegexText;
 }
 
 const PAL = ['#3e6b30', '#4a7a38', '#567f3f', '#6f8a4a', '#2c5a86', '#356a9a', '#6a6f72', '#d8cfa3', '#7c6a4a'];
@@ -51,6 +54,7 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
       </div></header>
     <div id="sel-bar" class="sel-bar" role="toolbar" aria-label="${esc(tx('selectMode'))}" hidden><b id="sel-count" role="status"></b><span class="muted sel-hint">${esc(tx('selectHint'))}</span><span class="sel-acts">
       <md-text-button id="sel-all">${esc(tx('selectAll'))}</md-text-button><md-text-button id="sel-inv">${esc(tx('selectInvert'))}</md-text-button><md-filled-tonal-button id="sel-dl">${esc(tx('downloadSelected'))}</md-filled-tonal-button><md-outlined-button id="sel-bin">${esc(tx('binMove'))}</md-outlined-button></span></div>
+    <div class="world-find"><div id="world-q"></div><span class="muted" id="world-count" role="status" hidden></span></div>
     <p class="muted" id="bin-report" role="status" hidden></p>
     <div id="upload-status"></div>
     <div id="list" class="world-grid" role="status" aria-label="${esc(tx('loading'))}">${'<div class="world-card skeleton"><span class="sk-tile"></span><span class="sk-line"></span><span class="sk-line short"></span></div>'.repeat(4)}</div>
@@ -64,6 +68,10 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
 
   const selBtn = view.querySelector<HTMLElement>('#sel-mode')!, selBar = view.querySelector<HTMLElement>('#sel-bar')!;
   const sel = new Set<number>(); let selecting = false, anchor: number | undefined, shown: WorldSummary[] = [];
+  let all: WorldSummary[] = [];
+  const countEl = view.querySelector<HTMLElement>('#world-count')!;
+  const box = c.rx ? searchBox('world-search', tx('worldsSearch'), c.rx, { compact: true }) : undefined;
+  if (box) { view.querySelector('#world-q')!.replaceWith(box.el); box.el.hidden = true; box.onChange(() => { void draw(); }); }
   const download = (w: WorldSummary) => {
     const a = document.createElement('a');
     a.href = '/api/worlds/download?path=' + encodeURIComponent(w.path);
@@ -138,11 +146,35 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
 
   async function load() {
     try {
-      const { worlds, roots } = await c.api<{ worlds: WorldSummary[]; roots: string[] }>('/api/worlds');
+      const { worlds: fetched, roots } = await c.api<{ worlds: WorldSummary[]; roots: string[] }>('/api/worlds');
       if (!list.isConnected) return; // the screen was replaced while this loaded
       view.querySelector('#roots')!.textContent = tx('worldsFrom', { roots: roots.join(', ') });
       list.removeAttribute('role'); list.removeAttribute('aria-label');
-      shown = worlds; sel.clear(); anchor = undefined; selBtn.hidden = worlds.length < 1; void refreshBin();
+      all = fetched; void refreshBin();
+      await draw();
+    } catch (e) {
+      if (!list.isConnected) return;
+      list.className = '';
+      list.innerHTML = `<div class="banner error" role="alert"><div><b>${esc(tx('loadFailed'))}</b><p>${esc((e as Error).message)}</p></div><md-filled-button id="retry">${esc(tx('retry'))}</md-filled-button></div>`;
+      list.querySelector('#retry')!.addEventListener('click', () => worldsView(view, c));
+    }
+  }
+  // The list as the search leaves it. Selection and the bin act on what is shown, never on a hidden world.
+  let drawRun = 0;
+  async function draw() {
+    const my = ++drawRun;
+    const folder = (w: WorldSummary) => w.path.split(/[\\/]/).filter(Boolean).pop() ?? '';
+    const hits = box ? await box.filter(all.map((w) => `${w.name} ${folder(w)} ${w.edition === 'bedrock' ? 'Bedrock' : `Java ${w.versionName ?? ''}`}`)) ?? all.map(() => false) : all.map(() => true);
+    if (my !== drawRun || !list.isConnected) return;
+    const worlds = all.filter((_, i) => hits[i]);
+    if (box) { box.el.hidden = all.length < 2; countEl.hidden = all.length < 2 || worlds.length === all.length; countEl.textContent = tx('worldsShowing', { n: worlds.length, total: all.length }); }
+    {
+      shown = worlds; sel.clear(); anchor = undefined; selBtn.hidden = worlds.length < 1;
+      if (all.length && !worlds.length) {
+        selecting = false; selBar.hidden = true; list.className = '';
+        list.innerHTML = `<div class="empty-world"><div><h2>${esc(tx('worldsNoMatch'))}</h2><p class="muted">${esc(tx('worldsNoMatchBody'))}</p></div></div>`;
+        return;
+      }
       if (!worlds.length) {
         selecting = false; selBar.hidden = true;
         list.className = '';
@@ -153,7 +185,7 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
       list.className = 'world-grid';
       // Worlds that share a name are told apart by their folder, and each gets its own picture.
       const folderOf = (w: { path: string }) => w.path.split(/[\\/]/).filter(Boolean).pop() ?? '';
-      const shared = new Set(worlds.map((w) => w.name).filter((n, i, all) => all.indexOf(n) !== i));
+      const shared = new Set(all.map((w) => w.name).filter((n, i, names) => names.indexOf(n) !== i)); // over every world, so a searched-for card keeps its folder line
       list.innerHTML = worlds.map((w, i) => `<article class="world-card ${SHAPES[i % SHAPES.length]}" style="--i:${i}">
         <input type="checkbox" class="sel-box" hidden aria-label="${esc(tx('selectWorld', { name: w.name }))}">
         <div class="mini-map" aria-hidden="true">${mosaic(shared.has(w.name) ? folderOf(w) : w.name)}</div>
@@ -163,11 +195,6 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
       list.querySelectorAll<HTMLElement>('[data-open]').forEach((b) => b.addEventListener('click', () => c.open(worlds[Number(b.dataset.open)]).catch((e) => c.notify((e as Error).message, true))));
       list.querySelectorAll<HTMLElement>('[data-dl]').forEach((b) => b.addEventListener('click', () => download(worlds[Number(b.dataset.dl)])));
       paintSel();
-    } catch (e) {
-      if (!list.isConnected) return;
-      list.className = '';
-      list.innerHTML = `<div class="banner error" role="alert"><div><b>${esc(tx('loadFailed'))}</b><p>${esc((e as Error).message)}</p></div><md-filled-button id="retry">${esc(tx('retry'))}</md-filled-button></div>`;
-      list.querySelector('#retry')!.addEventListener('click', () => worldsView(view, c));
     }
   }
 

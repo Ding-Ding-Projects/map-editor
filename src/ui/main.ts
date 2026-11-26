@@ -873,6 +873,7 @@ function authView(view: HTMLElement) {
 
 function worldsScreen(view: HTMLElement) {
   return worldsView(view, {
+    rx,
     api, notify, tx, esc, play, takeovers: () => prefs.takeovers,
     confirm: (text, ok) => askConfirm(text, ok, true, tx('binConfirmTitle')),
     browse: desktopBridge?.pickFolder,
