@@ -2,7 +2,7 @@
 
 Made from [INVENTORY.md](../INVENTORY.md), which is the record of what is built and what is not.
 
-Built 26 · partly built 75 · not built 10 · does not apply 14
+Built 27 · partly built 75 · not built 10 · does not apply 14
 
 ## Language, voice, and personalization
 
@@ -135,6 +135,7 @@ Built 26 · partly built 75 · not built 10 · does not apply 14
 
 ## Release pipeline
 
+- [Release workflow](release-workflow.md): Built
 - [Release timing](release-timing.md): Built
 - [Release line counts](release-line-counts.md): Partly built
 - [Release dim sum photo](release-dim-sum-photo.md): Built
