@@ -26,7 +26,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Squirrel.Windows installers for Map Editor and Map Editor Deploy built in CI, checked as NotSigned, published in release v0.1.0-build.12.
 - [ ] Installer run and app launched on a real Windows PC.
 - [x] Auto-update from the release feed with a restart banner, and an "Update coming soon" card with Hide while the download runs (editor and deploy app; checked in headless Chrome). Verified end to end on Windows: the installed previous release updated itself from the feed.
-- [x] Native folder picker for worlds outside `.minecraft/saves` (Browse folder… in the desktop app; not yet run on Windows).
+- [ ] Native folder picker for worlds outside `.minecraft/saves` (Browse folder… in the desktop app; built; the picker itself has not been clicked on Windows, so this is not ticked).
 
 ## Phase 3: Docker-hosted web app
 
@@ -41,16 +41,16 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] x86_64 image built in CI (alpine-make-rootfs on a loop device, syslinux), booted under QEMU until the web app answered its health check, and published as `.img.xz` and `.ova` in release v0.1.0-build.12.
 - [ ] Booted on real VirtualBox, VMware and a spare PC from USB.
 - [x] Raspberry Pi arm64 image with a QEMU boot test after each release (raspi4b, through to the web app's health check).
-- [x] In-place updater on the appliance (built, not yet run on a booted appliance): a daily job pulls the newest image, switches only after its health check answers and falls back otherwise, then upgrades the Alpine packages, logging to /var/log/map-editor-update.log; the image carries its version label for it.
+- [ ] In-place updater on the appliance (built, not yet run on a booted appliance, so not ticked): a daily job pulls the newest image, switches only after its health check answers and falls back otherwise, then upgrades the Alpine packages, logging to /var/log/map-editor-update.log; the image carries its version label for it.
 - [x] Separate data partition on the appliance (x86 and Raspberry Pi): accounts, history, notes and worlds live on their own ext4 partition (label me-data) mounted at /var/lib/map-editor, so the system partition can be replaced without touching them. Built in CI; the x86 boot test and the Raspberry Pi QEMU check both fail unless the data partition is mounted.
 - [x] Worlds can be uploaded as a .zip, created as a flat world and downloaded as a .zip from the web UI (unpack checks every path and refuses archives without level.dat; idiots and a headless Chrome run).
 
 ## Phase 5: deploy app
 
 - [x] Real-world checks workflow after every release: the deploy code against a real Docker daemon and over SSH (the runner's own sshd with key login), USB flashing onto a loop device, a Squirrel update of the installed Windows app from the previous release (passed: v0.1.41 to v0.1.42), and the Pi image booted on QEMU's raspi4b through to the web app's health check. Its first run found that every Docker deploy wrote an invalid Compose file (the worlds volume line); fixed with the long volume syntax and a YAML-parsing unit test. Unit tests and the type check now gate every build.
-- [x] Docker target: validates name and port, writes a Compose file per instance, pulls, starts, waits for health, shows the link (code; not run against a real Docker host yet).
-- [x] VirtualBox target: import, bridged adapter, start headless, read the guest address, health check (code; not run).
-- [x] USB flashing: only removable non-system disks, typed confirmation naming the disk, read-back SHA-256 check (code; not run on real hardware).
+- [x] Docker target: validates name and port, writes a Compose file per instance, pulls, starts, waits for health, shows the link (run against real Docker on the release runner after every release, by the Real-world checks workflow: local Docker and Docker over SSH with a key).
+- [ ] VirtualBox target: import, bridged adapter, start headless, read the guest address, health check (code written; never run against VirtualBox, so not ticked).
+- [x] USB flashing: only removable non-system disks, typed confirmation naming the disk, read-back SHA-256 check (the write and read-back check run against a loop device after every release in the Real-world checks workflow; not run on a real USB drive or on Windows).
 - [x] Instance list limited to instances the app created.
 - [x] VMware target: OVF Tool imports the appliance on a bridged network, vmrun starts it without a window and reads its address from open-vm-tools, then the health check; start, stop, restart and remove (files kept unless Delete data); unit tested with stand-in ovftool and vmrun. Not run on a real VMware install.
 - [x] The appliance now carries open-vm-tools and the VirtualBox guest additions, so VMware and VirtualBox can read its network address (the VirtualBox target needed this and could not have found the address before).
@@ -115,7 +115,7 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Deploy app takeovers from the Takeover board: success (link, version, time taken, Open, Copy link, closes after 8 s unless in use) and failure (stays until dismissed, step log and exact error, Try port N+1 when the port is taken, Copy details), focus kept inside, Esc closes; checked in headless Chrome including the port retry.
 - [x] Notification centre search with its own regex builder (in the search-surface catalogue test); checked in headless Chrome.
 - [x] Takeovers in the editor app for world uploads (success with Open in the editor and an 8 s auto-close held while in use; failure that stays with the exact reason, Choose another and Copy details), switchable under Settings › Comfort and focus; one shared takeover module now serves both apps; checked in headless Chrome with a good and a broken .zip.
-- [x] Updates for both Windows apps through Squirrel.Windows: Squirrel install, update and uninstall events create and remove shortcuts; installed copies check `https://ding-ding-projects.github.io/map-editor/updates/<app>/RELEASES` at start and every four hours, download in the background and show a ready-to-install banner (version, release notes link, not code-signed, Later, Restart to install update; restart refused while an edit, deploy or flash is running). Check for updates in About and the palette. The site build writes the feeds from the latest release with absolute package URLs (unit tested). Every build now gets its own version, major.minor.run, so updates move forward. Banner and About states checked in headless Chrome with a stand-in bridge; the real update round trip on Windows is not verified yet.
+- [x] Updates for both Windows apps through Squirrel.Windows: Squirrel install, update and uninstall events create and remove shortcuts; installed copies check `https://ding-ding-projects.github.io/map-editor/updates/<app>/RELEASES` at start and every four hours, download in the background and show a ready-to-install banner (version, release notes link, not code-signed, Later, Restart to install update; restart refused while an edit, deploy or flash is running). Check for updates in About and the palette. The site build writes the feeds from the latest release with absolute package URLs (unit tested). Every build now gets its own version, major.minor.run, so updates move forward. Banner and About states checked in headless Chrome with a stand-in bridge; the real round trip (install the previous release, update to this one) runs on a Windows runner after every release in the Real-world checks workflow; it has not been watched by a person on a PC.
 - [x] Dim sum surprise: 1 in 10 chance after setup at start (never during setup or errors), a non-blocking corner card with the bilingual name, jyutping and description from the public catalogue at `raw.githubusercontent.com/Ding-Ding-Projects/dim-sum-photos/main/catalog/index.json`, fetched by the server, trimmed and cached in the data folder with source and revision, kept when offline. The public photos are released only as encrypted archives, so the card shows Public image unavailable. Switch in Settings › Appearance and the palette; unit tested and checked in headless Chrome against the live catalogue.
 - [x] About screen with version, build commit, licence note, Copy version details and a searchable changelog built from the commit log (Added, Fixed, Changed); checked in headless Chrome.
 - [x] Exports: History and Activity export what is shown (after search and filters) as CSV, JSON, Markdown or an HTML table, with spreadsheet formulas neutralised in CSV; worlds export as .zip, selections as .nbt, settings as JSON. Offline documentation: the phone PDF edition. Bulk actions: close tabs by text. Unit tested; checked in headless Chrome.
@@ -157,6 +157,13 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Messages that point at a setting carry a button that changes it there (editing locked, tabs locked). Messages survive a redraw; the notes editor no longer fails on resize while hidden.
 - [x] Desktop app: the data folder, its size and the worlds folder shown in Settings, with Open and Copy path. Choosing or moving it is not built.
 - [x] Sketch board on the Tools tab: seven pens, partial eraser, straight lines, undo and redo, SVG and PNG export.
+
+## Deliberately not doing
+
+- Deleting a world for good. The app never deletes a world: Move to bin puts it aside and Put back returns it. Emptying the bin is left to the owner in their file manager.
+- Code signing. The Windows installers and updates are not signed, and every place that offers an update says so.
+- Rewriting edit history. Restores add a new entry; nothing in the history is edited or removed by the app.
+- Signing in with an outside account, cloud sync and payments.
 
 ## Decisions recorded
 

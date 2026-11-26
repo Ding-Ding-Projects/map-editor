@@ -40,7 +40,7 @@ const progress = (steps: targets.Step[]) => win?.webContents.send('progress', st
 // Version, commit and build time of this app, read from the file the build writes beside it.
 ipcMain.handle('build-info', async () => {
   for (const f of [path.join(__dirname, '..', 'build-info.json'), path.join(__dirname, 'build-info.json')]) {
-    try { const b = JSON.parse(await fsp.readFile(f, 'utf8')); return { version: String(b.version ?? ''), commit: String(b.commit ?? ''), builtAt: b.builtAt ?? null }; } catch { /* try the next place */ }
+    try { const b = JSON.parse(await fsp.readFile(f, 'utf8')); return { version: String(b.version ?? ''), commit: String(b.commit ?? ''), builtAt: b.builtAt ?? null, codeName: b.codeName && typeof b.codeName.en === 'string' ? { en: String(b.codeName.en).slice(0, 120), yue: String(b.codeName.yue ?? '').slice(0, 120) } : null }; } catch { /* try the next place */ }
   }
   return { version: 'unavailable', commit: 'unavailable', builtAt: null };
 });

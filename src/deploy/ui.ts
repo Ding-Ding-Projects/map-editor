@@ -28,9 +28,9 @@ function askYesNo(text: string, ok: string): Promise<boolean> {
 }
 /** The support desk, with the facts about this copy of the deploy app. */
 async function supportDesk() {
-  const b: { version?: string; commit?: string } = await d.buildInfo?.().catch(() => ({})) ?? {};
+  const b: { version?: string; commit?: string; codeName?: { en: string } | null } = await d.buildInfo?.().catch(() => ({})) ?? {};
   openSupportDesk({
-    context: () => ({ version: b.version ?? 'unavailable', commit: b.commit ?? 'unavailable', language: currentLang(), screen: `deploy app: ${view}`, window: `${innerWidth} × ${innerHeight}`, browser: `Map Editor Deploy on ${d.platform ?? 'unknown'}` }),
+    context: () => ({ version: b.version ?? 'unavailable', commit: b.commit ?? 'unavailable', codeName: b.codeName?.en, language: currentLang(), screen: `deploy app: ${view}`, window: `${innerWidth} × ${innerHeight}`, browser: `Map Editor Deploy on ${d.platform ?? 'unknown'}` }),
     tx: paletteText, esc, notify: toast, confirm: askYesNo,
   });
 }
@@ -275,7 +275,7 @@ async function render() {
     <div class="body"><main class="view" id="main"></main></div><div id="toasts" class="toasts"></div>`;
   showUpdate();
   // Front-screen provenance: the version and when this build was made.
-  d.buildInfo?.().then((b: { version: string; commit: string; builtAt: string | null }) => { const el = app.querySelector('#prov'); if (el) el.textContent = `Version ${b.version} · updated ${b.builtAt ? new Date(b.builtAt).toLocaleString('en-GB', { timeZoneName: 'short' }) : 'unavailable'} · ${String(b.commit).slice(0, 7)}`; }).catch(() => undefined);
+  d.buildInfo?.().then((b: { version: string; commit: string; builtAt: string | null; codeName?: { en: string; yue: string } | null }) => { const el = app.querySelector('#prov'); if (el) { el.textContent = `Version ${b.version} · updated ${b.builtAt ? new Date(b.builtAt).toLocaleString('en-GB', { timeZoneName: 'short' }) : 'unavailable'} · ${String(b.commit).slice(0, 7)}`; (el as HTMLElement).title = el.textContent + (b.codeName?.en ? ` · ${b.codeName.en}` : ''); if (b.codeName?.en) { const c = document.createElement('span'); c.className = 'code-name-line'; c.textContent = ` · ${by(b.codeName.en, b.codeName.yue || b.codeName.en)}`; c.title = by('Code name of this release', '呢個版本嘅代號'); el.append(c); } } }).catch(() => undefined);
   app.querySelector('#v-deploy')!.addEventListener('click', () => { view = 'deploy'; render(); });
   app.querySelector('#v-inst')!.addEventListener('click', () => { view = 'instances'; render(); });
   app.querySelector('#v-disks')!.addEventListener('click', () => { view = 'disks'; render(); });

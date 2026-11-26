@@ -81,6 +81,8 @@ export function setLang(next: Lang) {
   lang = next;
   try { next === 'en' ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, next); } catch { /* storage blocked */ }
   document.documentElement.lang = next === 'yue' ? 'yue-Hant-HK' : 'en';
+  document.documentElement.dataset.lang = next;
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 60); // anything placed beside an element (the tour card) lines up again
   walk(document.body);
   document.querySelectorAll<HTMLElement>('[data-set-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.setLang === lang)));
 }
