@@ -1236,3 +1236,11 @@ md-dialog:has(#nf) { max-block-size: min(760px, calc(100% - 32px)); }
 .steps-list .step.failed .step-mark { border: 0; background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); }
 @keyframes step-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .steps-list .step.running .step-mark { animation: none; } }
+
+/* Phones: an extension's name gets the whole row beside its switch, and its version line runs full width below. */
+@media (max-width: 600px) {
+  .ext-card header { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; row-gap: 6px; }
+  .ext-card .ext-title { display: contents; }
+  .ext-card .ext-title b { grid-column: 2; align-self: center; overflow-wrap: anywhere; }
+  .ext-card .ext-title small { grid-column: 1 / -1; grid-row: 2; }
+}
