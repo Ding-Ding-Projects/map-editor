@@ -18,7 +18,7 @@ describe('in-app guide', () => {
     for (const a of ARTICLES) for (const r of a.related) expect(slugs.has(r), `${a.slug} -> ${r}`).toBe(true);
   });
   it('picks text by language', () => {
-    expect(pick('en', 'a', 'b')).toEqual(['a']); expect(pick('yue', 'a', 'b')).toEqual(['b']); expect(pick('both', 'a', 'b')).toEqual(['a', 'b']); expect(pick('yue', 'a')).toEqual(['a']);
+    expect(pick('en', 'a', 'b')).toEqual(['a']); expect(pick('yue', 'a', 'b')).toEqual(['b']); expect(pick('both', 'a', 'b')).toEqual(['a', 'b']); expect(pick('yue', 'a')).toEqual(['a']); expect(pick('both', 'Map Editor Deploy', 'Map Editor Deploy')).toEqual(['Map Editor Deploy']);
     expect(docTitle(ARTICLES[0], 'both')).toContain(' · ');
   });
 });

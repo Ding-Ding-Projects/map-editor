@@ -13,7 +13,7 @@ const yueOf = (a: DocArticle): YueArticle | undefined => (YUE[a.slug]?.body?.len
 
 export type DocLang = 'en' | 'yue' | 'both';
 /** One piece of text in the chosen language; "both" gives English then Cantonese. */
-export function pick(lang: DocLang, en: string, yue?: string): string[] { return !yue || lang === 'en' ? [en] : lang === 'yue' ? [yue] : [en, yue]; }
+export function pick(lang: DocLang, en: string, yue?: string): string[] { return !yue || lang === 'en' ? [en] : lang === 'yue' ? [yue] : yue === en ? [en] : [en, yue]; } // a name that is the same in both languages is shown once
 export const docTitle = (a: DocArticle, lang: DocLang) => pick(lang, a.title, yueOf(a)?.title).join(' · ');
 
 let current = ARTICLES[0]?.slug ?? '';

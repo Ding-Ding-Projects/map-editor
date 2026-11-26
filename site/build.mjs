@@ -22,7 +22,7 @@ const stamp = when ? `${when.replace('T', ' ').replace(/([+-]\d\d:\d\d|Z)$/, ' U
 // The choice is kept in the browser; without scripts the page reads in English.
 let yueContent = {};
 try { yueContent = JSON.parse(readFileSync(path.join(here, 'content.yue.json'), 'utf8')); } catch { /* Cantonese articles not written yet */ }
-const L = (en, yue) => (yue ? `<span data-l="en" lang="en">${esc(en)}</span><span data-l="yue" lang="yue-Hant-HK">${esc(yue)}</span>` : esc(en));
+const L = (en, yue) => (yue && yue !== en ? `<span data-l="en" lang="en">${esc(en)}</span><span data-l="yue" lang="yue-Hant-HK">${esc(yue)}</span>` : esc(en));
 const yueOf = (f) => yueContent[f.slug] && Array.isArray(yueContent[f.slug].body) && yueContent[f.slug].body.length === f.body.length ? yueContent[f.slug] : undefined;
 // The picture shown when a link to the site is shared: the same file as social-preview.png at the repository root.
 const SITE = 'https://ding-ding-projects.github.io';
