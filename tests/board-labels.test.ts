@@ -7,7 +7,8 @@ const SOURCES = ['src/ui/i18n.ts', 'src/ui/main.ts', 'src/ui/worlds.ts', 'src/de
 const BOARD_ONLY: Record<string, string[]> = {
   FirstRun: ['Try it failing'],                       // a control of the board that shows the failure result
   History: ['From 2026-11-16 · To 2026-11-23'],       // the app's From and To fields, drawn with example dates
-  Phone: ['Run Fill'],                                 // the app writes "Run {op}" with the tool's name filled in
+  Phone: ['Run Fill'],
+  Worlds: ['Bin (2)'],                                // the app writes "Bin ({n})" with the number of binned worlds                                 // the app writes "Run {op}" with the tool's name filled in
 };
 const root = new URL('../', import.meta.url);
 const norm = (s: string) => s.toLowerCase().replace(/’/g, "'");
@@ -18,6 +19,12 @@ describe('design board labels', () => {
   it('covers every board', () => { expect(boards.length).toBeGreaterThanOrEqual(23); });
   it('shows host names, never a private network address', () => {
     for (const file of boards) expect(readFileSync(new URL(`design/canvas/${file}`, root), 'utf8'), file).not.toMatch(/\b(192\.168|10\.\d+|172\.(1[6-9]|2\d|3[01]))\.\d+\.\d+/);
+  });
+  it('gives the Worlds board the buttons of the Worlds screen', () => {
+    const worlds = readFileSync(new URL('design/canvas/Worlds.dc.html', root), 'utf8');
+    for (const b of ['>Upload world (.zip or .mcworld)</button>', '>New flat world</button>', '>Select</button>', '>Bin (2)</button>']) expect(worlds).toContain(b);
+    expect(worlds).not.toContain('Browse folder');
+    expect(worlds).toContain('/srv/minecraft/worlds');
   });
   it('lists only release jobs that exist on the update tile', () => {
     const palette = readFileSync(new URL('design/canvas/Palette.dc.html', root), 'utf8');

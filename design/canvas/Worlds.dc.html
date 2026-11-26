@@ -34,12 +34,13 @@ button:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offse
       <div style="display: flex; flex-direction: column; gap: 6px">
         <span style="font-size: 12px; color: {{t.onSurfaceVariant}}">v0.1.0 · updated 2026-11-25 01:40:12 UTC−05:00</span>
         <h1 style="margin: 0; font-size: 57px; line-height: 60px; font-weight: 900; letter-spacing: -1.8px; font-variation-settings: 'wdth' 118">Worlds</h1>
-        <p style="margin: 0; font-size: 16px; color: {{t.onSurfaceVariant}}">From <code style="font-family: 'Roboto Mono', monospace">/worlds</code> · Java Edition 1.18 and newer</p>
+        <p style="margin: 0; font-size: 16px; color: {{t.onSurfaceVariant}}">From <code style="font-family: 'Roboto Mono', monospace">/srv/minecraft/worlds</code> · Java Edition 1.18 and newer</p>
       </div>
       <div style="display: flex; flex-wrap: wrap; gap: 8px">
-        <button style="height: 56px; padding: 0 24px; border-radius: 28px 28px 28px 8px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; font-size: 16px; font-weight: 800">Upload world .zip</button>
+        <button style="height: 56px; padding: 0 24px; border-radius: 28px 28px 28px 8px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; font-size: 16px; font-weight: 800">Upload world (.zip or .mcworld)</button>
         <button style="height: 56px; padding: 0 22px; border-radius: 28px; border: 0; background: {{t.secondaryContainer}}; color: {{t.onSecondaryContainer}}; font-size: 16px; font-weight: 700">New flat world</button>
-        <button style="height: 56px; padding: 0 22px; border-radius: 28px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-size: 16px; font-weight: 700">Browse folder…</button>
+        <button style="height: 56px; padding: 0 22px; border-radius: 28px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-size: 16px; font-weight: 700">Select</button>
+        <button style="height: 56px; padding: 0 22px; border-radius: 28px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-size: 16px; font-weight: 700">Bin (2)</button>
       </div>
     </header>
 
@@ -61,7 +62,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offse
             <span style="font-size: 13px; color: {{w.sub}}">{{w.meta}}</span>
             <div style="display: flex; gap: 6px; margin-top: 4px">
               <button style="flex: 1; height: 44px; border-radius: 22px; border: 0; background: {{w.btnBg}}; color: {{w.btnFg}}; font-weight: 800">Open</button>
-              <button style="height: 44px; padding: 0 16px; border-radius: 22px; border: 1px solid {{t.outline}}; background: transparent; color: inherit; font-weight: 600">Download .zip</button>
+              <button style="height: 44px; padding: 0 16px; border-radius: 22px; border: 1px solid {{t.outline}}; background: transparent; color: inherit; font-weight: 600">Download</button>
             </div>
           </div>
         </sc-for>
@@ -86,7 +87,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offse
         <div style="flex: 1 1 360px; display: flex; flex-direction: column; gap: 12px">
           <span style="font-size: 36px; line-height: 40px; font-weight: 900; letter-spacing: -1px">No worlds here yet</span>
           <span style="font-size: 16px; line-height: 24px; color: {{t.onSurfaceVariant}}">Upload a world as a .zip from your .minecraft/saves folder, or start a new flat world to try the tools. Nothing you upload leaves this server.</span>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px"><button style="height: 48px; padding: 0 22px; border-radius: 24px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; font-weight: 800">Upload world .zip</button><button style="height: 48px; padding: 0 20px; border-radius: 24px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 700">New flat world</button></div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px"><button style="height: 48px; padding: 0 22px; border-radius: 24px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; font-weight: 800">Upload world (.zip or .mcworld)</button><button style="height: 48px; padding: 0 20px; border-radius: 24px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 700">New flat world</button></div>
         </div>
       </div>
     </sc-if>
@@ -95,7 +96,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offse
       <div class="rise" role="status" style="display: flex; flex-direction: column; gap: 16px; padding: 28px; border-radius: 32px; border: 2px dashed {{t.primary}}; background: {{t.surfaceContainerLow}}">
         <span style="font-size: 24px; font-weight: 850">Uploading Survival Island.zip</span>
         <div style="height: 12px; border-radius: 6px; background: {{t.surfaceContainerHighest}}; overflow: hidden"><div class="bar" style="width: 72%; height: 12px; border-radius: 6px; background: {{t.primary}}"></div></div>
-        <span style="font-size: 14px; color: {{t.onSurfaceVariant}}">38.4 of 53.1 MB · then the folder is checked for level.dat and unpacked into /worlds</span>
+        <span style="font-size: 14px; color: {{t.onSurfaceVariant}}">38.4 of 53.1 MB · then the folder is checked for level.dat and unpacked into /srv/minecraft/worlds</span>
       </div>
     </sc-if>
 
