@@ -15,6 +15,8 @@ interface Ctx {
   apply: () => void;
   relabel: () => HTMLElement;
   done: () => void;
+  /** Talks to the server, for the last step's real setup action. */
+  api?: <T = any>(path: string, init?: { method?: string; body?: unknown }) => Promise<T>;
 }
 
 const STEPS: Key[] = ['stepLanguage', 'stepComfort', 'stepTheme', 'stepWorld'];
@@ -59,7 +61,24 @@ export function onboarding(view: HTMLElement, c: Ctx) {
         onSpeed: (lv) => { prefs.rainbowSpeed = lv; c.apply(); },
       });
     } else {
-      body.innerHTML = `<p class="lead">${esc(tx('stepWorldBody'))}</p>`;
+      // A real setup action with its result: look at what worlds are there, and make a practice one if wanted.
+      body.innerHTML = `<p class="lead">${esc(tx('stepWorldBody'))}</p>
+        <p id="ob-found" class="muted" role="status">${esc(tx('loading'))}</p>
+        <div class="row-actions"><md-filled-tonal-button id="ob-make">${esc(tx('obMakePractice'))}</md-filled-tonal-button></div>
+        <p id="ob-made" role="status" aria-live="polite"></p>`;
+      const found = body.querySelector<HTMLElement>('#ob-found')!, made = body.querySelector<HTMLElement>('#ob-made')!, make = body.querySelector<HTMLElement & { disabled: boolean }>('#ob-make')!;
+      const look = async () => {
+        if (!c.api) { found.textContent = ''; make.hidden = true; return; }
+        try { const r = await c.api<{ worlds: unknown[]; roots: string[] }>('/api/worlds'); if (found.isConnected) found.textContent = tx(r.worlds.length ? 'obWorldsFound' : 'obWorldsNone', { n: r.worlds.length, roots: r.roots.join(', ') }); }
+        catch (e) { if (found.isConnected) found.textContent = tx('obWorldsFailed', { e: (e as Error).message }); }
+      };
+      void look();
+      make.addEventListener('click', async () => {
+        if (!c.api || make.disabled) return;
+        make.disabled = true; made.className = ''; made.textContent = tx('obMaking');
+        try { const r = await c.api<{ name: string }>('/api/worlds/new', { method: 'POST', body: { name: tx('obPracticeName'), preset: 'classic', size: 4 } }); made.className = 'ob-ok'; made.textContent = tx('obMade', { name: r.name }); await look(); }
+        catch (e) { made.className = 'ob-bad'; made.textContent = tx('obMakeFailed', { e: (e as Error).message }); make.disabled = false; }
+      });
     }
     host.querySelectorAll<HTMLElement>('[data-step]').forEach((b) => b.addEventListener('click', () => go(Number(b.dataset.step))));
     host.querySelector('#ob-back')!.addEventListener('click', () => go(step - 1));

@@ -1304,3 +1304,5 @@ md-list-item[hidden], .act-list > li[hidden] { display: none !important; }
 .msgs-list > li.error { background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); }
 .msgs-list > li[hidden] { display: none; }
 .msgs-list .act-text { display: grid; } .msgs-list small { opacity: .8; }
+
+#ob-made { margin: 0; min-height: 22px; font-weight: 600; } #ob-made.ob-ok { color: var(--md-sys-color-primary); } #ob-made.ob-bad { color: var(--md-sys-color-error); }

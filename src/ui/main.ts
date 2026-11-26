@@ -818,7 +818,7 @@ async function render(): Promise<void> {
   if (!user) return authView(view);
   if (!prefs.onboarded) {
     onboarding(view, {
-      tx, esc, prefs, pickerText, step: prefs.onboardStep,
+      tx, esc, prefs, pickerText, api, step: prefs.onboardStep,
       save: (step) => { prefs.onboardStep = step; savePrefs(); },
       apply: () => { savePrefs(); applyTheme(); },
       relabel: () => { savePrefs(); applyTheme(); shell(); return document.getElementById('view')!; },

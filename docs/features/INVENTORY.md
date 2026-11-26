@@ -6,7 +6,7 @@ lands; anything not rechecked keeps its last audited status.
 
 Re-audited on 2026-11-25 after the changes of that day.
 
-Counts (126 features): built 24 / partial 78 / unbuilt 10 / not applicable 14
+Counts (126 features): built 25 / partial 77 / unbuilt 10 / not applicable 14
 
 
 ## Language, voice, and personalization
@@ -42,7 +42,7 @@ Counts (126 features): built 24 / partial 78 / unbuilt 10 / not applicable 14
 
 ## Navigation, search, and commands
 
-`onboarding-wizard` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/ui/onboarding.ts (steps, Back/Next/Skip, resume via `onboardStep`) | MISSING: steps set preferences only (no setup action with a reported result such as choosing the worlds folder). (The deploy wizard has its own first-run wizard.)
+`onboarding-wizard` | APPLIES: yes | STATUS: BUILT | EVIDENCE: src/ui/onboarding.ts (steps, Back/Next/Skip, resume via `onboardStep`) | MISSING: nothing. The last step lists the worlds it found and can make a practice world, reporting what was made or why not (src/ui/onboarding.ts); driven in a browser. (The deploy wizard has its own first-run wizard.)
 `extension-support` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/server/extensions.ts, extensions/, samples/extensions/, tests/extensions.test.ts, main.ts `extensionsPanel`, site article `extensions` | MISSING: Deploy app has no extension support
 `tabs` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: main.ts `shell()` tab list, `closedTabs`, Open every tab; src/ui/tabsearch.ts | MISSING: dock strip to any edge; reorder; pin; groups and "Move… into group…"; overflow surface; New tab catalog; the other three tab-discovery searches; never-offered-tab logic on update; tabbed Settings with the full tab feature set; site and Deploy app tabs
 `regex-search` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/ui/regex.ts, regex-core.ts, regex-worker.ts, tests/regex.test.ts (surface catalogue test) | MISSING: (the Worlds list, the deploy app's instance list and its activity list now have searches with the builder; the block palette, the bin and the deploy app's virtual disks list followed; the catalogue test lists 16 search surfaces) RegexBuddy-parity workbench (replace syntax, flavour compare/convert, debug trace, benchmark, code templates, GREP, collections); pattern history and snippets; dated per-topic parity ledger; Deploy app and site searches
