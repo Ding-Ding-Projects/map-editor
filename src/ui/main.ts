@@ -459,6 +459,12 @@ function supportDesk() {
   });
 }
 
+/** The colour picker's fixed phrases in Cantonese; English is what the picker ships with. */
+const PICKER_YUE: Record<string, string> = { Hue: '色相', Opacity: '不透明度', Name: '名', Copy: '複製', 'No exact CSS name': '冇完全對應嘅 CSS 色名', 'Any colour: name, HEX, rgb(), hsl(), oklch(), cmyk()…': '任何顏色：色名、HEX、rgb()、hsl()、oklch()、cmyk()…',
+  'Contrast against the background': '同背景嘅對比度', '(passes 4.5:1 for text)': '（過到文字要求嘅 4.5:1）', '(passes 3:1 for large text and icons only)': '（只過到大字同圖示要求嘅 3:1）', '(too low for text)': '（對文字嚟講太低）',
+  'Animated rainbow: cycles every hue. With reduced motion it stays on one hue.': '彩虹動畫：會轉晒所有色相。開咗減少動態就停喺一隻色。' };
+const pickerText = (en: string) => { const y = PICKER_YUE[en]; return !y || prefs.lang === 'en' ? en : prefs.lang === 'yue' ? y : `${en} · ${y}`; };
+
 function paletteCommands(): Command[] {
   const go = (t: string) => () => { prefs.closedTabs = prefs.closedTabs.filter((x) => x !== t); prefs.tab = t; savePrefs(); render(); };
   const cmds: Command[] = [];
@@ -1835,6 +1841,7 @@ function settingsView(view: HTMLElement) {
   const showSeed = () => { const s = view.querySelector<HTMLElement>('.seed-swatch')!; s.classList.toggle('rainbow', prefs.seed === RAINBOW); s.style.background = prefs.seed === RAINBOW ? '' : prefs.seed; view.querySelector('.seed-now code')!.textContent = prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed; };
   colorPicker(view.querySelector<HTMLElement>('#seed-picker')!, {
     value: prefs.seed, label: tx('seed'), allowRainbow: true, rainbowSpeed: prefs.rainbowSpeed,
+    text: pickerText,
     surface: getComputedStyle(document.documentElement).getPropertyValue('--md-sys-color-surface').trim() || '#10140f',
     onChange: (v) => { prefs.seed = v.length === 9 ? v.slice(0, 7) : v; savePrefs(); applySeed(); showSeed(); },
     onSpeed: (lv) => { prefs.rainbowSpeed = lv; savePrefs(); applyRainbowSpeed(lv); },

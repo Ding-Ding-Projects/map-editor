@@ -11,6 +11,8 @@ export interface PickerOptions {
   surface: string; // colour the result is checked against for contrast
   onChange: (v: ColorValue) => void;
   onSpeed?: (level: number) => void;
+  /** Puts the picker's own fixed phrases into the chosen language; left out, they stay in English. */
+  text?: (english: string) => string;
 }
 
 const RECENT_KEY = 'map-editor.recent-colours.v1';
@@ -19,6 +21,7 @@ function recent(): string[] { try { return JSON.parse(localStorage.getItem(RECEN
 function pushRecent(hex: string) { try { localStorage.setItem(RECENT_KEY, JSON.stringify([hex, ...recent().filter((x) => x !== hex)].slice(0, 12))); } catch { /* storage blocked */ } }
 
 export function colorPicker(host: HTMLElement, o: PickerOptions) {
+  const T = o.text ?? ((x: string) => x);
   let rainbow = o.value === RAINBOW;
   let rgba: RGBA = (!rainbow && parseColor(o.value)) || { r: 0.18, g: 0.42, b: 0.17, a: 1 };
   let hsv = rgbToHsv(rgba);
@@ -27,9 +30,9 @@ export function colorPicker(host: HTMLElement, o: PickerOptions) {
   host.innerHTML = `<div class="picker" role="group" aria-label="${esc(o.label)}">
     <div class="picker-field" tabindex="0" role="slider" aria-label="Saturation and brightness" aria-valuetext="">
       <canvas width="280" height="160"></canvas><span class="picker-thumb" aria-hidden="true"></span></div>
-    <label class="picker-row"><span>Hue</span><md-slider class="h" min="0" max="360" step="0.1" labeled></md-slider></label>
-    <label class="picker-row"><span>Opacity</span><md-slider class="a" min="0" max="100" step="1" labeled></md-slider></label>
-    <md-outlined-text-field class="any" label="Any colour: name, HEX, rgb(), hsl(), oklch(), cmyk()…"></md-outlined-text-field>
+    <label class="picker-row"><span>${esc(T('Hue'))}</span><md-slider class="h" min="0" max="360" step="0.1" labeled></md-slider></label>
+    <label class="picker-row"><span>${esc(T('Opacity'))}</span><md-slider class="a" min="0" max="100" step="1" labeled></md-slider></label>
+    <md-outlined-text-field class="any" label="${esc(T('Any colour: name, HEX, rgb(), hsl(), oklch(), cmyk()…'))}"></md-outlined-text-field>
     <div class="picker-note" aria-live="polite"></div>
     <div class="picker-formats"></div>
     ${o.allowRainbow ? `<div class="picker-rainbow"><md-outlined-button class="rb">Animated rainbow</md-outlined-button>
@@ -70,10 +73,10 @@ export function colorPicker(host: HTMLElement, o: PickerOptions) {
     const surf = parseColor(o.surface);
     const ratio = surf ? contrast(rgba, surf) : undefined;
     host.querySelector('.picker-note')!.textContent = rainbow
-      ? 'Animated rainbow: cycles every hue. With reduced motion it stays on one hue.'
-      : [typedNote, ratio ? `Contrast against the background ${ratio.toFixed(2)}:1 ${ratio >= 4.5 ? '(passes 4.5:1 for text)' : ratio >= 3 ? '(passes 3:1 for large text and icons only)' : '(too low for text)'}` : ''].filter(Boolean).join(' ');
-    const rows: Array<[string, string]> = [['Name', f.name ?? 'No exact CSS name'], ['HEX', f.hex], ['HEX8', f.hex8], ['RGB', f.rgb], ['HSL', f.hsl], ['HSV', f.hsv], ['HWB', f.hwb], ['LAB', f.lab], ['LCH', f.lch], ['OKLab', f.oklab], ['OKLCH', f.oklch], ['CMYK', f.cmyk]];
-    host.querySelector('.picker-formats')!.innerHTML = rows.map(([k, v]) => `<div class="picker-fmt"><span>${k}</span><code>${esc(v)}</code>${k !== 'Name' || f.name ? `<md-text-button data-copy="${esc(v)}" aria-label="Copy ${k}">Copy</md-text-button>` : ''}</div>`).join('');
+      ? T('Animated rainbow: cycles every hue. With reduced motion it stays on one hue.')
+      : [typedNote, ratio ? `${T('Contrast against the background')} ${ratio.toFixed(2)}:1 ${T(ratio >= 4.5 ? '(passes 4.5:1 for text)' : ratio >= 3 ? '(passes 3:1 for large text and icons only)' : '(too low for text)')}` : ''].filter(Boolean).join(' ');
+    const rows: Array<[string, string]> = [['Name', f.name ?? T('No exact CSS name')], ['HEX', f.hex], ['HEX8', f.hex8], ['RGB', f.rgb], ['HSL', f.hsl], ['HSV', f.hsv], ['HWB', f.hwb], ['LAB', f.lab], ['LCH', f.lch], ['OKLab', f.oklab], ['OKLCH', f.oklch], ['CMYK', f.cmyk]];
+    host.querySelector('.picker-formats')!.innerHTML = rows.map(([k, v]) => `<div class="picker-fmt"><span>${k === 'Name' ? esc(T('Name')) : k}</span><code>${esc(v)}</code>${k !== 'Name' || f.name ? `<md-text-button data-copy="${esc(v)}" aria-label="${esc(T('Copy'))} ${k}">${esc(T('Copy'))}</md-text-button>` : ''}</div>`).join('');
     host.querySelectorAll<HTMLElement>('[data-copy]').forEach((b) => b.addEventListener('click', () => navigator.clipboard?.writeText(b.dataset.copy!).catch(() => undefined)));
     host.querySelector('.picker-recent')!.innerHTML = recent().map((hx) => `<button class="picker-swatch" style="background:${esc(hx)}" data-hex="${esc(hx)}" aria-label="Use ${esc(hx)}"></button>`).join('');
     host.querySelectorAll<HTMLElement>('[data-hex]').forEach((b) => b.addEventListener('click', () => { rainbow = false; rgba = parseColor(b.dataset.hex!)!; hsv = rgbToHsv(rgba); typedNote = ''; paintField(); emit(); }));

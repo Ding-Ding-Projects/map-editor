@@ -1166,3 +1166,9 @@ md-dialog:has(#nf) { max-block-size: min(760px, calc(100% - 32px)); }
 [data-lang="both"] .sc-card { inline-size: min(680px, calc(100vw - 32px)); max-inline-size: none; }
 [data-lang="both"] .sc-card { inline-size: min(740px, calc(100vw - 32px)); } [data-lang="both"] .sc-key { font-size: 14px; }
 @media (min-width: 800px) { [data-lang="both"] .sc-key { white-space: nowrap; } }
+
+/* Colours of each part: in bilingual mode the label sits above its dropdown, so neither is squeezed into a column of single words. */
+[data-lang="both"] .tone-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+[data-lang="both"] .tone-row { flex-direction: column; align-items: stretch; gap: 6px; }
+.tone-row .select-button, .tone-row select { min-inline-size: 0; }
+[data-lang="both"] .picker-row > span { flex: 0 0 170px; white-space: nowrap; }
