@@ -631,7 +631,7 @@ function offerTour() {
 function takeTour(name: 'app' | Tab = 'app', start = 0) {
   const steps = tourSteps(name);
   const label = name === 'app' ? tx('tourWhole') : tx(name as Key);
-  startTour(label, steps, { stepOf: (n, m, tour) => tx('tourStepOf', { n, m, tour }), back: tx('back'), skip: tx('tourSkip'), next: tx('next'), done: tx('tourDone'), close: tx('close'), notHere: tx('tourNotHere') }, {
+  startTour(label, steps, { stepOf: (n, m, tour) => { if (prefs.lang !== 'both') return tx('tourStepOf', { n, m, tour }); const [a, b = a] = tour.split(' · '); return `${tr({ ...prefs, lang: 'en' }, 'tourStepOf', { n, m, tour: a })} · ${tr({ ...prefs, lang: 'yue' }, 'tourStepOf', { n, m, tour: b })}`; }, back: tx('back'), skip: tx('tourSkip'), next: tx('next'), done: tx('tourDone'), close: tx('close'), notHere: tx('tourNotHere') }, {
     start,
     onStep: (i) => { prefs.tourResume = { name, step: i }; savePrefs(); },
     onEnd: (finished) => { prefs.tourOffered = true; if (finished) prefs.tourResume = null; savePrefs(); },

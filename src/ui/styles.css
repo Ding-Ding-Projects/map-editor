@@ -1161,3 +1161,4 @@ md-dialog:has(#nf) { max-block-size: min(760px, calc(100% - 32px)); }
 [data-lang="both"] .note-centre { width: min(480px, calc(100vw - 32px)); }
 [data-lang="both"] .note-centre h2 { flex: 1 1 100%; font-size: 20px; }
 [data-lang="both"] .note-centre header { justify-content: flex-start; }
+.tour-card footer button, .tour-card .tour-actions button { white-space: nowrap; }

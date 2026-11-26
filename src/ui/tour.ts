@@ -16,6 +16,9 @@ let active: { close: () => void } | undefined;
 /** The first matching element that is actually on screen (a selector may list alternatives). */
 const find = (sel: string) => Array.from(document.querySelectorAll<HTMLElement>(sel)).find((e) => e.getClientRects().length > 0);
 
+/** Two languages side by side need a wider card, or the buttons wrap. */
+const cardWidth = () => (document.documentElement.dataset.lang === 'both' ? 470 : 360);
+
 export function startTour(name: string, steps: TourStep[], t: TourText, opts: { start?: number; onStep?: (i: number) => void; onEnd?: (finished: boolean) => void } = {}) {
   active?.close();
   let i = Math.max(0, Math.min(opts.start ?? 0, steps.length - 1));
@@ -37,14 +40,14 @@ export function startTour(name: string, steps: TourStep[], t: TourText, opts: { 
       const r = el!.getBoundingClientRect();
       Object.assign(ring.style, { display: 'block', left: `${r.left - 6}px`, top: `${r.top - 6}px`, width: `${r.width + 12}px`, height: `${r.height + 12}px` });
       // Put the card beside the control: below if there is room, otherwise above; clamp into view.
-      const cw = Math.min(360, innerWidth - 24), ch = card.offsetHeight || 220;
+      const cw = Math.min(cardWidth(), innerWidth - 24), ch = card.offsetHeight || 220;
       let top = r.bottom + 16; if (top + ch > innerHeight - 12) top = Math.max(12, r.top - ch - 16);
       let left = Math.min(Math.max(12, r.left), innerWidth - cw - 12);
       if (r.width < 200 && r.right + cw + 16 < innerWidth && top === Math.max(12, r.top - ch - 16)) { left = r.right + 16; top = Math.max(12, Math.min(r.top, innerHeight - ch - 12)); }
       Object.assign(card.style, { left: `${left}px`, top: `${top}px`, width: `${cw}px` });
     } else {
       ring.style.display = 'none';
-      Object.assign(card.style, { left: `${Math.max(12, (innerWidth - 360) / 2)}px`, top: '96px', width: `${Math.min(360, innerWidth - 24)}px` });
+      Object.assign(card.style, { left: `${Math.max(12, (innerWidth - cardWidth()) / 2)}px`, top: '96px', width: `${Math.min(cardWidth(), innerWidth - 24)}px` });
     }
     return { el, visible };
   };
