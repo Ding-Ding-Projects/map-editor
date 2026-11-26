@@ -40,6 +40,7 @@ import { notesPanel as notesPanelImpl } from './notes.js';
 import { contextMenu, initMenus, type MenuItem } from './menu.js';
 import { iconSvg, initButtonIcons } from './icons.js';
 import { renderMarkdown } from './markdown.js';
+import { openSupportDesk } from './tickets.js';
 import { pickItem } from './select.js';
 import { ARTICLES, docsView, docTitle, openDoc } from './docs.js';
 import { levelUp, otpauthParts, qrSvg, superConfirm, vocabHeadline } from './moments.js';
@@ -418,6 +419,15 @@ function refuseLocked(which: 'editLock' | 'tabsLocked') {
   } });
 }
 
+/** Opens the support desk with the facts about this copy that a ticket carries. */
+function supportDesk() {
+  openSupportDesk({
+    context: () => ({ version: health?.version ?? 'unavailable', commit: health?.commit ?? 'unavailable', codeName: health?.codeName?.en, language: prefs.lang, screen: prefs.tab, window: `${innerWidth} × ${innerHeight}`,
+      browser: (navigator.userAgent.match(/(Edg|Chrome|Firefox|Safari)\/[\d.]+/) ?? [navigator.userAgent.slice(0, 60)])[0].replace('/', ' ') + (desktopBridge ? ' (desktop app)' : ''), world: world?.edition ?? (world ? 'java' : undefined) }),
+    tx: (k, v) => tx(k as Key, v), esc, notify, confirm: (text, ok) => askConfirm(text, ok),
+  });
+}
+
 function paletteCommands(): Command[] {
   const go = (t: string) => () => { prefs.closedTabs = prefs.closedTabs.filter((x) => x !== t); prefs.tab = t; savePrefs(); render(); };
   const cmds: Command[] = [];
@@ -444,6 +454,7 @@ function paletteCommands(): Command[] {
   cmds.push({ id: 'motion', label: tx('reduceMotion'), where: `${tx('settings')} › Appearance`, toggle: { get: () => prefs.reduceMotion, set: (v) => { prefs.reduceMotion = v; savePrefs(); applyTheme(); } } });
   for (const [l, label] of [['en', 'English'], ['yue', '粵語'], ['both', 'EN + 粵']] as const) cmds.push({ id: `lang-${l}`, label: `${tx('language')}: ${label}`, where: `${tx('settings')} › ${tx('language')}`, run: () => { prefs.lang = l; savePrefs(); render(); } });
   cmds.push({ id: 'notes', label: tx('notifications'), where: 'Header', run: () => toggleNoteCentre() });
+  cmds.push({ id: 'support', label: tx('aboutReport'), where: tx('help'), run: () => supportDesk() });
   if (desktopBridge?.openInEditor && world) cmds.push({ id: 'outside', label: tx('outsideTitle'), where: world.name, run: () => { void openOutside(); } });
   cmds.push({ id: 'welcome', label: tx('welcome'), where: `${tx('settings')}`, run: () => { prefs.onboarded = false; prefs.onboardStep = 0; savePrefs(); render(); } });
   // Every setting can be teleported to (Shift+Enter or the arrow): toggles get it as a second action,
@@ -647,7 +658,7 @@ function helpMenu(anchor: HTMLElement) {
   document.querySelector('.help-menu')?.remove();
   const m = document.createElement('div');
   m.className = 'help-menu'; m.setAttribute('role', 'menu'); m.setAttribute('aria-label', tx('help'));
-  const items: Array<[string, () => void]> = [[tx('tourTake'), () => takeTour('app')], [tx('tourThisPage'), () => takeTour(prefs.tab as Tab)], ...(prefs.tourResume ? [[tx('tourResume'), resumeOrStartTour] as [string, () => void]] : []), [tx('paletteHint'), () => showPalette()]];
+  const items: Array<[string, () => void]> = [[tx('tourTake'), () => takeTour('app')], [tx('tourThisPage'), () => takeTour(prefs.tab as Tab)], ...(prefs.tourResume ? [[tx('tourResume'), resumeOrStartTour] as [string, () => void]] : []), [tx('paletteHint'), () => showPalette()], [tx('aboutReport'), () => supportDesk()]];
   m.innerHTML = items.map(([label], i) => `<button role="menuitem" data-i="${i}">${esc(label)}</button>`).join('');
   const r = anchor.getBoundingClientRect();
   Object.assign(m.style, { top: `${r.bottom + 6}px`, right: `${Math.max(8, innerWidth - r.right)}px` });
@@ -1815,12 +1826,13 @@ async function aboutView(view: HTMLElement): Promise<void> {
       <p>${esc(provenance())}</p>
       <p class="fine">${esc(tx('aboutLegal'))}</p>
       <div class="row-actions"><md-filled-button id="copy-ver">${esc(tx('copyDetails'))}</md-filled-button></div>
-      <nav class="about-links" aria-label="${esc(tx('aboutLinks'))}">${([['aboutDocs', 'https://ding-ding-projects.github.io/map-editor/', 'compass'], ['aboutSource', 'https://github.com/Ding-Ding-Projects/map-editor', 'code'], ['aboutReleases', 'https://github.com/Ding-Ding-Projects/map-editor/releases', 'download'], ['aboutReport', 'https://github.com/Ding-Ding-Projects/map-editor/issues/new', 'pencil']] as Array<[Key, string, string]>).map(([k, href, ic]) => `<a class="about-link" href="${href}" target="_blank" rel="noopener noreferrer"><span class="about-link-ico" aria-hidden="true">${iconSvg(ic, 20)}</span><span>${esc(tx(k))}</span></a>`).join('')}</nav>
+      <nav class="about-links" aria-label="${esc(tx('aboutLinks'))}">${([['aboutDocs', 'https://ding-ding-projects.github.io/map-editor/', 'compass'], ['aboutSource', 'https://github.com/Ding-Ding-Projects/map-editor', 'code'], ['aboutReleases', 'https://github.com/Ding-Ding-Projects/map-editor/releases', 'download'], ['aboutReport', 'https://github.com/Ding-Ding-Projects/map-editor/issues/new', 'pencil']] as Array<[Key, string, string]>).map(([k, href, ic]) => k === 'aboutReport' ? `<button type="button" class="about-link" id="about-report"><span class="about-link-ico" aria-hidden="true">${iconSvg(ic, 20)}</span><span>${esc(tx(k))}</span></button>` : `<a class="about-link" href="${href}" target="_blank" rel="noopener noreferrer"><span class="about-link-ico" aria-hidden="true">${iconSvg(ic, 20)}</span><span>${esc(tx(k))}</span></a>`).join('')}</nav>
       <div class="about-update"><b>${esc(tx('updTitle'))}</b><p id="upd-text" aria-live="polite">${esc(updateText(upd))}</p>${desktopBridge?.updates ? `<md-outlined-button id="upd-check">${esc(tx('updCheck'))}</md-outlined-button>` : ''}</div></section>
     <section class="changelog"><div class="cl-head"><h2>${esc(tx('changelog'))}</h2>
       <div id="cl-q-host"></div></div>
       <ol id="cl" aria-live="polite"><li class="muted">${esc(tx('loading'))}</li></ol></section></div>`;
   view.querySelector('#upd-check')?.addEventListener('click', () => checkForUpdates());
+  view.querySelector('#about-report')?.addEventListener('click', () => supportDesk());
   view.querySelector('#copy-ver')!.addEventListener('click', () => navigator.clipboard?.writeText(`Map Editor ${health?.version} ${health?.commit} ${health?.builtAt ?? ''}${health?.codeName ? ` (${health.codeName.en})` : ''}`).then(() => notify(tx('copied')), () => notify(tx('copyFailed'), true)));
   const listEl = view.querySelector<HTMLElement>('#cl')!;
   type Entry = { sha: string; date: string; subject: string; body?: string };

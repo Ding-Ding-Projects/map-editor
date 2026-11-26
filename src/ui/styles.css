@@ -1102,3 +1102,13 @@ md-list-item .h-pick { inline-size: 18px; block-size: 18px; margin: 0; accent-co
 .data-folder dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 8px 0 12px; } .data-folder dt { color: var(--md-sys-color-on-surface-variant); font-size: 13px; }
 .data-folder dd { margin: 0; min-inline-size: 0; overflow-wrap: anywhere; } .data-folder code { font-size: 13px; }
 @media (max-width: 560px) { .data-folder dl { grid-template-columns: 1fr; gap: 2px; } .data-folder dd { margin-block-end: 8px; } }
+
+/* Support desk */
+.support-desk { --md-dialog-container-max-inline-size: 640px; inline-size: min(640px, calc(100vw - 32px)); }
+.support-desk form { display: grid; gap: 12px; } .support-desk md-outlined-text-field { inline-size: 100%; }
+.desk-attached { padding: 10px 14px; border-radius: 16px; background: var(--md-sys-color-surface-container); } .desk-attached summary { cursor: pointer; font-weight: 600; }
+.desk-attached ul { margin: 8px 0; padding-inline-start: 18px; font-size: 13px; } .desk-attached p { margin: 0; font-size: 12px; }
+.desk-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; } .desk-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 8px 12px; border-radius: 14px; background: var(--md-sys-color-surface-container-low); }
+.desk-list .desk-text { flex: 1 1 200px; display: grid; min-inline-size: 0; } .desk-list small { color: var(--md-sys-color-on-surface-variant); } .support-desk h3 { margin: 8px 0 0; font-size: 15px; }
+button.about-link { font: inherit; text-align: start; cursor: pointer; border: 0; }
+md-dialog.support-desk { max-block-size: min(820px, calc(100% - 32px)); }
