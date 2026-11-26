@@ -1269,7 +1269,8 @@ html { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--md-sys-c
 
 /* Deploy app: search rows above the instance list and the activity list; a hidden row takes no space. */
 .inst-find { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 8px 0; }
-.inst-find .search-box, .activity .search-box { flex: 1 1 280px; max-width: 520px; margin-bottom: 8px; }
+.inst-find .search-box { flex: 1 1 280px; max-width: 520px; }
+.activity .search-box { flex: none; max-width: 520px; margin-bottom: 8px; } /* this card stacks its children, so a flex basis here would be a height */
 md-list-item[hidden], .act-list > li[hidden] { display: none !important; }
 
 .bp-swatch[hidden] { display: none !important; } .bp-shown { margin: 6px 0 0; }
