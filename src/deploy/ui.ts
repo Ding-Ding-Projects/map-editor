@@ -529,7 +529,7 @@ function onboarding(main: Element) {
       try {
         const res: Array<{ name: string; ok: boolean; detail: string }> = await d.preflight();
         list.innerHTML = res.map((r) => `<li class="${r.ok ? 'ok' : 'no'}"><b>${esc(r.name)}</b><span class="pill-state">${r.ok ? 'Found' : 'Not found'}</span><small>${esc(r.detail)}</small></li>`).join('') + '<li><b>USB drive and Raspberry Pi</b><span class="pill-state">Ready</span><small>These only need the appliance image file, which you choose when you deploy.</small></li>';
-      } catch (e) { list.innerHTML = `<li class="no"><b>The check could not run</b><small>${esc((e as Error).message)}</small></li>`; }
+      } catch (e) { list.innerHTML = `<li class="no"><b>The check could not run</b><small>Nothing was changed. Press Check now to try again, or carry on: each target checks its own tools when you deploy.</small><small class="ob-why"><code>${esc((e as Error).message).slice(0, 200)}</code></small></li>`; }
     };
     body.querySelector('#ob-check')!.addEventListener('click', () => void check());
     void check();
