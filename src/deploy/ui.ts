@@ -220,8 +220,15 @@ async function virtualDisks(main: Element) {
   await load();
 }
 
+const STEP_WORD: Record<Step['state'], [string, string]> = { waiting: ['Waiting', '等緊'], running: ['Working', '做緊'], done: ['Done', '搞掂'], failed: ['Failed', '失敗'] };
 function stepsHtml(steps: Step[]) {
-  return `<ol class="stack" aria-live="polite">${steps.map((s) => `<li><strong>${esc(s.label)}</strong> · ${esc(s.state)}${s.detail ? ` <span class="muted">${esc(s.detail)}</span>` : ''}</li>`).join('')}</ol>`;
+  const done = steps.filter((s) => s.state === 'done').length;
+  return `<p class="steps-count muted" role="status">${esc(by(`${done} of ${steps.length} steps done`, `${steps.length} 步入面搞掂咗 ${done} 步`))}</p><ol class="steps-list" aria-live="polite">${steps.map((s) => `<li class="step ${s.state}"><span class="step-mark" aria-hidden="true">${s.state === 'done' ? iconSvg('check', 16) : s.state === 'failed' ? iconSvg('x', 16) : ''}</span><span class="step-text"><strong>${esc(s.label)}</strong>${s.detail ? `<small>${esc(s.detail)}</small>` : ''}</span><span class="step-state">${esc(by(...STEP_WORD[s.state]))}</span></li>`).join('')}</ol>`;
+}
+/** Run one deploy from its button: the button is off while it runs, so a second press cannot start another. */
+function runOnce(form: Element, run: () => Promise<void>) {
+  const go = form.querySelector('#go') as HTMLElement & { disabled: boolean };
+  go.addEventListener('click', () => { if (go.disabled) return; go.disabled = true; void run().finally(() => { if (go.isConnected) go.disabled = false; }); });
 }
 
 // Update ready banner: same wording and behaviour as the editor's; restart is never automatic.
@@ -366,11 +373,11 @@ async function render() {
       if (!r.error) { celebrate(r.url, r.instance, Date.now() - t0); return; }
       const port = Number(val('#port'));
       const portBusy = /port|allocated|in use/i.test(r.error) && port < 65535;
-      failTakeover({ what: `Docker could not start ${val('#name')}.`, error: r.error, steps,
-        retry: portBusy ? { label: `Try port ${port + 1}`, run: () => { (form.querySelector('#port') as HTMLInputElement).value = String(port + 1); void deployNow(); } }
+      failTakeover({ what: by(`Docker could not start ${val('#name')}.`, `Docker 開唔到 ${val('#name')}。`), error: r.error, steps,
+        retry: portBusy ? { label: by(`Try port ${port + 1}`, `試吓連接埠 ${port + 1}`), run: () => { (form.querySelector('#port') as HTMLInputElement).value = String(port + 1); void deployNow(); } }
           : { label: 'Try again', run: () => void deployNow() } });
     };
-    form.querySelector('#go')!.addEventListener('click', () => void deployNow());
+    runOnce(form, deployNow);
   } else if (target === 'ssh') {
     form.innerHTML = `<h2 class="md-typescale-headline-large">Docker on another computer</h2>
       <p class="muted">The other computer needs Docker with Compose and an SSH login that works without a password prompt (an SSH key in your agent). Docker connects with <code>DOCKER_HOST=ssh://…</code>; this app never sees your password or key.</p>
@@ -390,10 +397,10 @@ async function render() {
       const r = await d.docker({ name: val('#name'), port, version: val('#version'), worlds: val('#rworlds'), sshHost: val('#ssh') });
       if (!r.error) { celebrate(r.url, r.instance, Date.now() - t0); return; }
       const portBusy = /allocated|address already in use/i.test(r.error) && port < 65535;
-      failTakeover({ what: `Docker on ${val('#ssh')} could not start ${val('#name')}.`, error: r.error, steps,
-        retry: portBusy ? { label: `Try port ${port + 1}`, run: () => { (form.querySelector('#port') as HTMLInputElement).value = String(port + 1); void deployNow(); } } : { label: 'Try again', run: () => void deployNow() } });
+      failTakeover({ what: by(`Docker on ${val('#ssh')} could not start ${val('#name')}.`, `${val('#ssh')} 上面嘅 Docker 開唔到 ${val('#name')}。`), error: r.error, steps,
+        retry: portBusy ? { label: by(`Try port ${port + 1}`, `試吓連接埠 ${port + 1}`), run: () => { (form.querySelector('#port') as HTMLInputElement).value = String(port + 1); void deployNow(); } } : { label: 'Try again', run: () => void deployNow() } });
     };
-    form.querySelector('#go')!.addEventListener('click', () => void deployNow());
+    runOnce(form, deployNow);
   } else if (target === 'vmware') {
     form.innerHTML = `<h2 class="md-typescale-headline-large">VMware</h2>
       <p class="muted">Needs VMware Workstation or Player with OVF Tool (it comes with Workstation). The VM uses a bridged network so other devices can reach it.</p>
@@ -410,9 +417,9 @@ async function render() {
       const t0 = Date.now();
       const r = await d.vmware({ name, ova });
       if (!r.error) { celebrate(r.url, r.instance, Date.now() - t0); return; }
-      failTakeover({ what: `VMware could not start ${name}.`, error: r.error, steps, retry: { label: 'Try again', run: () => void deployNow() } });
+      failTakeover({ what: by(`VMware could not start ${name}.`, `VMware 開唔到 ${name}。`), error: r.error, steps, retry: { label: 'Try again', run: () => void deployNow() } });
     };
-    form.querySelector('#go')!.addEventListener('click', () => void deployNow());
+    runOnce(form, deployNow);
   } else if (target === 'virtualbox') {
     form.innerHTML = `<h2 class="md-typescale-headline-large">VirtualBox</h2>
       <md-outlined-text-field id="name" label="Instance name" value="map-editor-vm"></md-outlined-text-field>
@@ -429,9 +436,9 @@ async function render() {
       const t0 = Date.now();
       const r = await d.virtualbox({ name: val('#name'), ova, bridgeAdapter: val('#bridge') });
       if (!r.error) { celebrate(r.url, r.instance, Date.now() - t0); return; }
-      failTakeover({ what: `VirtualBox could not start ${val('#name')}.`, error: r.error, steps, retry: { label: 'Try again', run: () => void deployNow() } });
+      failTakeover({ what: by(`VirtualBox could not start ${val('#name')}.`, `VirtualBox 開唔到 ${val('#name')}。`), error: r.error, steps, retry: { label: 'Try again', run: () => void deployNow() } });
     };
-    form.querySelector('#go')!.addEventListener('click', () => void deployNow());
+    runOnce(form, deployNow);
   } else if (target === 'usb') {
     const disks: Disk[] = await d.disks().catch((e: Error) => { toast(e.message, true); return []; });
     form.innerHTML = `<h2 class="md-typescale-headline-large">USB drive</h2>
@@ -480,16 +487,17 @@ function toast(text: string, error = false) {
 
 // Full-screen takeovers from the Takeover board (shared with the editor).
 function celebrate(url: string, inst: Instance, tookMs = 0) {
+  const whereYue = inst.target === 'docker' ? '喺呢部電腦嘅 Docker 度' : inst.target === 'docker-ssh' ? `喺 ${inst.sshHost ?? inst.host} 嘅 Docker 度` : inst.target === 'vmware' ? '喺 VMware 度' : '喺 VirtualBox 度';
   const where = inst.target === 'docker' ? 'in Docker on this computer' : inst.target === 'docker-ssh' ? `in Docker on ${inst.sshHost ?? inst.host}` : inst.target === 'vmware' ? 'in VMware' : 'in VirtualBox';
-  showTakeover({ kind: 'ok', chip: 'Installed', title: 'It is live.', lead: `${inst.name} is running ${where} and answered its health check. The first person to open the link creates the owner account, so open it yourself first.`,
-    stats: [{ label: 'Link', value: url.replace(/^https?:\/\//, '').replace(/\/$/, ''), code: true }, { label: 'Version', value: inst.version }, { label: 'Took', value: `${Math.max(1, Math.round(tookMs / 1000))} s` }],
+  showTakeover({ kind: 'ok', chip: 'Installed', title: 'It is live.', lead: by(`${inst.name} is running ${where} and answered its health check. The first person to open the link creates the owner account, so open it yourself first.`, `${inst.name} ${whereYue}運行緊，健康檢查都有回應。第一個開條連結嘅人會建立擁有者帳戶，所以你自己開先。`),
+    stats: [{ label: 'Link', value: url.replace(/^https?:\/\//, '').replace(/\/$/, ''), code: true }, { label: 'Version', value: inst.version }, { label: 'Took', value: by(`${Math.max(1, Math.round(tookMs / 1000))} s`, `${Math.max(1, Math.round(tookMs / 1000))} 秒`) }],
     actions: [{ label: 'Open Map Editor', primary: true, run: () => d.open(url) }, { label: 'Copy link', outlined: true, run: () => { void navigator.clipboard?.writeText(url).then(() => toast('Link copied.')); } }, { label: 'Close (Esc)', run: (close) => close() }],
-    autoClose: { seconds: 8, text: (n) => `Closes by itself in ${n} s.`, held: 'Stays open while you use it.' } });
+    autoClose: { seconds: 8, text: (n) => by(`Closes by itself in ${n} s.`, `${n} 秒後自己關閉。`), held: 'Stays open while you use it.' } });
 }
 
 function failTakeover(o: { what: string; error: string; steps: Step[]; retry: { label: string; run: () => void } }) {
   const log = [...o.steps.map((s) => `${s.state === 'failed' ? '✗' : s.state === 'done' ? '✓' : '·'} ${s.label}${s.detail ? ` — ${s.detail}` : ''}`), '', o.error, `at ${new Date().toLocaleTimeString('en-GB')}`].join('\n').trim();
-  showTakeover({ kind: 'fail', chip: 'Install failed · stays until you close it', title: 'That did not work.', lead: `${o.what} Nothing else on this computer was changed.`, log, logLabel: 'What happened',
+  showTakeover({ kind: 'fail', chip: 'Install failed · stays until you close it', title: 'That did not work.', lead: `${o.what} ${by('Nothing else on this computer was changed.', '呢部電腦其他嘢都冇改到。')}`, log, logLabel: 'What happened',
     actions: [{ label: o.retry.label, primary: true, run: (close) => { close(); o.retry.run(); } }, { label: 'Copy details', outlined: true, run: () => { void navigator.clipboard?.writeText(log).then(() => toast('Details copied.')); } }, { label: 'Dismiss (Esc)', run: (close) => close() }] });
 }
 
