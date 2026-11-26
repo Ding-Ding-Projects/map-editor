@@ -801,7 +801,7 @@ function shell() {
       </nav>` : ''}
       <main id="view" class="view" role="tabpanel"></main>
     </div>
-    ${user && prefs.onboarded ? `<nav class="bottom-nav" aria-label="${esc(tx('destinations'))}">${open.map((x) => `<button data-tab="${x}" ${x === prefs.tab ? 'aria-current="page"' : ''}><span class="pill">${TAB_ICON[x]}</span><span class="bn-label">${tx(x as Key).split(' · ').map((part) => `<span>${esc(part)}</span>`).join('')}</span></button>`).join('')}</nav>` : ''}
+    ${user && prefs.onboarded ? `<nav class="bottom-nav" aria-label="${esc(tx('destinations'))}">${open.map((x) => `<button data-tab="${x}" ${x === prefs.tab ? 'aria-current="page"' : ''}><span class="pill">${TAB_ICON[x]}</span><span class="bn-label">${tx(x as Key).split(' · ').map((part) => `<span>${esc(part)}</span>`).join('')}</span></button>`).join('')}${prefs.closedTabs.some((x) => (TABS as readonly string[]).includes(x)) ? `<button type="button" id="tab-new-phone" aria-haspopup="menu"><span class="pill">${iconSvg('plus', 22)}</span><span class="bn-label"><span>${esc(tx('newTab'))}</span></span></button>` : ''}</nav>` : ''}
     <div id="toasts" class="toasts" aria-live="polite"></div>`;
   if (keptToasts.length) app.querySelector('#toasts')!.append(...keptToasts);
   app.querySelectorAll<HTMLElement>('[data-lang]').forEach((c) => c.addEventListener('click', () => { prefs.lang = c.dataset.lang as Lang; savePrefs(); render(); }));
@@ -809,15 +809,15 @@ function shell() {
   app.querySelectorAll<HTMLElement>('[data-close]').forEach((c) => c.addEventListener('click', () => { prefs.closedTabs.push(c.dataset.close!); savePrefs(); render(); }));
   app.querySelector('#open-all')?.addEventListener('click', () => { prefs.closedTabs = []; savePrefs(); render(); });
   // New tab: a catalogue of every tab. Closed ones come first and open again one at a time.
-  app.querySelector<HTMLElement>('#tab-new')?.addEventListener('click', (e) => {
-    const btn = e.currentTarget as HTMLElement; const r = btn.getBoundingClientRect();
+  app.querySelectorAll<HTMLElement>('#tab-new, #tab-new-phone').forEach((b) => b.addEventListener('click', (e) => {
+    const btn = e.currentTarget as HTMLElement; const r = btn.getBoundingClientRect(); const up = btn.id === 'tab-new-phone';
     const closed = TABS.filter((x) => prefs.closedTabs.includes(x)), openNow = TABS.filter((x) => !prefs.closedTabs.includes(x));
-    contextMenu(r.left, r.bottom + 4, tx('newTabMenu'), [
+    contextMenu(up ? 8 : r.left, up ? Math.max(8, r.top - 8 - 56 * (TABS.length + 2)) : r.bottom + 4, tx('newTabMenu'), [
       ...closed.map((x) => [tx('newTabOpen', { tab: tx(x as Key) }), goTab(x)] as [string, () => void]),
       ...(closed.length > 1 ? [[tx('openEveryTab'), () => { prefs.closedTabs = []; savePrefs(); render(); }] as [string, () => void]] : []),
       ...openNow.map((x) => [tx('newTabGo', { tab: tx(x as Key) }), goTab(x)] as [string, () => void]),
     ], btn, -1, true);
-  });
+  }));
   app.querySelector('#tab-find')?.addEventListener('click', () => tabSearch());
   app.querySelector('#cmd')?.addEventListener('click', () => showPalette());
   app.querySelector('#bell')?.addEventListener('click', () => toggleNoteCentre());
