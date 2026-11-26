@@ -28,6 +28,12 @@ const yueOf = (f) => yueContent[f.slug] && Array.isArray(yueContent[f.slug].body
 const SITE = 'https://ding-ding-projects.github.io';
 const preview = readFileSync(path.join(root, 'social-preview.png'));
 const previewName = `social-preview.${createHash('sha256').update(preview).digest('hex').slice(0, 10)}.png`; // a new address whenever the picture changes
+// The tags a shared link is drawn from. Every page carries them, the phone editions included.
+const shareTags = (title, desc, pagePath) => `<meta name="description" content="${esc(desc)}">
+<meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website">
+<meta property="og:url" content="${SITE}${base}${pagePath}"><meta property="og:site_name" content="Map Editor">
+<meta property="og:image" content="${SITE}${base}${previewName}"><meta property="og:image:width" content="1280"><meta property="og:image:height" content="640"><meta property="og:image:alt" content="Map Editor with a world open: the top-down map, the Fill tool and the block palette.">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${SITE}${base}${previewName}"><meta name="theme-color" content="#2f6b2e">`;
 let pagePath = '';
 function page(title, desc, main, active = 'guide') {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -140,7 +146,7 @@ for (const [dir, yue] of [['phone', false], ['phone-yue', true]]) {
   mkdirSync(path.join(out, dir), { recursive: true });
   const T = (f) => (yue && yueOf(f)) || f;
   writeFileSync(path.join(out, dir, 'index.html'), `<!doctype html><html lang="${yue ? 'yue-Hant-HK' : 'en'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${yue ? 'Map Editor 指南（手機版）' : 'Map Editor guide, phone edition'}</title><link rel="stylesheet" href="${base}site.css"><style>
+<title>${yue ? 'Map Editor 指南（手機版）' : 'Map Editor guide, phone edition'}</title>${shareTags(yue ? 'Map Editor 指南（手機版）' : 'Map Editor guide, phone edition', yue ? '成份 Map Editor 指南，一頁睇晒，啱手機睇。' : 'The whole Map Editor guide on one page, sized for a phone.', `${dir}/`)}<link rel="icon" type="image/svg+xml" href="${base}favicon.svg"><link rel="stylesheet" href="${base}site.css"><style>
 @page { size: 90mm 160mm; margin: 8mm 6mm; }
 body { font-size: 11pt; line-height: 1.45; background: #fff; color: #181d17; }
 main { max-width: 560px; margin: 0 auto; padding: 12px; }

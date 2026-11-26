@@ -62,7 +62,7 @@ let prefs = loadPrefs();
 // Settings history: every saved change to a user-facing setting keeps the previous values,
 // newest first, so any change can be restored (and the restore is recorded too).
 const HISTORY_KEY = 'map-editor.settings-history.v1';
-const TRACKED = ['tones', 'focusMode', 'schoolMode', 'lang', 'funnyEn', 'funnyYue', 'dark', 'reduceMotion', 'largeText', 'takeovers', 'lockedSettings', 'layoutLocked', 'tabsLocked', 'settingsLocked', 'quietHours', 'quietFrom', 'quietTo', 'dimSum', 'narrate', 'narrateRate', 'darkSchedule', 'darkFrom', 'darkTo', 'editLock', 'sounds', 'soundVolume', 'seed', 'rainbowSpeed'] as const;
+const TRACKED = ['appName', 'tones', 'focusMode', 'schoolMode', 'lang', 'funnyEn', 'funnyYue', 'dark', 'reduceMotion', 'largeText', 'takeovers', 'lockedSettings', 'layoutLocked', 'tabsLocked', 'settingsLocked', 'quietHours', 'quietFrom', 'quietTo', 'dimSum', 'narrate', 'narrateRate', 'darkSchedule', 'darkFrom', 'darkTo', 'editLock', 'sounds', 'soundVolume', 'seed', 'rainbowSpeed'] as const;
 type Tracked = typeof TRACKED[number];
 interface SettingsChange { at: string; keys: Tracked[]; before: Partial<Prefs>; after: Partial<Prefs> }
 let lastSaved: Partial<Prefs> = pick(prefs);
@@ -134,7 +134,14 @@ let fitPending = false; // centre the map on the world's chunks the next time th
 // Where the map was looking, kept while a world is open so leaving the Editor tab and coming back does not lose the view.
 let mapView: { x: number; z: number; s: number; moved: boolean } | undefined;
 
-const tx = (k: Key, v: Record<string, string | number> = {}) => tr(prefs, k, v);
+// A name the owner gave this app replaces the built-in one wherever a message says it. The legal line
+// names the upstream project and keeps its wording; the built-in name itself is left as the fallback.
+const NAME_KEPT = new Set<Key>(['appName', 'aboutLegal', 'appNameSet', 'appNameNote' as Key]);
+const tx = (k: Key, v: Record<string, string | number> = {}) => {
+  const out = tr(prefs, k, v);
+  const own = (prefs.appName ?? '').trim().slice(0, 40);
+  return own && !NAME_KEPT.has(k) ? out.replace(/(?<!Amulet )Map Editor(?! Deploy)/g, own).replace(/地圖編輯器/g, own) : out;
+};
 /** A sentence with other translated words inside it. In bilingual mode each language is put together on its own, so the result reads "English · 粵語" once instead of nesting both inside both. */
 const txWith = (k: Key, inner: Record<string, Key>, v: Record<string, string | number> = {}) => {
   const one = (lang: Lang) => { const st = { ...prefs, lang }; return tr(st, k, { ...v, ...Object.fromEntries(Object.entries(inner).map(([name, key]) => [name, tr(st, key)])) }); };
@@ -1925,7 +1932,7 @@ function settingsView(view: HTMLElement) {
   const sh = view.querySelector<HTMLElement>('#sh')!;
   const hist = loadSettingsHistory();
   const fmt = (k: Tracked, v: unknown) => k === 'seed' && v === RAINBOW ? tx('rainbow') : typeof v === 'boolean' ? (v ? 'on' : 'off') : v && typeof v === 'object' ? (Object.entries(v).map(([a, b]) => `${a} ${b}`).join(', ') || '—') : String(v);
-  const name: Record<Tracked, string> = { tones: tx('elemAppearance'), focusMode: tx('focusMode'), schoolMode: tx('schoolMode'), layoutLocked: tx('layoutLocked'), tabsLocked: tx('tabsLocked'), settingsLocked: tx('settingsLocked'), lockedSettings: tx('lockedSettings'), quietHours: tx('quietHours'), quietFrom: tx('quietFrom'), quietTo: tx('quietTo'), takeovers: tx('takeovers'), narrate: tx('narrate'), narrateRate: tx('narrateRate'), darkSchedule: tx('darkSchedule'), darkFrom: tx('darkFrom'), darkTo: tx('darkTo'), editLock: tx('editLock'), dimSum: tx('dimSum'), sounds: tx('soundEffects'), soundVolume: tx('soundVolume'), lang: tx('secLanguage'), funnyEn: tx('funnyEn'), funnyYue: tx('funnyYue'), dark: tx('dark'), reduceMotion: tx('reduceMotion'), largeText: tx('largeText'), seed: tx('seed'), rainbowSpeed: tx('rainbow') };
+  const name: Record<Tracked, string> = { appName: tx('appNameSet'), tones: tx('elemAppearance'), focusMode: tx('focusMode'), schoolMode: tx('schoolMode'), layoutLocked: tx('layoutLocked'), tabsLocked: tx('tabsLocked'), settingsLocked: tx('settingsLocked'), lockedSettings: tx('lockedSettings'), quietHours: tx('quietHours'), quietFrom: tx('quietFrom'), quietTo: tx('quietTo'), takeovers: tx('takeovers'), narrate: tx('narrate'), narrateRate: tx('narrateRate'), darkSchedule: tx('darkSchedule'), darkFrom: tx('darkFrom'), darkTo: tx('darkTo'), editLock: tx('editLock'), dimSum: tx('dimSum'), sounds: tx('soundEffects'), soundVolume: tx('soundVolume'), lang: tx('secLanguage'), funnyEn: tx('funnyEn'), funnyYue: tx('funnyYue'), dark: tx('dark'), reduceMotion: tx('reduceMotion'), largeText: tx('largeText'), seed: tx('seed'), rainbowSpeed: tx('rainbow') };
   sh.innerHTML = hist.length ? hist.slice(0, 50).map((h, i) => `<li data-find="${esc(h.keys.map((k) => name[k]).join(' '))}"><span><b>${h.keys.map((k) => `${esc(name[k])}: ${esc(fmt(k, h.before[k]))} → ${esc(fmt(k, h.after[k]))}`).join(' · ')}</b><small>${esc(new Date(h.at).toLocaleString())}</small></span><md-text-button data-restore="${i}">${esc(tx('restore'))}</md-text-button></li>`).join('') : `<li class="muted">${esc(tx('noSettingsHistory'))}</li>`;
   sh.querySelectorAll<HTMLElement>('[data-restore]').forEach((b) => b.addEventListener('click', () => {
     const h = hist[Number(b.dataset.restore)]; if (!h) return;
