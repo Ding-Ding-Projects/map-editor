@@ -1271,3 +1271,5 @@ html { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--md-sys-c
 .inst-find { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 8px 0; }
 .inst-find .search-box, .activity .search-box { flex: 1 1 280px; max-width: 520px; margin-bottom: 8px; }
 md-list-item[hidden], .act-list > li[hidden] { display: none !important; }
+
+.bp-swatch[hidden] { display: none !important; } .bp-shown { margin: 6px 0 0; }

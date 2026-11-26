@@ -1230,12 +1230,30 @@ async function editorView(view: HTMLElement): Promise<void> {
     // A Bedrock world only takes blocks it already holds, so its palette is what has been picked, plus air.
     const bedrock = world?.edition === 'bedrock';
     const list = bedrock ? [...pickedBlocks, ...['minecraft:air', ...worldBlocks].filter((b) => !pickedBlocks.includes(b))] : [...pickedBlocks, ...PALETTE_BLOCKS.filter((b) => !pickedBlocks.includes(b))];
-    blocksEl.innerHTML = `<p class="muted">${esc(tx(bedrock ? 'bedrockEditorNote' : 'paletteNote'))}</p><div class="bp-grid" role="list">${list.map((b) => {
+    blocksEl.querySelector('.bp-body')?.remove();
+    const body = document.createElement('div'); body.className = 'bp-body'; blocksEl.append(body);
+    body.innerHTML = `<p class="muted">${esc(tx(bedrock ? 'bedrockEditorNote' : 'paletteNote'))}</p><div class="bp-grid" role="list">${list.map((b) => {
       const [r, g, bl] = blockColor(b.split('[')[0]);
       return `<button type="button" role="listitem" class="bp-swatch${pickedBlocks.includes(b) ? ' picked' : ''}" data-pb="${esc(b)}" title="${esc(b)}" aria-label="${esc(b.slice(10))}"><span style="background: rgb(${r} ${g} ${bl})"></span><small>${esc(b.slice(b.indexOf(':') + 1).replace(/\[(.*)\]$/, ' ($1)').replace(/_/g, ' '))}</small></button>`;
     }).join('')}</div>`;
     blocksEl.querySelectorAll<HTMLElement>('[data-pb]').forEach((sw) => sw.addEventListener('click', () => { useBlock(sw.dataset.pb!); status.textContent = tx('blockSet', { block: sw.dataset.pb! }); }));
+    void filterPalette();
   }
+  // The block search stays put while the swatches are redrawn under it.
+  const blockQ = searchBox('block-search', tx('blockSearch'), rx, { compact: true });
+  const blockShown = document.createElement('p'); blockShown.className = 'muted bp-shown'; blockShown.setAttribute('role', 'status'); blockShown.hidden = true;
+  blocksEl.append(blockQ.el, blockShown);
+  let paletteRun = 0;
+  async function filterPalette() {
+    const my = ++paletteRun;
+    const sws = Array.from(blocksEl.querySelectorAll<HTMLElement>('[data-pb]'));
+    const hits = await blockQ.filter(sws.map((x) => `${x.dataset.pb} ${x.querySelector('small')?.textContent ?? ''}`)) ?? sws.map(() => false);
+    if (my !== paletteRun) return;
+    sws.forEach((x, i) => { x.hidden = !hits[i]; });
+    const n = hits.filter(Boolean).length;
+    blockShown.hidden = n === sws.length; blockShown.textContent = n ? tx('worldsShowing', { n, total: sws.length }) : tx('blockNoMatch');
+  }
+  blockQ.onChange(() => { void filterPalette(); });
   drawPalette();
   view.innerHTML = '<div id="dock" class="dock"></div>';
   // 3D view of the selection: isometric cubes with turns and zoom, redrawn after edits.

@@ -37,6 +37,8 @@ const S = {
   worldsShowing: { en: 'Showing {n} of {total}', yue: '顯示緊 {total} 個入面嘅 {n} 個' },
   worldsNoMatch: { en: 'No world matches', yue: '冇世界啱' },
   worldsNoMatchBody: { en: 'Change or clear the search to see your worlds again. Nothing was removed.', yue: '改吓或者清咗個搜尋就見返啲世界。乜都冇移走。' },
+  blockSearch: { en: 'Search blocks', yue: '搵方塊' },
+  blockNoMatch: { en: 'No block here matches. Type any block id in the Block field of the tool instead.', yue: '呢度冇方塊啱。可以喺工具嘅「方塊」格直接打方塊 id。' },
   worldFolderLine: { en: 'Folder: {folder}', yue: '資料夾：{folder}' },
   historyNoWorld: { en: 'No world is open, so there are no edits to list. Open a world to see its edits and undo them here; the activity record is below.', yue: '未開世界，所以冇編輯可以列出嚟。開咗世界就可以喺度睇同復原編輯；活動記錄喺下面。' },
   vocabStateSchool: { en: 'School mode is on, so the built-in wording is shown. Your words are kept for later.', yue: '學校模式開緊，所以用內置用字。你嗰套會留低，遲啲用返。' },
