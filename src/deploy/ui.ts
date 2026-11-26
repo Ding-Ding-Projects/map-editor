@@ -6,7 +6,8 @@ import { showTakeover } from '../ui/takeover.js';
 import { downloadRows, exportButton } from '../ui/exporter.js';
 import { iconSvg, initButtonIcons } from '../ui/icons.js';
 import { superConfirm } from '../ui/moments.js';
-import { englishOf, initLang, langSwitch, setLang, type Lang } from './lang.js';
+import { englishOf, initLang, langSwitch, setLang, setWords, wordCount, type Lang } from './lang.js';
+import { readVocabFile, VocabError, VOCAB_LIMITS } from '../ui/vocabfile.js';
 import { configureSounds, play } from '../ui/sounds.js';
 import { openPalette, type Command } from '../ui/palette.js';
 import { t as tr, type Key } from '../ui/i18n.js';
@@ -269,7 +270,7 @@ async function render() {
   app.innerHTML = `<header class="top"><div class="brand"><div class="logo" aria-hidden="true"></div><div>
       <div class="md-typescale-headline-medium title">Put Map Editor on your network</div>
       <div class="muted" id="prov"></div></div></div>
-    <md-chip-set class="views"><md-filter-chip id="v-deploy" label="Deploy" ${view === 'deploy' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-inst" label="Instances" ${view === 'instances' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-disks" label="Virtual disks" ${view === 'disks' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-guide" label="Guide" ${view === 'guide' ? 'selected' : ''}></md-filter-chip></md-chip-set><md-text-button id="tour">Take a tour</md-text-button><button type="button" id="cmd" class="icon-btn" aria-label="Find commands (Ctrl+Shift+F)" title="Find commands (Ctrl+Shift+F)" aria-keyshortcuts="Control+Shift+F">${iconSvg('search', 20)}</button>${langSwitch()}<button type="button" id="snd" class="icon-btn" aria-pressed="${soundsOn}" aria-label="Sound effects" title="Sound effects">${iconSvg('sound', 20)}</button></header>
+    <md-chip-set class="views"><md-filter-chip id="v-deploy" label="Deploy" ${view === 'deploy' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-inst" label="Instances" ${view === 'instances' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-disks" label="Virtual disks" ${view === 'disks' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-guide" label="Guide" ${view === 'guide' ? 'selected' : ''}></md-filter-chip></md-chip-set><md-text-button id="tour">Take a tour</md-text-button><button type="button" id="cmd" class="icon-btn" aria-label="Find commands (Ctrl+Shift+F)" title="Find commands (Ctrl+Shift+F)" aria-keyshortcuts="Control+Shift+F">${iconSvg('search', 20)}</button><button type="button" id="words" class="icon-btn" aria-label="Your own words" title="Your own words">${iconSvg('pencil', 20)}</button>${langSwitch()}<button type="button" id="snd" class="icon-btn" aria-pressed="${soundsOn}" aria-label="Sound effects" title="Sound effects">${iconSvg('sound', 20)}</button></header>
     <div id="update-banner" class="update-banner" role="region" aria-label="Update" hidden></div>
     <div class="body"><main class="view" id="main"></main></div><div id="toasts" class="toasts"></div>`;
   showUpdate();
@@ -546,6 +547,48 @@ function onboarding(main: Element) {
   body.querySelector<HTMLElement>('h1')?.setAttribute('tabindex', '-1'); body.querySelector<HTMLElement>('h1')?.focus();
 }
 
+// Your own words: one local JSON file, checked whole before any of it is used.
+let wordsRefused = false;
+function ownWords() {
+  document.querySelector('#words-dlg')?.remove();
+  const dlg = document.createElement('md-dialog') as HTMLElement & { show: () => void; close: () => void };
+  dlg.id = 'words-dlg';
+  const pt = paletteText;
+  const paint = () => {
+    const n = wordCount();
+    dlg.innerHTML = `<div slot="headline">${esc(pt('vocab'))}</div><div slot="content" class="words-body"><p>${esc(pt('vocabNote'))}</p>
+      <p id="words-state" role="status" class="${wordsRefused ? 'bad' : ''}"><b>${esc(wordsRefused ? pt('vocabStateBad') : n ? pt('vocabStateOn', { n }) : pt('vocabStateNone'))}</b></p>
+      <div class="row-actions"><md-filled-tonal-button id="words-up">${esc(pt(n ? 'vocabReplace' : 'vocabUpload'))}</md-filled-tonal-button><md-outlined-button id="words-template">${esc(pt('vocabTemplate'))}</md-outlined-button>${n ? `<md-text-button id="words-reset">${esc(pt('vocabReset'))}</md-text-button>` : ''}<input type="file" id="words-file" accept=".json,application/json" hidden></div></div>
+      <div slot="actions"><md-text-button id="words-close">${esc(pt('close'))}</md-text-button></div>`;
+    const file = dlg.querySelector<HTMLInputElement>('#words-file')!;
+    dlg.querySelector('#words-up')!.addEventListener('click', () => file.click());
+    dlg.querySelector('#words-close')!.addEventListener('click', () => dlg.close());
+    file.addEventListener('change', async () => {
+      const f = file.files?.[0]; if (!f) return;
+      try {
+        if (f.size > VOCAB_LIMITS.bytes) throw new VocabError('size');
+        const got = readVocabFile(await f.text(), new Set());
+        if (got.kind !== 'words') throw new VocabError('shape');
+        setWords(got.entries); wordsRefused = false; paint(); toast(pt('vocabStateOn', { n: wordCount() }));
+      } catch (err) {
+        wordsRefused = true; paint();
+        const kind = err instanceof VocabError ? err.problem : 'json';
+        toast(pt('vocabBad', { e: pt(`vocabErr${kind[0].toUpperCase()}${kind.slice(1)}`) }), true); // the kind of fault only
+      }
+    });
+    dlg.querySelector('#words-template')!.addEventListener('click', () => {
+      const entries = Object.fromEntries(['Deploy', 'Instances', 'Virtual disks', 'Guide'].map((w) => [w, w]));
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ schemaVersion: 1, entries }, null, 2)], { type: 'application/json' })); a.download = 'map-editor-deploy-words.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+    dlg.querySelector('#words-reset')?.addEventListener('click', async () => { if (!await askYesNo(pt('vocabResetAsk'), pt('vocabReset'))) return; setWords({}); wordsRefused = false; paint(); toast(pt('vocabCleared')); });
+  };
+  paint();
+  document.body.append(dlg);
+  dlg.addEventListener('closed', () => dlg.remove());
+  dlg.show();
+}
+document.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('#words')) ownWords(); });
+
 // Command palette (Ctrl+Shift+F): every view, target and switch of this app, with live toggles.
 function deployCommands(): Command[] {
   const go = (v: typeof view) => () => { view = v; void render(); };
@@ -559,6 +602,7 @@ function deployCommands(): Command[] {
     { id: 'tour', label: 'Take a tour', where: 'Help', run: () => deployTour() },
     { id: 'support', label: 'Report a problem', where: 'Help', run: () => { void supportDesk(); } },
     { id: 'setup', label: 'Run first-time setup again', where: 'Help', run: () => { obSave({ step: 0, done: false }); void render(); } },
+    { id: 'words', label: 'Your own words', where: 'Settings', run: () => ownWords() },
     { id: 'snd', label: 'Sound effects', where: 'Settings, live', toggle: { get: () => soundsOn, set: (v) => { if (v !== soundsOn) document.querySelector<HTMLElement>('#snd')?.click(); } } },
     ...(['en', 'yue', 'both'] as const).map((l) => ({ id: `lang-${l}`, label: `Language: ${l === 'en' ? 'English' : l === 'yue' ? '粵語' : 'English + 粵語'}`, where: 'Settings', run: () => setLang(l) })),
   ];
