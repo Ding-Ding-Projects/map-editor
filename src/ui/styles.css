@@ -1266,3 +1266,8 @@ html { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--md-sys-c
 .world-find { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 0 0 16px; }
 .world-find .search-box { flex: 1 1 320px; max-width: 560px; }
 .world-find:has(.search-box[hidden]) { display: none; }
+
+/* Deploy app: search rows above the instance list and the activity list; a hidden row takes no space. */
+.inst-find { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 8px 0; }
+.inst-find .search-box, .activity .search-box { flex: 1 1 280px; max-width: 520px; margin-bottom: 8px; }
+md-list-item[hidden], .act-list > li[hidden] { display: none !important; }

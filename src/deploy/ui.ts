@@ -13,7 +13,8 @@ import { openPalette, type Command } from '../ui/palette.js';
 import { t as tr, type Key } from '../ui/i18n.js';
 import { currentLang } from './lang.js';
 import { ARTICLES, docsView, docTitle, openDoc } from '../ui/docs.js';
-import { invert, pickItem, selectAll } from '../ui/select.js';
+import { pickItem } from '../ui/select.js';
+import { searchBox } from '../ui/regex.js';
 import { openSupportDesk } from '../ui/tickets.js';
 let guideOpened = false;
 /** A plain yes or no question, for small local things such as deleting a saved ticket. */
@@ -314,6 +315,11 @@ async function render() {
       <section class="card activity"><h2 class="md-typescale-headline-small">Activity</h2><p class="muted">Every deploy, duplicate, drive write and instance action from this app, kept in a local Git history on this computer.</p><ol class="act-list" id="act-list"><li>Loading…</li></ol></section>`;
     d.activity?.().then((events: Array<{ time: number; message: string; who: string; sha?: string }>) => {
       const ol = main.querySelector('#act-list'); if (!ol) return;
+      if (events.length > 1 && !main.querySelector('[data-search=deploy-activity-search]')) {
+        const aq = searchBox('deploy-activity-search', by('Search activity', '搵活動記錄'), paletteText, { compact: true });
+        ol.before(aq.el);
+        aq.onChange(async () => { const hits = await aq.filter(events.map((e) => `${e.message} ${e.who} ${e.sha ?? ''}`)) ?? events.map(() => false); Array.from(ol.children).forEach((li, k) => { (li as HTMLElement).hidden = !hits[k]; }); });
+      }
       ol.innerHTML = events.length ? events.map((e) => `<li><span class="act-kind">${/failed/.test(e.message) ? 'Failed' : 'Done'}</span><span class="act-text"><b>${esc(e.message)}</b><small>${esc(e.who)} · ${esc(new Date(e.time * 1000).toLocaleString('en-GB'))}${e.sha ? ` · <code>${esc(e.sha.slice(0, 7))}</code>` : ''}</small></span></li>`).join('') : '<li>Nothing yet.</li>';
     }).catch(() => undefined);
     main.querySelectorAll<HTMLElement>('[data-manage]').forEach((b) => b.addEventListener('click', () => { managing = b.dataset.manage; render(); }));
@@ -331,8 +337,28 @@ async function render() {
         main.querySelectorAll('[data-bulk]').forEach((b) => b.toggleAttribute('disabled', !picked.size));
       };
       boxes.forEach((b, k) => b.addEventListener('click', (ev) => { ev.stopPropagation(); anchor = pickItem(picked, k, anchor, ev.shiftKey); paint(); }));
-      main.querySelector('#inst-all')!.addEventListener('click', () => { selectAll(picked, list.length); paint(); });
-      main.querySelector('#inst-inv')!.addEventListener('click', () => { invert(picked, list.length); paint(); });
+      // Search: rows that do not match are hidden, and nothing hidden can be ticked or acted on.
+      const items = boxes.map((b) => b.closest('md-list-item') as HTMLElement);
+      let visible = list.map(() => true);
+      if (list.length > 1) {
+        const q = searchBox('instance-search', by('Search instances', '搵實例'), paletteText, { compact: true });
+        const shownEl = document.createElement('span'); shownEl.className = 'muted'; shownEl.setAttribute('role', 'status');
+        const row = document.createElement('div'); row.className = 'inst-find'; row.append(q.el, shownEl);
+        main.querySelector('md-list')!.before(row);
+        let run = 0;
+        q.onChange(async () => {
+          const my = ++run;
+          const hits = await q.filter(list.map((i) => `${i.name} ${i.target} ${i.version} ${i.host}:${i.port} ${i.sshHost ?? ''}`)) ?? list.map(() => false);
+          if (my !== run) return;
+          visible = hits; items.forEach((el, k) => { if (el) el.hidden = !hits[k]; });
+          for (const k of [...picked]) if (!hits[k]) picked.delete(k);
+          const n = hits.filter(Boolean).length;
+          shownEl.textContent = n === list.length ? '' : n ? by(`Showing ${n} of ${list.length}`, `顯示緊 ${list.length} 個入面嘅 ${n} 個`) : by('No instance matches. Nothing was changed.', '冇實例啱。乜都冇改到。');
+          paint();
+        });
+      }
+      main.querySelector('#inst-all')!.addEventListener('click', () => { picked.clear(); visible.forEach((v, k) => { if (v) picked.add(k); }); paint(); });
+      main.querySelector('#inst-inv')!.addEventListener('click', () => { visible.forEach((v, k) => { if (!v) return; if (picked.has(k)) picked.delete(k); else picked.add(k); }); paint(); });
       main.querySelectorAll<HTMLElement>('[data-bulk]').forEach((btn) => btn.addEventListener('click', async () => {
         const action = btn.dataset.bulk!, chosen = [...picked].sort((x, y) => x - y).map((k) => list[k]);
         if (!chosen.length) return;
