@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "ranAt": "2026-11-26T15:52:38Z",
-  "fingerprint": "8abfd8472e49c1703792ca83e99039c5236ff8a8879ea76e27db751a1bf6e471",
+  "ranAt": "2026-11-26T15:54:10Z",
+  "fingerprint": "18ec8cea34eeb8e85dbd51fc4f522272cea41e1ebbd737a10935f00694be5bb7",
   "checks": [
     {
       "name": "type check",
