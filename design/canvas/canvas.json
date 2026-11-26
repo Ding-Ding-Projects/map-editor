@@ -248,6 +248,16 @@
    "page": "settings",
    "is_interactive": true
   },
+  "OwnWords.dc.html": {
+   "x": 4680,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Your own words: upload, states and refusals",
+   "expand": "fill",
+   "page": "settings",
+   "is_interactive": true
+  },
   "Guide.dc.html": {
    "x": 0,
    "y": 0,
@@ -288,6 +298,7 @@
   "Tools.dc.html",
   "Sketch.dc.html",
   "DataFolder.dc.html",
+  "OwnWords.dc.html",
   "Guide.dc.html",
   "SiteHome.dc.html"
  ],
@@ -545,6 +556,14 @@
    "y": 0,
    "w": 420,
    "text": "Desktop app, Settings, Backup and history: the data folder and extra worlds folders. Try: Move data folder, Use the built-in folder again, Add a worlds folder, Take off the list; Tweaks dark, seed, motion.\nIn the app: the move copies everything, checks it, saves the choice and takes effect after a restart; the old folder is never deleted; extra worlds folders show their worlds without a restart.",
+   "fill": "yellow",
+   "page": "settings"
+  },
+  "n_ownwords": {
+   "x": 6200,
+   "y": 0,
+   "w": 420,
+   "text": "Settings, Language and voice: your own words. Try: Upload words (stands for a good file), then each faulty file, then Back to the built-in words; watch the section names at the top; Tweaks dark, seed, motion.\nIn the app: one fault refuses the whole file and nothing changes; the message names the kind of fault only; the same dialog is in the deploy app behind the pencil button.",
    "fill": "yellow",
    "page": "settings"
   },
