@@ -8,6 +8,7 @@ import { handleSquirrelEvent } from './squirrel.js';
 import { startUpdater } from './updater.js';
 import { spawn } from 'node:child_process';
 import { detectEditors } from './editors.js';
+import { currentDataDir, moveDataDir } from './datafolder.js';
 
 function defaultSaves() {
   if (process.platform === 'win32') return path.join(process.env.APPDATA ?? os.homedir(), '.minecraft', 'saves');
@@ -21,7 +22,9 @@ let win: BrowserWindow | undefined;
 
 if (!squirrel) app.whenReady().then(async () => {
   startUpdater('MapEditor', () => win);
-  const dataDir = path.join(app.getPath('userData'), 'data');
+  const userData = app.getPath('userData');
+  const { dataDir, isDefault } = await currentDataDir(userData);
+  await fs.mkdir(dataDir, { recursive: true });
   const { port } = await createServer({
     host: '127.0.0.1', port: 0, dataDir, worldRoots: [defaultSaves()], allowAnyPath: true,
     staticDir: path.join(__dirname, '..', 'ui'),
@@ -69,8 +72,19 @@ if (!squirrel) app.whenReady().then(async () => {
       }
     };
     await walk(dataDir, 0);
-    return { path: dataDir, bytes, files, worlds: defaultSaves() };
+    return { path: dataDir, bytes, files, worlds: defaultSaves(), isDefault, defaultPath: path.join(userData, 'data') };
   });
+  // Move the data folder: the person picks an empty folder, everything is copied and checked, and the choice takes effect at the next start.
+  ipcMain.handle('move-data-folder', async (_e, toDefault: boolean) => {
+    let to = path.join(userData, 'data');
+    if (!toDefault) {
+      const picked = (await dialog.showOpenDialog(win!, { title: 'Choose an empty folder for Map Editor data', properties: ['openDirectory', 'createDirectory'] })).filePaths[0];
+      if (!picked) return { ok: false, message: '' };
+      to = picked;
+    }
+    return moveDataDir(userData, to, (done, total) => win?.webContents.send('data-move-progress', done, total));
+  });
+  ipcMain.handle('relaunch', () => { app.relaunch(); app.quit(); });
   ipcMain.handle('open-data-root', async () => { await fs.mkdir(dataDir, { recursive: true }); return shell.openPath(dataDir); });
   ipcMain.handle('pick-folder', async () => (await dialog.showOpenDialog(win!, { title: 'Open a Minecraft world folder', properties: ['openDirectory'] })).filePaths[0]);
   // Links to other sites open in the normal browser, never inside the app window.
