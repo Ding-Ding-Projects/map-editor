@@ -1136,3 +1136,6 @@ md-dialog.support-desk { max-block-size: min(820px, calc(100% - 32px)); }
 .bin-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 10px 14px; border-radius: 16px; background: var(--md-sys-color-surface-container-low); } .bin-list code { font-size: 12px; overflow-wrap: anywhere; }
 #bin-report { margin: 0 0 12px; }
 .bin-list .desk-text { flex: 1 1 220px; display: grid; gap: 2px; min-inline-size: 0; } .bin-list small { color: var(--md-sys-color-on-surface-variant); }
+
+.data-folder h4 { margin: 18px 0 4px; font-size: 15px; } .wf-list { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 4px; }
+.wf-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; } .wf-list code { flex: 1 1 240px; overflow-wrap: anywhere; font-size: 13px; }

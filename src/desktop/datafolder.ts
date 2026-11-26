@@ -78,3 +78,38 @@ export async function moveDataDir(userData: string, to: string, onProgress?: (do
     return { ok: true, message: `Copied ${before.files} files. The old folder was left as it is: ${from}`, files: before.files, bytes: before.bytes };
   } catch (e) { return { ok: false, message: `${(e as Error).message}. The data folder was not changed.` }; }
 }
+
+// Extra worlds folders: besides the game's own saves folder, the person can add folders that hold worlds.
+const WORLDS_CONFIG = 'worlds-folders.json';
+
+/** The extra worlds folders that were saved and still exist, without duplicates or the built-in one. */
+export async function extraWorldsFolders(userData: string, builtIn: string): Promise<string[]> {
+  try {
+    const v = JSON.parse(await fs.readFile(path.join(userData, WORLDS_CONFIG), 'utf8'));
+    const out: string[] = [];
+    for (const f of Array.isArray(v?.folders) ? v.folders : []) {
+      if (typeof f !== 'string' || !path.isAbsolute(f)) continue;
+      const abs = path.resolve(f);
+      if (abs === path.resolve(builtIn) || out.includes(abs)) continue;
+      if (await fs.stat(abs).then((s) => s.isDirectory(), () => false)) out.push(abs);
+    }
+    return out.slice(0, 20);
+  } catch { return []; }
+}
+
+/** Adds or removes one extra folder and saves the list. Returns the new list, or a reason it was refused. */
+export async function changeWorldsFolders(userData: string, builtIn: string, change: { add?: string; remove?: string }): Promise<{ folders: string[]; error?: string }> {
+  const now = await extraWorldsFolders(userData, builtIn);
+  let next = now;
+  if (change.add !== undefined) {
+    const abs = path.resolve(change.add);
+    if (!path.isAbsolute(change.add) || !await fs.stat(abs).then((s) => s.isDirectory(), () => false)) return { folders: now, error: 'That folder does not exist.' };
+    if (abs === path.resolve(builtIn) || now.includes(abs)) return { folders: now, error: 'That folder is already in the list.' };
+    if (now.length >= 20) return { folders: now, error: 'There are already 20 extra folders.' };
+    next = [...now, abs];
+  }
+  if (change.remove !== undefined) next = next.filter((f) => f !== path.resolve(change.remove!));
+  await fs.mkdir(userData, { recursive: true });
+  await fs.writeFile(path.join(userData, WORLDS_CONFIG), JSON.stringify({ folders: next }, null, 2));
+  return { folders: next };
+}

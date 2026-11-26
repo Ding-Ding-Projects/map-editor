@@ -8,7 +8,7 @@ import { handleSquirrelEvent } from './squirrel.js';
 import { startUpdater } from './updater.js';
 import { spawn } from 'node:child_process';
 import { detectEditors } from './editors.js';
-import { currentDataDir, moveDataDir } from './datafolder.js';
+import { changeWorldsFolders, currentDataDir, extraWorldsFolders, moveDataDir } from './datafolder.js';
 
 function defaultSaves() {
   if (process.platform === 'win32') return path.join(process.env.APPDATA ?? os.homedir(), '.minecraft', 'saves');
@@ -25,8 +25,10 @@ if (!squirrel) app.whenReady().then(async () => {
   const userData = app.getPath('userData');
   const { dataDir, isDefault } = await currentDataDir(userData);
   await fs.mkdir(dataDir, { recursive: true });
+  // The server keeps this very list, so a folder added in Settings shows its worlds straight away.
+  const worldRoots = [defaultSaves(), ...await extraWorldsFolders(userData, defaultSaves())];
   const { port } = await createServer({
-    host: '127.0.0.1', port: 0, dataDir, worldRoots: [defaultSaves()], allowAnyPath: true,
+    host: '127.0.0.1', port: 0, dataDir, worldRoots, allowAnyPath: true,
     staticDir: path.join(__dirname, '..', 'ui'),
   });
   win = new BrowserWindow({
@@ -72,7 +74,7 @@ if (!squirrel) app.whenReady().then(async () => {
       }
     };
     await walk(dataDir, 0);
-    return { path: dataDir, bytes, files, worlds: defaultSaves(), isDefault, defaultPath: path.join(userData, 'data') };
+    return { path: dataDir, bytes, files, worlds: defaultSaves(), worldsFolders: worldRoots.slice(1), isDefault, defaultPath: path.join(userData, 'data') };
   });
   // Move the data folder: the person picks an empty folder, everything is copied and checked, and the choice takes effect at the next start.
   ipcMain.handle('move-data-folder', async (_e, toDefault: boolean) => {
@@ -83,6 +85,18 @@ if (!squirrel) app.whenReady().then(async () => {
       to = picked;
     }
     return moveDataDir(userData, to, (done, total) => win?.webContents.send('data-move-progress', done, total));
+  });
+  ipcMain.handle('worlds-folder', async (_e, remove?: string) => {
+    let change: { add?: string; remove?: string };
+    if (typeof remove === 'string') change = { remove };
+    else {
+      const picked = (await dialog.showOpenDialog(win!, { title: 'Choose a folder that holds worlds', properties: ['openDirectory'] })).filePaths[0];
+      if (!picked) return { folders: worldRoots.slice(1), error: '' };
+      change = { add: picked };
+    }
+    const r = await changeWorldsFolders(userData, defaultSaves(), change);
+    worldRoots.splice(1, worldRoots.length, ...r.folders);
+    return r;
   });
   ipcMain.handle('relaunch', () => { app.relaunch(); app.quit(); });
   ipcMain.handle('open-data-root', async () => { await fs.mkdir(dataDir, { recursive: true }); return shell.openPath(dataDir); });

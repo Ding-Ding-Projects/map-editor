@@ -5,9 +5,10 @@ contextBridge.exposeInMainWorld('mapEditorDesktop', {
   openDataFolder: (p: string): Promise<string> => ipcRenderer.invoke('open-data-folder', p),
   editors: (): Promise<Array<{ id: string; name: string }>> => ipcRenderer.invoke('editors'),
   openInEditor: (id: string, folder: string): Promise<string> => ipcRenderer.invoke('open-in-editor', id, folder),
-  dataFolder: (): Promise<{ path: string; bytes: number; files: number; worlds: string; isDefault: boolean; defaultPath: string }> => ipcRenderer.invoke('data-folder'),
+  dataFolder: (): Promise<{ path: string; bytes: number; files: number; worlds: string; worldsFolders: string[]; isDefault: boolean; defaultPath: string }> => ipcRenderer.invoke('data-folder'),
   moveDataFolder: (toDefault: boolean): Promise<{ ok: boolean; message: string; files?: number }> => ipcRenderer.invoke('move-data-folder', toDefault),
   onDataMove: (fn: (done: number, total: number) => void) => { ipcRenderer.on('data-move-progress', (_e, done, total) => fn(done, total)); },
+  worldsFolder: (remove?: string): Promise<{ folders: string[]; error?: string }> => ipcRenderer.invoke('worlds-folder', remove),
   relaunch: (): Promise<void> => ipcRenderer.invoke('relaunch'),
   openDataRoot: (): Promise<string> => ipcRenderer.invoke('open-data-root'),
   updates: {

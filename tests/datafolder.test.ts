@@ -51,3 +51,19 @@ describe('desktop data folder', () => {
     expect(r.ok).toBe(false); expect(await currentDataDir(userData)).toEqual({ dataDir: data, isDefault: true });
   });
 });
+
+describe('extra worlds folders', () => {
+  it('adds, lists and removes folders, and forgets ones that are gone', async () => {
+    const { userData, root } = await setup();
+    const { changeWorldsFolders, extraWorldsFolders } = await import('../src/desktop/datafolder.js');
+    const saves = path.join(root, 'saves'), a = path.join(root, 'a'); await mkdir(saves); await mkdir(a);
+    expect(await extraWorldsFolders(userData, saves)).toEqual([]);
+    expect((await changeWorldsFolders(userData, saves, { add: a })).folders).toEqual([a]);
+    expect((await changeWorldsFolders(userData, saves, { add: a })).error).toMatch(/already/);
+    expect((await changeWorldsFolders(userData, saves, { add: saves })).error).toMatch(/already/);
+    expect((await changeWorldsFolders(userData, saves, { add: path.join(root, 'nope') })).error).toMatch(/does not exist/);
+    await writeFile(path.join(userData, 'worlds-folders.json'), JSON.stringify({ folders: [a, path.join(root, 'gone'), 'relative', 7, a] }));
+    expect(await extraWorldsFolders(userData, saves)).toEqual([a]);
+    expect((await changeWorldsFolders(userData, saves, { remove: a })).folders).toEqual([]);
+  });
+});
