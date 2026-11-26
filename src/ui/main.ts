@@ -1354,7 +1354,8 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
   if (!world && embedded) return;
   if (!world) {
     // Without an open world, History still shows the activity record.
-    view.innerHTML = '<div id="dock" class="dock"></div>';
+    view.innerHTML = `<div class="hint-bar" role="note"><span>${esc(tx('historyNoWorld'))}</span><md-filled-tonal-button id="h-go-worlds">${esc(tx('worlds'))}</md-filled-tonal-button></div><div id="dock" class="dock"></div>`;
+    view.querySelector('#h-go-worlds')!.addEventListener('click', goTab('worlds'));
     mountWorkspace(view.querySelector<HTMLElement>('#dock')!, { activity: activityPanel() }, { activity: tx('activity') }, document.documentElement.dataset.theme === 'dark',
       { key: 'history-noworld', arrange: [['activity']], active: 'activity' }, prefs.layoutLocked);
     return;
