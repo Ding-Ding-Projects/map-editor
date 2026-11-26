@@ -12,3 +12,11 @@ Thank you for helping with Map Editor.
 `ROADMAP.md` is the checklist of what exists. Tick an item only after you have tried the built result.
 World edits are recorded in a local history kept in the app data folder; never write inside a world's own folder
 except to the world files themselves, and never rewrite that history.
+
+## Wording lock
+
+`scripts/check-vocabulary.mjs` runs at the start of every build and before every push (enable the hook once per
+clone with `git config core.hooksPath .githooks`). It compares a private file the maintainer keeps outside this
+repository with the lock stored beside that file. If you do not have that file, the check prints that it was
+skipped and you can build and push as usual. It fails only when the file is present and has changed since it was
+locked. It shows that the current file is held, not that it was followed.

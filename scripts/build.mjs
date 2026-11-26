@@ -15,6 +15,9 @@ try {
   if (!builtAt) builtAt = new Date(Number(execFileSync('git', ['log', '-1', '--format=%ct'], { cwd: root }).toString().trim()) * 1000).toISOString();
 } catch { /* not a git checkout: provenance stays honestly unavailable */ }
 
+// Wording lock: skipped where there is no private source, stops the build when that source is stale.
+try { execFileSync(process.execPath, [path.join(root, 'scripts', 'check-vocabulary.mjs')], { stdio: 'inherit' }); } catch { console.error('Build stopped by the wording lock.'); process.exit(1); }
+
 const dist = path.join(root, 'dist');
 mkdirSync(path.join(dist, 'ui'), { recursive: true });
 // Changelog from the real commit history, newest first.

@@ -2,7 +2,7 @@
 
 Made from [INVENTORY.md](../INVENTORY.md), which is the record of what is built and what is not.
 
-Built 28 · partly built 75 · not built 9 · does not apply 14
+Built 29 · partly built 75 · not built 8 · does not apply 14
 
 ## Language, voice, and personalization
 
@@ -150,7 +150,7 @@ Built 28 · partly built 75 · not built 9 · does not apply 14
 - [Human time estimate](human-time-estimate.md): Built
 - [Sanitized instruction copy](sanitized-instruction-copy.md): Not built
 - [Agents md vocabulary block](agents-md-vocabulary-block.md): Built
-- [Vocabulary hash lock](vocabulary-hash-lock.md): Not built
+- [Vocabulary hash lock](vocabulary-hash-lock.md): Built
 - [Roadmap checklist](roadmap-checklist.md): Built
 - [Feature docs](feature-docs.md): Built
 - [Postman collections](postman-collections.md): Partly built
