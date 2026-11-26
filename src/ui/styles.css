@@ -1278,3 +1278,13 @@ md-list-item[hidden], .act-list > li[hidden] { display: none !important; }
 .bin-list > li[hidden] { display: none !important; } .bin-dialog .search-box { margin: 8px 0; }
 
 .bp-body .bp-grid { margin-top: 10px; } .bp-note { margin: 12px 0 0; font-size: 13px; }
+
+/* The notes editor wears the app's colours wherever it is docked: toolbar, buttons, the style picker and the status line. */
+.tox.tox-tinymce .tox-editor-header, .tox.tox-tinymce .tox-toolbar-overlord, .tox.tox-tinymce .tox-toolbar__primary, .tox.tox-tinymce .tox-statusbar { background: var(--md-sys-color-surface-container) !important; box-shadow: none !important; border-color: var(--md-sys-color-outline-variant) !important; }
+.tox.tox-tinymce .tox-tbtn { background: transparent !important; border-radius: 12px !important; color: var(--md-sys-color-on-surface) !important; }
+.tox.tox-tinymce .tox-tbtn svg { fill: var(--md-sys-color-on-surface) !important; }
+.tox.tox-tinymce .tox-tbtn:hover, .tox.tox-tinymce .tox-tbtn:focus-visible { background: color-mix(in srgb, var(--md-sys-color-on-surface) 10%, transparent) !important; }
+.tox.tox-tinymce .tox-tbtn--enabled, .tox.tox-tinymce .tox-tbtn--enabled:hover { background: var(--md-sys-color-secondary-container) !important; color: var(--md-sys-color-on-secondary-container) !important; }
+.tox.tox-tinymce .tox-tbtn--select { background: var(--md-sys-color-surface-container-highest) !important; }
+.tox.tox-tinymce .tox-statusbar, .tox.tox-tinymce .tox-statusbar__path-item { color: var(--md-sys-color-on-surface-variant) !important; }
+.tox.tox-tinymce .tox-edit-area::before { border-color: var(--md-sys-color-primary) !important; }
