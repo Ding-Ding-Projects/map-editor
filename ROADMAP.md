@@ -153,6 +153,11 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Desktop app: Open world folder in an outside editor or the file manager. Not yet run on a real Windows PC.
 - [x] Release code names from the public dim sum catalogue, shown in About and in the release notes.
 
+- [x] Support desk in the app and the deploy wizard: write up a problem, see exactly what is attached, keep tickets on the device, copy or open as an issue.
+- [x] Messages that point at a setting carry a button that changes it there (editing locked, tabs locked). Messages survive a redraw; the notes editor no longer fails on resize while hidden.
+- [x] Desktop app: the data folder, its size and the worlds folder shown in Settings, with Open and Copy path. Choosing or moving it is not built.
+- [x] Sketch board on the Tools tab: seven pens, partial eraser, straight lines, undo and redo, SVG and PNG export.
+
 ## Decisions recorded
 
 - Licence: the upstream Amulet licence is kept unaltered in `LICENSE`; the owner holds an Amulet licence for this work.

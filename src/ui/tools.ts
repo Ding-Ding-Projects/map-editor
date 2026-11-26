@@ -3,6 +3,7 @@
 //  - JSON to TypeScript: types for a JSON sample (the kind of job quicktype does).
 //  - Coordinates: block, chunk, region file and Nether/Overworld positions.
 
+import { sketchBoard } from './sketch.js';
 import { iconSvg } from './icons.js';
 import { readNbt, TagType, type Tag } from '../core/nbt.js';
 
@@ -143,7 +144,9 @@ export function toolsView(view: HTMLElement, t: ToolsText, esc: (s: unknown) => 
     <section class="card tool-card" aria-labelledby="tco"><h2 id="tco"><span class="tool-badge" aria-hidden="true">${iconSvg('target', 22)}</span>${esc(t('toolCoords'))}</h2><p class="muted">${esc(t('toolCoordsNote'))}</p>
       <div class="row-actions"><md-outlined-text-field id="co-x" type="number" label="x" value="1234"></md-outlined-text-field><md-outlined-text-field id="co-z" type="number" label="z" value="-567"></md-outlined-text-field></div>
       <dl class="tool-dl" id="co-out" aria-live="polite"></dl></section>
+    <section class="card tool-card tool-wide" aria-labelledby="tsk"><h2 id="tsk"><span class="tool-badge" aria-hidden="true">${iconSvg('pencil', 22)}</span>${esc(t('toolSketch'))}</h2><p class="muted">${esc(t('toolSketchNote'))}</p><div id="sketch"></div></section>
   </div>`;
+  sketchBoard(view.querySelector<HTMLElement>('#sketch')!, t, esc, notify);
   const $ = <T extends HTMLElement>(id: string) => view.querySelector<T>(`#${id}`)!;
   const b64in = $<HTMLTextAreaElement>('b64-in'), b64out = $<HTMLTextAreaElement>('b64-out');
   $('b64-enc').addEventListener('click', () => { b64out.value = toBase64(b64in.value); });

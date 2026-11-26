@@ -6,7 +6,7 @@ lands; anything not rechecked keeps its last audited status.
 
 Re-audited on 2026-11-25 after the changes of that day.
 
-Counts (126 features): built 14 / partial 87 / unbuilt 11 / not applicable 14
+Counts (126 features): built 14 / partial 88 / unbuilt 10 / not applicable 14
 
 
 ## Language, voice, and personalization
@@ -93,7 +93,7 @@ Counts (126 features): built 14 / partial 87 / unbuilt 11 / not applicable 14
 `download-handoff` | APPLIES: no | STATUS: N-A | EVIDENCE: no browser-extension download capture in this product | MISSING: -
 `forge-publishing` | APPLIES: no | STATUS: N-A | EVIDENCE: the app does not publish repositories | MISSING: -
 `progress-recovery` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/ui/worlds.ts upload progress, src/ui/takeover.ts failure card with retry and Copy details, Deploy app "Try port N+1" | MISSING: progress inside the starting dialog for new world, structure place, extension install; submit disabling/re-entry guard on every dialog; optional slow phases as explicit choices; re-authentication offer on a refused credential
-`drawesome-drawing` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: none | MISSING: drawing/annotation board with seven pens, partial eraser, Shift-lock, morphing toolbar, shortcuts, undo/redo, SVG and PNG export, persistence
+`drawesome-drawing` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/ui/sketch.ts on the Tools tab: seven pens, eight colours, an eraser that removes only the touched part, straight lines with Shift or the L lock, a toolbar whose chosen pen opens out to show its name, keys 1 to 7, E, L, Ctrl+Z and Ctrl+Y, undo and redo, SVG and PNG export, kept on the device; tests/sketch.test.ts | MISSING: drawing over the map itself; pressure and smoothing; the deploy wizard and site have no board
 
 ## Completeness and evidence
 
