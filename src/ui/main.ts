@@ -248,6 +248,8 @@ function notify(text: string, error = false, action?: { label: string; run: () =
   el.innerHTML = `<span>${esc(text)}</span>`;
   if (action) { const b = document.createElement('md-text-button'); b.textContent = action.label; b.addEventListener('click', () => { action.run(); el.remove(); }); el.append(b); }
   const x = document.createElement('md-text-button'); x.textContent = tx('close'); x.addEventListener('click', () => el.remove()); el.append(x);
+  // The same message again replaces the one already showing instead of stacking under it.
+  for (const old of Array.from(host.querySelectorAll<HTMLElement>('.toast'))) if (old.querySelector('span')?.textContent === text && old.classList.contains('error') === error) old.remove();
   host.prepend(el);
   if (!error) setTimeout(() => el.remove(), 6000);
   const bell = document.querySelector('.bell-wrap');

@@ -1248,3 +1248,7 @@ md-dialog:has(#nf) { max-block-size: min(760px, calc(100% - 32px)); }
 /* A short note above a screen that is showing less than usual, with the one button that fixes it. */
 .hint-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 0 0 12px; padding: 14px 18px; border-radius: 24px 24px 24px 8px; background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
 .hint-bar span { flex: 1 1 240px; }
+
+/* Scrollbars follow the theme: thin, rounded, the track clear, in every scrolling area and the window itself. */
+html { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--md-sys-color-on-surface) 35%, transparent) transparent; }
+* { scrollbar-color: inherit; }
