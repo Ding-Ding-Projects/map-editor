@@ -6,6 +6,12 @@
 
 Category: [Using the editor](README.md) · [Read on the website, with pictures](https://ding-ding-projects.github.io/map-editor/worlds/)
 
+## Select several, and the bin
+
+Select on the Worlds screen switches on tick boxes: click or tick, Shift+click for a range, Ctrl+A for all, Invert to swap. Download selected saves each ticked world in turn. Move to bin asks with the two-key confirmation, then moves the ticked worlds, whole, into a bin folder inside the worlds folder; nothing is deleted, the open world is left alone, and a line says what was not moved and why. Bin lists them with Put back. To free the space, remove them yourself from the bin folder.
+
+世界頁嘅「揀選」會開剔格：撳或者剔，Shift 加撳揀一段，Ctrl+A 全選，「反轉揀選」調轉。「下載揀咗嘅」會逐個下載。「掉入回收筒」會先過雙重確認，跟住將剔咗嘅世界成個搬入世界資料夾入面嘅回收筒資料夾；唔會刪任何嘢，開緊嗰個世界唔會郁，仲會有一行講邊個冇搬到同原因。「回收筒」會列晒出嚟，有「放返出嚟」。想騰出空間，就自己去回收筒資料夾移除。
+
 ## Bedrock Edition worlds
 
 Bedrock Edition worlds open like any other: upload a .mcworld file (or a .zip of the world folder) and download it again as .mcworld, ready for the game. The map, the side view, the 3D view, Pick block, Fill, Replace, Delete blocks and Clone all work, in the Overworld, the Nether and the End. Fill and Replace use blocks that are already somewhere in the world: choose one in the Blocks panel, which lists the blocks found in the world so far, pick one from the map with Pick block (I), or type minecraft:air. That way every block is written back exactly as the game wrote it. Biomes, waterlogging, structure files, mobs and the contents of chests are not changed in Bedrock worlds, and chunks the game has not made yet are never invented. Saving adds one new file to the world database and leaves the others alone, so History can take any edit back. Close the world in the game before editing it here, and keep a copy the first time you try it.

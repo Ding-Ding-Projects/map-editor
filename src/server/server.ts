@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { Accounts, Throttle } from './auth.js';
 import { EditSession, type OperationRequest } from '../core/session.js';
 import { decodeStructure } from '../core/structure.js';
+import { binWorld, listBin, restoreWorld } from '../core/bin.js';
 import { discoverWorlds, isBedrockWorld, isWorldFolder, setLevelName, worldInfo, type Dimension } from '../core/world.js';
 import { volume, MAX_OPERATION_BLOCKS, OPERATIONS, type Box } from '../core/ops.js';
 import { importWorldZip, exportWorldZip, createFlatWorld, WORLD_PRESETS, WORLD_SIZES, type WorldPreset } from '../core/archive.js';
@@ -268,6 +269,27 @@ export async function createServer(opts: ServerOptions) {
       const dir = await createFlatWorld(root, name, r, p);
       note('world', user.name, `Created flat world ${path.basename(dir)}`);
       return send(201, { path: dir, name: path.basename(dir) });
+    }
+    // The bin: worlds are moved aside inside their own worlds folder, never deleted, and can be put back.
+    if (p === '/api/worlds/bin' && req.method === 'GET') return send(200, { items: await listBin(opts.worldRoots) });
+    if (p === '/api/worlds/bin' && req.method === 'POST') {
+      const { paths } = await body(req);
+      if (!Array.isArray(paths) || !paths.length || paths.length > 200 || paths.some((x) => typeof x !== 'string')) throw new HttpError(400, 'Send the list of world folders to move to the bin.');
+      const moved: string[] = [], skipped: Array<{ name: string; reason: string }> = [];
+      for (const wp of paths as string[]) {
+        const name = path.basename(wp);
+        if (session && path.resolve(session.world.dir) === path.resolve(wp)) { skipped.push({ name, reason: 'It is the world that is open.' }); continue; }
+        try { const e = await binWorld(opts.worldRoots, wp); moved.push(e.name); note('world', user.name, `Moved the world "${e.name}" to the bin`); }
+        catch (e) { skipped.push({ name, reason: (e as Error).message }); }
+      }
+      return send(200, { moved, skipped });
+    }
+    if (p === '/api/worlds/restore' && req.method === 'POST') {
+      const { root, id } = await body(req);
+      let dir: string;
+      try { dir = await restoreWorld(opts.worldRoots, String(root ?? ''), String(id ?? '')); } catch (e) { throw new HttpError(400, (e as Error).message); }
+      note('world', user.name, `Put the world "${path.basename(dir)}" back from the bin`);
+      return send(200, { name: path.basename(dir), path: dir });
     }
     if (p === '/api/worlds/download' && req.method === 'GET') {
       const wp = url.searchParams.get('path') ?? '';

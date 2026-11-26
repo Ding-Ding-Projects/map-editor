@@ -328,9 +328,9 @@ function askUnlock(what: string): Promise<boolean> {
 }
 
 /** Material confirm dialog in place of the browser's confirm(): themed, translated and keyboard friendly. */
-function askConfirm(text: string, ok = tx('ok'), danger = false): Promise<boolean> {
+function askConfirm(text: string, ok = tx('ok'), danger = false, title?: string): Promise<boolean> {
   // Anything destructive needs two keys and a full slide, in every language mode.
-  if (danger) return superConfirm(text, { title: emo('⚠️', tx('superTitle')), key1: tx('superKey1'), key2: tx('superKey2'), keyOn: tx('superKeyOn'), slide: tx('superSlide'), slideLocked: tx('superSlideLocked'), exit: tx('superExit'), hint: tx('superHint'), done: tx('superDone') });
+  if (danger) return superConfirm(text, { title: emo('⚠️', title ?? tx('superTitle')), key1: tx('superKey1'), key2: tx('superKey2'), keyOn: tx('superKeyOn'), slide: tx('superSlide'), slideLocked: tx('superSlideLocked'), exit: tx('superExit'), hint: tx('superHint'), done: tx('superDone') });
   return new Promise((resolve) => {
     const dlg = document.createElement('md-dialog') as HTMLElement & { show: () => void; returnValue: string };
     dlg.setAttribute('type', 'alert');
@@ -820,6 +820,7 @@ function authView(view: HTMLElement) {
 function worldsScreen(view: HTMLElement) {
   return worldsView(view, {
     api, notify, tx, esc, play, takeovers: () => prefs.takeovers,
+    confirm: (text, ok) => askConfirm(text, ok, true, tx('binConfirmTitle')),
     browse: desktopBridge?.pickFolder,
     open: async (w) => {
       const r = await api('/api/worlds/open', { method: 'POST', body: { path: w.path } });

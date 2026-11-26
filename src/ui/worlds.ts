@@ -17,6 +17,8 @@ export interface WorldsContext {
   tx: (k: Key, v?: Record<string, string | number>) => string;
   esc: (s: unknown) => string;
   open: (w: WorldSummary) => Promise<void>;
+  /** The two-key confirmation, for moving worlds to the bin. */
+  confirm?: (text: string, ok: string) => Promise<boolean>;
   /** Present only in the desktop app. */
   browse?: () => Promise<string | undefined>;
 }
@@ -45,9 +47,11 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
         <md-filled-tonal-button id="new">${esc(tx('newFlat'))}</md-filled-tonal-button>
         ${c.browse ? `<md-outlined-button id="browse">${esc(tx('browse'))}</md-outlined-button>` : ''}
         <md-outlined-button id="sel-mode" aria-pressed="false" hidden>${esc(tx('selectMode'))}</md-outlined-button>
+        <md-text-button id="bin-open" hidden></md-text-button>
       </div></header>
     <div id="sel-bar" class="sel-bar" role="toolbar" aria-label="${esc(tx('selectMode'))}" hidden><b id="sel-count" role="status"></b><span class="muted sel-hint">${esc(tx('selectHint'))}</span><span class="sel-acts">
-      <md-text-button id="sel-all">${esc(tx('selectAll'))}</md-text-button><md-text-button id="sel-inv">${esc(tx('selectInvert'))}</md-text-button><md-filled-tonal-button id="sel-dl">${esc(tx('downloadSelected'))}</md-filled-tonal-button></span></div>
+      <md-text-button id="sel-all">${esc(tx('selectAll'))}</md-text-button><md-text-button id="sel-inv">${esc(tx('selectInvert'))}</md-text-button><md-filled-tonal-button id="sel-dl">${esc(tx('downloadSelected'))}</md-filled-tonal-button><md-outlined-button id="sel-bin">${esc(tx('binMove'))}</md-outlined-button></span></div>
+    <p class="muted" id="bin-report" role="status" hidden></p>
     <div id="upload-status"></div>
     <div id="list" class="world-grid" role="status" aria-label="${esc(tx('loading'))}">${'<div class="world-card skeleton"><span class="sk-tile"></span><span class="sk-line"></span><span class="sk-line short"></span></div>'.repeat(4)}</div>
   </section>`;
@@ -74,7 +78,7 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
       const box = card.querySelector<HTMLInputElement>('.sel-box'); if (box) { box.hidden = !selecting; box.checked = sel.has(i); }
     });
     view.querySelector('#sel-count')!.textContent = tx('selectedN', { n: sel.size, total: shown.length });
-    view.querySelector('#sel-dl')!.toggleAttribute('disabled', !sel.size);
+    view.querySelector('#sel-dl')!.toggleAttribute('disabled', !sel.size); view.querySelector('#sel-bin')!.toggleAttribute('disabled', !sel.size);
   }
   const setSelecting = (on: boolean) => { selecting = on; if (!on) { sel.clear(); anchor = undefined; } paintSel(); };
   selBtn.addEventListener('click', () => setSelecting(!selecting));
@@ -85,6 +89,40 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
     c.notify(tx('downloadingN', { n: picked.length }));
     picked.forEach((w, k) => setTimeout(() => download(w), k * 700)); // spaced so the browser keeps every file
   });
+  // The bin: ticked worlds are moved aside (never deleted) after the two-key confirmation, and can be put back.
+  const binBtn = view.querySelector<HTMLElement>('#bin-open')!, binReport = view.querySelector<HTMLElement>('#bin-report')!;
+  type BinItem = { id: string; name: string; root: string; binnedAt: string };
+  async function refreshBin() {
+    try { const { items } = await c.api<{ items: BinItem[] }>('/api/worlds/bin'); binBtn.hidden = !items.length; binBtn.textContent = tx('binOpen', { n: items.length }); return items; } catch { binBtn.hidden = true; return []; }
+  }
+  view.querySelector('#sel-bin')!.addEventListener('click', async () => {
+    const picked = [...sel].sort((a, b) => a - b).map((i) => shown[i]).filter(Boolean); if (!picked.length) return;
+    const ask = tx('binAsk', { n: picked.length, list: picked.map((w) => w.name).slice(0, 8).join(', ') + (picked.length > 8 ? '…' : '') });
+    if (!(c.confirm ? await c.confirm(ask, tx('binMove')) : false)) return;
+    try {
+      const r = await c.api<{ moved: string[]; skipped: Array<{ name: string; reason: string }> }>('/api/worlds/bin', { method: 'POST', body: { paths: picked.map((w) => w.path) } });
+      const text = tx('binDone', { n: r.moved.length, total: picked.length }) + (r.skipped.length ? ` ${tx('binSkipped', { list: r.skipped.map((x) => `${x.name}: ${x.reason}`).join('; ') })}` : '');
+      binReport.hidden = false; binReport.textContent = text; c.notify(text, r.skipped.length > 0);
+      setSelecting(false); await load();
+    } catch (e) { c.notify((e as Error).message, true); }
+  });
+  binBtn.addEventListener('click', async () => {
+    const dlg = document.createElement('md-dialog') as HTMLElement & { show: () => void };
+    dlg.className = 'bin-dialog';
+    const draw = async () => {
+      const items = await refreshBin();
+      dlg.innerHTML = `<div slot="headline">${esc(tx('binTitle'))}</div><form slot="content" id="bin-form" method="dialog"><p class="muted">${esc(tx('binNote'))}</p>
+        <ol class="bin-list">${items.length ? items.map((it, i) => `<li><span class="desk-text"><b>${esc(it.name)}</b><small>${esc(it.binnedAt ? new Date(it.binnedAt).toLocaleString('en-GB') : '')} · <code>${esc(it.root)}</code></small></span><md-filled-tonal-button type="button" data-restore="${i}">${esc(tx('binRestore'))}</md-filled-tonal-button></li>`).join('') : `<li class="muted">${esc(tx('binEmpty'))}</li>`}</ol></form>
+        <div slot="actions"><md-text-button form="bin-form" value="close">${esc(tx('close'))}</md-text-button></div>`;
+      dlg.querySelectorAll<HTMLElement>('[data-restore]').forEach((b) => b.addEventListener('click', async () => {
+        const it = items[Number(b.dataset.restore)];
+        try { const r = await c.api<{ name: string }>('/api/worlds/restore', { method: 'POST', body: { root: it.root, id: it.id } }); c.notify(tx('binRestored', { name: r.name })); await draw(); await load(); }
+        catch (e) { c.notify((e as Error).message, true); }
+      }));
+    };
+    document.body.append(dlg); await draw(); dlg.addEventListener('closed', () => dlg.remove()); dlg.show();
+  });
+
   list.addEventListener('click', (e) => {
     if (!selecting) return;
     const card = (e.target as HTMLElement).closest<HTMLElement>('.world-card'); if (!card || (e.target as HTMLElement).closest('.row-actions')) return;
@@ -104,7 +142,7 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
       if (!list.isConnected) return; // the screen was replaced while this loaded
       view.querySelector('#roots')!.textContent = tx('worldsFrom', { roots: roots.join(', ') });
       list.removeAttribute('role'); list.removeAttribute('aria-label');
-      shown = worlds; sel.clear(); anchor = undefined; selBtn.hidden = worlds.length < 2;
+      shown = worlds; sel.clear(); anchor = undefined; selBtn.hidden = worlds.length < 1; void refreshBin();
       if (!worlds.length) {
         selecting = false; selBar.hidden = true;
         list.className = '';
