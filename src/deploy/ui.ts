@@ -13,7 +13,26 @@ import { t as tr, type Key } from '../ui/i18n.js';
 import { currentLang } from './lang.js';
 import { ARTICLES, docsView, docTitle, openDoc } from '../ui/docs.js';
 import { invert, pickItem, selectAll } from '../ui/select.js';
+import { openSupportDesk } from '../ui/tickets.js';
 let guideOpened = false;
+/** A plain yes or no question, for small local things such as deleting a saved ticket. */
+function askYesNo(text: string, ok: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const dlg = document.createElement('md-dialog') as HTMLElement & { show: () => void; returnValue: string };
+    dlg.innerHTML = `<form slot="content" id="yn" method="dialog"><p>${esc(text)}</p></form><div slot="actions"><md-text-button form="yn" value="cancel">Cancel</md-text-button><md-filled-button form="yn" value="ok">${esc(ok)}</md-filled-button></div>`;
+    document.body.append(dlg);
+    dlg.addEventListener('closed', () => { resolve(dlg.returnValue === 'ok'); dlg.remove(); });
+    dlg.show();
+  });
+}
+/** The support desk, with the facts about this copy of the deploy app. */
+async function supportDesk() {
+  const b: { version?: string; commit?: string } = await d.buildInfo?.().catch(() => ({})) ?? {};
+  openSupportDesk({
+    context: () => ({ version: b.version ?? 'unavailable', commit: b.commit ?? 'unavailable', language: currentLang(), screen: `deploy app: ${view}`, window: `${innerWidth} × ${innerHeight}`, browser: `Map Editor Deploy on ${d.platform ?? 'unknown'}` }),
+    tx: paletteText, esc, notify: toast, confirm: askYesNo,
+  });
+}
 /** Text made at run time, in the chosen language (fixed phrases go through the phrase list instead). */
 const by = (en: string, yue: string) => currentLang() === 'yue' ? yue : currentLang() === 'both' ? `${en} · ${yue}` : en;
 
@@ -267,7 +286,11 @@ async function render() {
   if (view === 'guide') { // the same bundled guide as the editor, opened on this app's own article first
     if (!guideOpened) { openDoc('deploy-app'); guideOpened = true; }
     main.classList.add('guide-view');
-    return docsView(main as HTMLElement, { lang: currentLang(), tx: paletteText, esc, rx: (k, v) => paletteText(k, v) });
+    docsView(main as HTMLElement, { lang: currentLang(), tx: paletteText, esc, rx: (k, v) => paletteText(k, v) });
+    const report = document.createElement('md-outlined-button'); report.id = 'desk-open-btn'; report.textContent = 'Report a problem'; report.style.marginBlockStart = '12px';
+    report.addEventListener('click', () => { void supportDesk(); });
+    main.querySelector('.docs-nav')?.append(report);
+    return;
   }
   if (view === 'instances') {
     const list: Instance[] = await d.instances();
@@ -534,6 +557,7 @@ function deployCommands(): Command[] {
     ...ARTICLES.map((a) => ({ id: `doc-${a.slug}`, label: `Guide: ${docTitle(a, currentLang())}`, where: 'Guide', run: () => { openDoc(a.slug); guideOpened = true; view = 'guide'; void render(); } })),
     ...TARGETS.map((x) => ({ id: `t-${x.id}`, label: `Deploy to: ${x.name}`, where: 'Targets', run: () => { view = 'deploy'; target = x.id; void render(); } })),
     { id: 'tour', label: 'Take a tour', where: 'Help', run: () => deployTour() },
+    { id: 'support', label: 'Report a problem', where: 'Help', run: () => { void supportDesk(); } },
     { id: 'setup', label: 'Run first-time setup again', where: 'Help', run: () => { obSave({ step: 0, done: false }); void render(); } },
     { id: 'snd', label: 'Sound effects', where: 'Settings, live', toggle: { get: () => soundsOn, set: (v) => { if (v !== soundsOn) document.querySelector<HTMLElement>('#snd')?.click(); } } },
     ...(['en', 'yue', 'both'] as const).map((l) => ({ id: `lang-${l}`, label: `Language: ${l === 'en' ? 'English' : l === 'yue' ? '粵語' : 'English + 粵語'}`, where: 'Settings', run: () => setLang(l) })),

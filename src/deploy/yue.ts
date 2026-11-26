@@ -94,6 +94,7 @@ export const YUE: Record<string, string> = {
   "On Windows: make a disk that lives in one file, attach one you already have, or detach it. Files are never deleted here.": "喺 Windows：建立一個存放喺單一檔案入面嘅磁碟、掛載你已經有嘅磁碟，或者將佢卸載。呢度永遠唔會刪除檔案。",
   "Come back any time": "隨時可以返嚟",
   "Guide": "指南",
+  "Report a problem": "回報問題",
   "Select all": "全選",
   "Invert": "反轉揀選",
   "Start selected": "啟動揀咗嘅",
