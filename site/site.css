@@ -190,3 +190,6 @@ article figure { margin: 16px 0 24px; } article figure img { width: 100%; height
 @media print { .lang-switch { display: none; } }
 /* In the diagram, "both" shows the English name over the Cantonese line so nothing runs out of its box. */
 [data-lang="both"] .dt [data-l="yue"], [data-lang="both"] .db [data-l="en"] { display: none; }
+/* Panel tabs are pills, as in the app (the theme variable alone does not round them). */
+.dockview-theme-site .dv-tabs-container .dv-tab { border-radius: 999px; margin: 8px 4px; block-size: 32px; align-self: center; padding: 0 8px 0 14px; font-weight: 700; }
+.dockview-theme-site .dv-tabs-container .dv-tab:focus-visible { outline: 3px solid var(--p, currentColor); outline-offset: 1px; }
