@@ -98,7 +98,14 @@ jobs:
         with: { name: image-tar }
       - run: sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o DPkg::Lock::Timeout=120 update && sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o DPkg::Lock::Timeout=120 install -y qemu-utils qemu-system-x86 curl fdisk e2fsprogs parted
       - name: Build appliance image
-        run: sudo appliance/build.sh map-editor-image.tar ${{ needs.meta.outputs.version }}
+        # The build downloads tools from servers outside GitHub; one of them answering with an error for a
+        # moment cost a release both images, so the build is tried up to three times.
+        run: |
+          for attempt in 1 2 3; do
+            if sudo appliance/build.sh map-editor-image.tar ${{ needs.meta.outputs.version }}; then exit 0; fi
+            echo "Image build attempt $attempt failed."; sleep $((attempt * 30))
+          done
+          exit 1
       - name: Boot test under QEMU
         run: sudo appliance/boot-test.sh appliance/out/map-editor-appliance-x86_64.img
       - run: sudo xz -T0 -k appliance/out/map-editor-appliance-x86_64.img
@@ -126,7 +133,14 @@ jobs:
         with: { platforms: arm64 }
       - run: sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o DPkg::Lock::Timeout=120 update && sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o DPkg::Lock::Timeout=120 install -y dosfstools fdisk e2fsprogs parted xz-utils
       - name: Build Raspberry Pi appliance image
-        run: sudo appliance/build-pi.sh map-editor-image-arm64.tar ${{ needs.meta.outputs.version }}
+        # The build downloads tools from servers outside GitHub; one of them answering with an error for a
+        # moment cost a release both images, so the build is tried up to three times.
+        run: |
+          for attempt in 1 2 3; do
+            if sudo appliance/build-pi.sh map-editor-image-arm64.tar ${{ needs.meta.outputs.version }}; then exit 0; fi
+            echo "Image build attempt $attempt failed."; sleep $((attempt * 30))
+          done
+          exit 1
       - uses: actions/upload-artifact@v4
         with:
           name: appliance-pi
