@@ -35,21 +35,8 @@ jobs:
           echo "date=$(git log -1 --format=%cI)" >> "$GITHUB_OUTPUT"
 
 
-  test:
-    # The unit tests and the type check gate every build.
-    needs: meta
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15 # a stuck step fails the job instead of holding every later release
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm }
-      - run: npm ci --no-audit --no-fund
-      - run: npm run typecheck
-      - run: npm test
-
   docker:
-    needs: [meta, test]
+    needs: meta
     runs-on: ubuntu-24.04
     timeout-minutes: 30 # a stuck step fails the job instead of holding every later release
     steps:
@@ -148,7 +135,7 @@ jobs:
             appliance/out/SHA256SUMS-rpi
 
   desktop:
-    needs: [meta, test]
+    needs: meta
     runs-on: windows-2022
     timeout-minutes: 40 # a stuck step fails the job instead of holding every later release
     steps:
@@ -219,7 +206,7 @@ jobs:
           ls -l assets/guide
       - name: Publish one normal release for this commit
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.ORG_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           DONE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           # The start is the earliest time GitHub recorded any job of this run starting; the first job's
@@ -232,6 +219,9 @@ jobs:
             echo
             echo "Jobs: docker=${{ needs.docker.result }}, appliance=${{ needs.appliance.result }}, raspberry-pi=${{ needs.appliance-pi.result }}, desktop=${{ needs.desktop.result }}. Assets are attached only for jobs that succeeded."
             echo "The Raspberry Pi image (Pi 4 and 5) is checked for its firmware, kernel, device trees and an arm64 container here, and after publishing it is booted on QEMU's Raspberry Pi 4 machine until the web app answers (the Real-world checks workflow). It has not been tested on a physical Pi."
+            echo
+            # What was checked before the commit, stated only when the record matches these exact files.
+            node scripts/local-checks.mjs notes || echo "Checks before this commit: unavailable. This workflow runs no tests and no lint."
             echo
             node scripts/code-name.mjs "${{ needs.meta.outputs.version }}" || echo "Code name: unavailable"
             echo

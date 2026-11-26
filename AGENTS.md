@@ -23,4 +23,4 @@ a step, not a habit.
 
 - Every form (desktop app, Docker-hosted web app, appliance OS image, deploy app) shares one core in `src/core` and one UI in `src/ui`. Change the core once; never fork behaviour per form.
 - World edits are recorded in a local Git history kept in the app data folder, never inside a world folder. Restores add a new entry; never rewrite that history.
-- Run `npm test` and `npm run typecheck` before committing. `ROADMAP.md` is the honest checklist: tick an item only after its built artifact was verified.
+- Before committing, stage the change and run `node scripts/local-checks.mjs record` (type check and tests), then add `local-checks.json` to the same commit; the release workflow runs no tests and its notes repeat that record. `ROADMAP.md` is the honest checklist: tick an item only after its built artifact was verified.

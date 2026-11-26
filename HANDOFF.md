@@ -111,6 +111,12 @@ above). These checks still need a person, a browser session or hardware:
 
 ## Releases and workflow changes
 
+- The release workflow runs no tests and no lint; it only builds, packages and publishes. Before committing, stage the
+  change and run `node scripts/local-checks.mjs record`, then add `local-checks.json` to the same commit. The release
+  notes repeat that record only when its fingerprint matches the files in the released commit; otherwise they say that
+  nothing is claimed. A release existing is never a test result.
+- GitHub calls in the workflow use `RELEASE_TOKEN`, then `ORG_TOKEN`, then `GITHUB_TOKEN`.
+
 - Do not push a change to a file under `.github/workflows/` while an earlier Build and release run is still publishing. The run for `79a3f98` built everything and was then refused at the publish step, apparently because its commit's workflow file differed from the one at the tip of `main`; that commit never got a release of its own.
 - The step that attaches the guide PDF to a release must not install packages. Installing a Chinese font there took six minutes and delayed v0.1.209.
 - `tests/markdown.test.ts` has a timing check. It failed twice on a slow build machine before the link pattern was made linear; if it fails again, look for a pattern that rescans, not for a higher limit.
