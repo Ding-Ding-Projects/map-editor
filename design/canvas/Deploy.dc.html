@@ -95,6 +95,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
       <section aria-label="Instances" style="border-radius: 32px; background: {{t.surfaceContainerLow}}; overflow-x: auto">
         <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 16px 24px">
           <span style="font-size: 22px; font-weight: 700">3 instances</span>
+          <span role="search" style="display: inline-flex; align-items: center; gap: 6px; margin-left: 16px"><span style="width: 220px; height: 44px; padding: 0 12px; box-sizing: border-box; border-radius: 12px; border: {{iqBorder}}; display: flex; flex-direction: column; justify-content: center"><small style="font-size: 11px; color: {{t.onSurfaceVariant}}">Search instances</small><span style="font-size: 14px; min-height: 16px">{{iq}}</span></span>
+            <sc-for list="{{iTries}}" as="x" hint-placeholder-count="3"><button onClick="{{x.pick}}" style="{{x.style}}">{{x.label}}</button></sc-for>
+            <span role="status" style="font-size: 13px; color: {{t.onSurfaceVariant}}">{{iShown}}</span></span>
           <button style="margin-left: auto; height: 40px; padding: 0 16px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 500">Stop selected</button>
           <button style="height: 40px; padding: 0 16px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 500">Update selected</button>
         </div>
@@ -167,11 +170,13 @@ class Component extends DCLogic {
       statusStyle: ok ? 'background: ' + (i === sel ? t.onPrimary : t.primaryContainer) + '; color: ' + (i === sel ? t.primary : t.onPrimaryContainer) : 'background: ' + t.surface + '; color: ' + t.onSurfaceVariant,
       pick: () => this.setState({ x: i })
     }));
+    const iq = this.state.iq ?? '';
+    const iTries = ['docker', 'stopped', ''].map((v) => ({ label: v || 'Clear', pick: () => this.setState({ iq: v }), style: 'height: 32px; padding: 0 12px; border-radius: 16px; font-size: 12px; font-weight: 700; ' + (v === iq ? 'border: 0; background: ' + t.secondaryContainer + '; color: ' + t.onSecondaryContainer : 'border: 1px solid ' + t.outline + '; background: transparent; color: ' + t.primary) }));
     const instances = [
       ['map-editor-1', 'Docker · this PC', '0.1.0', 'Healthy', 'http://192.168.1.42:8420/', true],
       ['map-editor-vm', 'VirtualBox', '0.1.0', 'Healthy', 'http://192.168.1.77:8420/', true],
       ['survival-test', 'Docker · nas.local over SSH', '0.1.0', 'Stopped', 'http://192.168.1.10:8421/', false]
-    ].map(([name, target, version, health, link, ok]) => ({
+    ].filter((r) => r.slice(0, 5).join(' ').toLowerCase().includes(iq)).map(([name, target, version, health, link, ok]) => ({
       name, target, version, health, link,
       pill: 'height: 28px; padding: 0 12px; border-radius: 8px; font-size: 12px; line-height: 28px; font-weight: 600; ' + (ok ? 'background: ' + t.primaryContainer + '; color: ' + t.onPrimaryContainer : 'background: ' + t.surfaceContainerHighest + '; color: ' + t.onSurfaceVariant)
     }));
@@ -190,6 +195,7 @@ class Component extends DCLogic {
     return {
       steps, deploy, stepCount: at < 0 ? 'Press Deploy to see the steps run.' : Math.min(at, labels.length) + ' of ' + labels.length + ' steps done',
       goStyle: 'height: 64px; border-radius: 32px; border: 0; font-size: 18px; font-weight: 800; ' + (busy ? 'background: ' + t.surfaceContainerHighest + '; color: ' + t.onSurfaceVariant + '; cursor: default' : 'background: ' + t.primary + '; color: ' + t.onPrimary),
+      iq, iTries, iqBorder: iq ? '2px solid ' + t.primary : '1px solid ' + t.outline, iShown: iq ? 'Showing ' + instances.length + ' of 3' : '',
       t, views, targets, instances,
       isDeploy: view === 'Deploy', isInstances: view === 'Instances',
       isUsb: sel === 3 || sel === 4, isOther: !(sel === 3 || sel === 4),

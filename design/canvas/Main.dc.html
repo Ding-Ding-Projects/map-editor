@@ -152,7 +152,12 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
         <button style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-size: 12px">Dock</button>
         <button style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-size: 12px">Close</button>
       </div>
-      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 16px">
+      <div role="search" style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 12px 16px 0">
+        <span style="flex: 1 1 120px; height: 44px; padding: 0 12px; box-sizing: border-box; border-radius: 12px; border: {{bqBorder}}; display: flex; flex-direction: column; justify-content: center"><small style="font-size: 11px; color: {{t.onSurfaceVariant}}">Search blocks</small><span style="font-size: 14px; min-height: 16px">{{bq}}</span></span>
+        <sc-for list="{{bTries}}" as="x" hint-placeholder-count="3"><button onClick="{{x.pick}}" style="{{x.style}}">{{x.label}}</button></sc-for>
+        <span role="status" style="flex-basis: 100%; font-size: 12px; color: {{t.onSurfaceVariant}}">{{bShown}}</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 12px 16px 16px">
         <sc-for list="{{swatches}}" as="s" hint-placeholder-count="8">
           <button aria-label="{{s.n}}" title="{{s.n}}" style="{{s.style}}"></button>
         </sc-for>
@@ -220,7 +225,9 @@ class Component extends DCLogic {
       pick: () => this.setState({ tool: label })
     }));
     const coords = [['x1','96'],['y1','60'],['z1','-96'],['x2','159'],['y2','72'],['z2','-33']].map(([n, v]) => ({ n, v }));
-    const swatches = [['stone_bricks','#7a7a7a'],['oak_planks','#a2834f'],['grass_block','#5d8f3a'],['water','#3f68c9'],['sand','#dbcfa3'],['glass','#c9e4ea'],['deepslate','#4d4d50'],['cherry_leaves','#e7a9c3']].map(([n, c]) => ({ n, style: 'height: 48px; border-radius: 12px; border: 1px solid ' + t.outlineVariant + '; background: ' + c }));
+    const bq = this.state.bq ?? '';
+    const bTries = ['stone', 'glass', ''].map((v) => ({ label: v || 'Clear', pick: () => this.setState({ bq: v }), style: 'height: 32px; padding: 0 12px; border-radius: 16px; font-size: 12px; font-weight: 700; ' + (v === bq ? 'border: 0; background: ' + t.secondaryContainer + '; color: ' + t.onSecondaryContainer : 'border: 1px solid ' + t.outline + '; background: transparent; color: ' + t.onSurface) }));
+    const swatches = [['stone_bricks','#7a7a7a'],['oak_planks','#a2834f'],['grass_block','#5d8f3a'],['water','#3f68c9'],['sand','#dbcfa3'],['glass','#c9e4ea'],['deepslate','#4d4d50'],['cherry_leaves','#e7a9c3']].filter(([n]) => n.includes(bq)).map(([n, c]) => ({ n, style: 'height: 48px; border-radius: 12px; border: 1px solid ' + t.outlineVariant + '; background: ' + c }));
     const pal = ['#3e6b30','#4a7a38','#567f3f','#6f8a4a','#2c5a86','#356a9a','#6a6f72','#c8bf98','#7c6a4a'];
     const cells = Array.from({ length: 360 }, (_, i) => {
       const x = i % 24, z = Math.floor(i / 24);
@@ -231,7 +238,7 @@ class Component extends DCLogic {
     });
     return {
       t, bar, langs, views, tabs, tabCount: tabs.length, openAll: () => this.setState({ closed: [] }),
-      tools, tool, coords, recent: ['oak_planks', 'glass', 'water', 'air'], swatches, cells,
+      tools, tool, coords, recent: ['oak_planks', 'glass', 'water', 'air'], swatches, cells, bq, bTries, bqBorder: bq ? '2px solid ' + t.primary : '1px solid ' + t.outline, bShown: bq ? 'Showing ' + swatches.length + ' of 8' : '',
       showFloat: this.props.showFloat ?? true, showDrop: this.props.showDrop ?? false
     };
   }
