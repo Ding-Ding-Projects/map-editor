@@ -6,6 +6,7 @@ import { mountWorkspace, PHONE, resetLayout } from './workspace.js';
 import { searchBox, type RegexText } from './regex.js';
 import { enableClearControls } from './clearable.js';
 import { configureSounds, play, CUE_ORDER, cueNotes, type Cue } from './sounds.js';
+import { spokenFor } from './narration.js';
 import { startTour, type TourStep } from './tour.js';
 import { worldsView } from './worlds.js';
 import { openPalette, type Command } from './palette.js';
@@ -225,9 +226,10 @@ function narrate(text: string, force = false) {
   if ((!prefs.narrate && !force) || (!force && quiet()) || !('speechSynthesis' in window)) return;
   try {
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = prefs.lang === 'yue' ? 'zh-HK' : 'en';
-    u.rate = prefs.narrateRate / 10;
+    const say = spokenFor(text, prefs.lang, prefs.narrateRate);
+    const u = new SpeechSynthesisUtterance(say.text);
+    u.lang = say.lang;
+    u.rate = say.rate;
     speechSynthesis.speak(u);
   } catch { /* no speech on this device: the message is still on screen */ }
 }
