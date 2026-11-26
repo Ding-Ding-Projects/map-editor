@@ -2,7 +2,7 @@
 
 Made from [INVENTORY.md](../INVENTORY.md), which is the record of what is built and what is not.
 
-Built 29 · partly built 75 · not built 8 · does not apply 14
+Built 30 · partly built 74 · not built 8 · does not apply 14
 
 ## Language, voice, and personalization
 
@@ -95,7 +95,7 @@ Built 29 · partly built 75 · not built 8 · does not apply 14
 - [Completeness parity](completeness-parity.md): Partly built
 - [Front provenance](front-provenance.md): Built
 - [Product evidence](product-evidence.md): Partly built
-- [Screen recording](screen-recording.md): Partly built
+- [Screen recording](screen-recording.md): Built
 - [Design reference parity](design-reference-parity.md): Not built
 - [Design folder](design-folder.md): Built
 - [Low cost check matrix](low-cost-check-matrix.md): Partly built

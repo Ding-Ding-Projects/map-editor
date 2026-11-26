@@ -6,7 +6,7 @@ lands; anything not rechecked keeps its last audited status.
 
 Re-audited on 2026-11-25 after the changes of that day.
 
-Counts (126 features): built 29 / partial 75 / unbuilt 8 / not applicable 14
+Counts (126 features): built 30 / partial 74 / unbuilt 8 / not applicable 14
 
 
 ## Language, voice, and personalization
@@ -100,7 +100,7 @@ Counts (126 features): built 29 / partial 75 / unbuilt 8 / not applicable 14
 `completeness-parity` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: docs/features/INVENTORY.md (this file: one hand-written line per catalogue feature with status, evidence and gaps) | MISSING: a row per surface (app, Deploy app, site) with links to implementation, article, localized copy, persistence, test, built-app proof and screenshot; the remove-one-item test; a build step that fails on a stale row
 `front-provenance` | APPLIES: yes | STATUS: BUILT | EVIDENCE: main.ts `provenance()` in the header before sign-in; src/deploy/ui.ts `#prov` (version, build time with timezone, commit); scripts/build.mjs build-info.json; site footer version, time and commit ; tests/provenance.test.ts fails if the line is removed from the app, the deploy app or the site | MISSING: nothing. (The app header shows version and time; the commit is in About. The site's first screen shows the version and the build time in the visitor's own time zone, with seconds.)
 `product-evidence` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: docs/screenshots/ (17 PNG + walkthrough.gif), README, site articles | MISSING: screenshots of every destination, dialogs, empty/error states, narrow layout and both themes; collapsible grouping in README; per-capture provenance (commit, viewport, scale, theme, method); Mermaid workflow diagrams in README; evidence inventory and stale-image test
-`screen-recording` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: docs/screenshots/walkthrough.gif shown in README | MISSING: stated source commit and capture method; recording for the Deploy app
+`screen-recording` | APPLIES: yes | STATUS: BUILT | EVIDENCE: docs/screenshots/walkthrough.gif (17 steps) and docs/screenshots/deploy-walkthrough.gif (9 steps), both shown in README with the source commit and how they were captured; the deploy one says plainly that system calls were stand-ins | MISSING: -
 `design-reference-parity` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: design/canvas/*.dc.html; tests/board-labels.test.ts holds every button, heading and label written into the 23 boards to wording the app really uses (three board-only items listed by hand); tests/onboarding-comfort.test.ts holds the first-run and editor boards to the app's steps, switches, tabs and tools | MISSING: design-reference app, matching routes in the built app, per-screen inventory, side-by-side captures, diff evidence (the label check compares words only, not layout, and not the lists that boards build from data)
 `design-folder` | APPLIES: yes | STATUS: BUILT | EVIDENCE: design/canvas/ (16 boards + canvas.json) tracked in Git; no private terms found by grep | MISSING: -
 `cheap-jor-matrix` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: HANDOFF.md and ROADMAP.md describe a 40-combination sweep (1440/390 px, light/dark, languages) | MISSING: receipts and screenshots in the repository; 125/150/200% scales; minimum viewport; binding to commit and build hash; re-run after the Tools tab; site matrix

@@ -22,7 +22,13 @@ A separate **Map Editor Deploy** app does each of those in one click and gives y
 
 A one-minute walk through: sign in, make a water world, fill, measure, check History and Tools, then switch to the dark theme from the command palette.
 
-![Walkthrough of Map Editor: setup, a new world, an edit, the map toolbar, History, Tools and the command palette](docs/screenshots/walkthrough.gif)
+![Walkthrough of Map Editor: first-run setup with the comfort switches, the worlds list and its search, an area selected on the map, the map menu, the command palette, the New tab list, the account menu, Settings with an explanation unfolded, sounds, Tools and About](docs/screenshots/walkthrough.gif)
+
+*Recorded from commit `fac8c5a`: the web app built from that commit, running on a test server and driven in headless Chrome at 1280×800, one still per step, shown at 800×500.*
+
+![Walkthrough of the deploy app: choosing where to run it, the guided tour, the instances list with one ticked, virtual disks, the new disk form, the built-in guide and the own-words dialog](docs/screenshots/deploy-walkthrough.gif)
+
+*Recorded from the same commit: the deploy app's page driven in headless Chrome with stand-in answers for the system calls (Docker, disks, instances), so nothing was really deployed. Host names and paths are examples.*
 
 New here? **Take a tour**: after setup the app offers a short guided tour that points at each real control. Start it again any time from the **?** Help menu, Settings › Comfort and focus, or the command palette (Ctrl+Shift+F). Every page has its own tour too, and so do the deploy app and the documentation site.
 
