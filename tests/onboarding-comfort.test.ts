@@ -19,3 +19,12 @@ describe('first-run comfort step', () => {
     for (const gone of ['Low stimulation', 'Time awareness', 'Momentum', 'Owner account']) expect(board).not.toContain(gone);
   });
 });
+
+describe('editor design board', () => {
+  const board = readFileSync(new URL('../design/canvas/Main.dc.html', import.meta.url), 'utf8');
+  it('names the tabs and tools the app really has', () => {
+    expect(board).toContain("['Worlds', 'Editor', 'History', 'Tools', 'Guide', 'Settings', 'About']");
+    expect(board).toContain("['Fill','Replace','Delete blocks','Clone','Waterlog','Biome']");
+    for (const gone of ["'Convert'", "'Exports'", "'Chunks'", 'Save world']) expect(board).not.toContain(gone);
+  });
+});
