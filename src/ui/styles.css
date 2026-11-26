@@ -1259,3 +1259,5 @@ html { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--md-sys-c
 .coords-grid .clear-btn svg { width: 16px; height: 16px; }
 /* The docked workspace ends above the bottom edge so the window itself never scrolls by a few pixels. */
 @media (min-width: 981px) { .dock { height: calc(100dvh - 100px); } }
+
+.ctx-menu .ctx-title { margin: 4px 8px 8px; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface-variant); }

@@ -8,7 +8,7 @@ let deps: { rx: RegexText; search: () => string; none: () => string } | undefine
 export type MenuItem = [label: string, run: () => void, shortcut?: string];
 
 /** Open a menu at a point. `current` marks the chosen entry of a dropdown. */
-export function contextMenu(x: number, y: number, label: string, items: MenuItem[], restore?: HTMLElement, current = -1) {
+export function contextMenu(x: number, y: number, label: string, items: MenuItem[], restore?: HTMLElement, current = -1, showTitle = false) {
   if (!deps) return;
   document.querySelector('.ctx-menu')?.remove();
   const m = document.createElement('div');
@@ -17,6 +17,7 @@ export function contextMenu(x: number, y: number, label: string, items: MenuItem
   const list = document.createElement('div'); list.className = 'ctx-list';
   const role = current >= 0 ? 'menuitemradio' : 'menuitem';
   list.innerHTML = items.map(([text, , key], i) => `<button type="button" role="${role}" ${current >= 0 ? `aria-checked="${i === current}"` : ''} ${key ? `aria-keyshortcuts="${esc(key.replace(/Ctrl/g, 'Control'))}"` : ''} data-i="${i}"><span class="lbl">${esc(text)}</span>${key ? `<kbd aria-hidden="true">${esc(key)}</kbd>` : ''}</button>`).join('') + `<p class="muted ctx-none" hidden>${esc(deps.none())}</p>`;
+  if (showTitle) { const h = document.createElement('p'); h.className = 'ctx-title'; h.textContent = label; m.append(h); } // a menu opened from the palette has no button beside it to say what it is
   m.append(box.el, list);
   // Inside a modal dialog the menu must be the dialog's descendant and in the top layer, or it is inert.
   const host = restore?.closest('md-dialog') ?? document.body;

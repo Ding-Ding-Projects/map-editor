@@ -428,7 +428,7 @@ async function openOutside(id?: string, anchor?: { x: number; y: number }) {
   if (hit) return run(hit.id, hit.name);
   let last = ''; try { last = localStorage.getItem(EDITOR_KEY) ?? ''; } catch { /* none */ }
   if (!found.length) notify(tx('outsideNone'));
-  contextMenu(anchor?.x ?? innerWidth / 2 - 140, anchor?.y ?? 120, tx('outsideTitle'), all.map((x) => [x.name, () => { void run(x.id, x.name); }] as MenuItem), undefined, all.findIndex((x) => x.id === last));
+  contextMenu(anchor?.x ?? innerWidth / 2 - 140, anchor?.y ?? 120, tx('outsideTitle'), all.map((x) => [x.name, () => { void run(x.id, x.name); }] as MenuItem), undefined, all.findIndex((x) => x.id === last), true);
 }
 
 /** Desktop app only: fills the data folder card in Settings › Backup and history. */
