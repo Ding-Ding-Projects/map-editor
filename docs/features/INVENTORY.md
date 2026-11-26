@@ -6,7 +6,7 @@ lands; anything not rechecked keeps its last audited status.
 
 Re-audited on 2026-11-25 after the changes of that day.
 
-Counts (126 features): built 16 / partial 86 / unbuilt 10 / not applicable 14
+Counts (126 features): built 17 / partial 85 / unbuilt 10 / not applicable 14
 
 
 ## Language, voice, and personalization
@@ -141,7 +141,7 @@ Counts (126 features): built 16 / partial 86 / unbuilt 10 / not applicable 14
 ## Release pipeline
 
 `release-workflow` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: .github/workflows/release.yml (push + dispatch, unique v<major.minor.run> tag, non-draft release with installers) | MISSING: the `test` job gates `docker` and `desktop` through `needs:` (the rule is no test or lint gate); `ORG_TOKEN` in the token chain; release notes stating which local checks ran
-`release-timing` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: release.yml writes Workflow started/completed/duration | MISSING: the new start has not yet been read back from a published release. (The start is the earliest job start GitHub recorded for the run, with the first job's clock as the fallback; the duration is printed as HH:mm:ss.)
+`release-timing` | APPLIES: yes | STATUS: BUILT | EVIDENCE: release.yml writes Workflow started/completed/duration | MISSING: nothing. (Read back on v0.1.215: the notes say started 12:02:29Z, the same second GitHub recorded for the run's first job. The start is the earliest job start GitHub recorded for the run, with the first job's clock as the fallback; the duration is printed as HH:mm:ss.)
 `release-line-counts` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: release.yml inline loop over file extensions | MISSING: git-blame attribution; README copy naming its release. (scripts/line-counts.mjs is committed and used by the release notes: kinds, source/tests/styles split, total and non-blank lines, stated exclusions; tests/line-counts.test.ts.)
 `release-dim-sum-photo` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: no photos tracked or attached to releases | MISSING: release notes referencing a catalogue dish and photo link, or the explicit "version only" statement when none resolves
 `dim-sum-code-names` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: scripts/code-name.mjs (dish chosen from the public catalogue by version number, nothing stored), scripts/build.mjs puts it in build-info.json, `/api/health`, About card, release notes line in release.yml, tests/code-name.test.ts | MISSING: the site and the changelog do not show it. (The deploy wizard shows it beside its version line.) (Releases since v0.1.138 carry the code name in their notes.)
