@@ -31,13 +31,17 @@ export async function notesPanel(el: HTMLElement, o: Opts) {
       menubar: false, branding: false, promotion: false, height: '100%', resize: false,
       plugins: 'lists link table autolink',
       toolbar: 'undo redo | blocks | bold italic underline | bullist numlist | link table',
-      setup: (ed: any) => ed.on('input change', () => {
+      setup: (ed: any) => {
+        // While its panel is not showing, the editor's frame has no window; its own resize handler would fail, so stop the event first.
+        ed.on('ResizeWindow', (e: { stopImmediatePropagation: () => void }) => { if (!ed.getContentAreaContainer?.()?.isConnected || !ed.getWin?.()) e.stopImmediatePropagation(); }, true);
+        ed.on('input change', () => {
         clearTimeout(timer);
         timer = window.setTimeout(async () => {
           try { await o.api('/api/notes', { method: 'PUT', body: { html: ed.getContent() } }); }
           catch (e) { o.notify((e as Error).message, true); }
         }, 800);
-      }),
+        });
+      },
     });
   } catch (e) { o.notify((e as Error).message, true); }
 }

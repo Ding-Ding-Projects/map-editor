@@ -372,7 +372,7 @@ function tabSearch() {
   showTabSearch({
     tabs: () => TABS.map((x) => ({ id: x, label: tx(x as Key), open: !prefs.closedTabs.includes(x), active: x === prefs.tab, busy: x === 'editor' && busy > 0 })),
     go: (id) => { prefs.closedTabs = prefs.closedTabs.filter((x) => x !== id); prefs.tab = id; savePrefs(); render(); },
-    close: (ids) => { if (prefs.tabsLocked) { notify(tx('tabsLockedRefuse'), true); return; } prefs.closedTabs = [...new Set([...prefs.closedTabs, ...ids])]; savePrefs(); render(); },
+    close: (ids) => { if (prefs.tabsLocked) { refuseLocked('tabsLocked'); return; } prefs.closedTabs = [...new Set([...prefs.closedTabs, ...ids])]; savePrefs(); render(); },
     t: (k, v) => tx(k as Key, v), rx, esc,
   });
 }
@@ -406,6 +406,16 @@ function wireDataFolder(view: HTMLElement) {
   }, (e) => { box.querySelector('#df-path')!.textContent = (e as Error).message; });
   box.querySelector('#df-open')!.addEventListener('click', async () => { const err = await desktopBridge!.openDataRoot?.(); if (err) notify(err, true); });
   box.querySelector('#df-copy')!.addEventListener('click', () => { if (where) void navigator.clipboard?.writeText(where).then(() => notify(tx('copied')), () => notify(tx('copyFailed'), true)); });
+}
+
+/** A refusal that points at a setting also carries the fix: one button on the message changes that setting on the spot. */
+function refuseLocked(which: 'editLock' | 'tabsLocked') {
+  const sid = which === 'editLock' ? 'elock' : 'tlock';
+  notify(tx(which === 'editLock' ? 'editLocked' : 'tabsLockedRefuse'), true, { label: tx(which === 'editLock' ? 'unlockEditingNow' : 'unlockTabsNow'), run: () => {
+    // A setting that is itself locked stays as it is; the lock in Settings has to be lifted first.
+    if (prefs.settingsLocked || prefs.lockedSettings.includes(sid)) { notify(tx('settingLockedMsg'), true); return; }
+    prefs[which] = false; savePrefs(); render(); notify(tx(which === 'editLock' ? 'editLockOff' : 'tabsUnlockedNow'));
+  } });
 }
 
 function paletteCommands(): Command[] {
@@ -520,7 +530,7 @@ async function loadExtensions(): Promise<ExtState> {
 }
 async function runExtension(id: string, command: string) {
   if (!world) { notify(tx('extNeedsWorld'), true); return; }
-  if (prefs.editLock) { notify(tx('editLocked'), true); return; }
+  if (prefs.editLock) { refuseLocked('editLock'); return; }
   try {
     const r = await api<{ message: string; applied: number; changed: number }>('/api/extensions/run', { method: 'POST', body: { id, command, selection: { dimension: dim, box: { ...sel } } } });
     if (r.applied) { play('success'); document.dispatchEvent(new Event('history-changed')); }
@@ -662,6 +672,10 @@ const emo = (e: string, text: string) => (prefs.emojiDialogs && !prefs.schoolMod
 const RAIL_ICONS: Record<string, string> = { worlds: 'globe', editor: 'map', history: 'undo', tools: 'wrench', docs: 'book', settings: 'sliders', about: 'info' };
 function shell() {
   const app = document.getElementById('app')!;
+  // Redrawing must not lose messages that are still showing, and must let go of the notes editor
+  // properly: an editor left behind keeps listening for window resizes and then fails.
+  const keptToasts = Array.from(document.querySelectorAll<HTMLElement>('#toasts > .toast'));
+  try { (window as unknown as { tinymce?: { remove: () => void } }).tinymce?.remove(); } catch { /* nothing to remove */ }
   document.title = world ? `${world.name} · ${appName()}` : appName();
   const open = TABS.filter((x) => !prefs.closedTabs.includes(x));
   if (!open.includes(prefs.tab as Tab)) prefs.tab = open[0] ?? 'worlds';
@@ -689,6 +703,7 @@ function shell() {
     </div>
     ${user && prefs.onboarded ? `<nav class="bottom-nav" aria-label="${esc(tx('destinations'))}">${open.map((x) => `<button data-tab="${x}" ${x === prefs.tab ? 'aria-current="page"' : ''}><span class="pill">${TAB_ICON[x]}</span><span class="bn-label">${tx(x as Key).split(' · ').map((part) => `<span>${esc(part)}</span>`).join('')}</span></button>`).join('')}</nav>` : ''}
     <div id="toasts" class="toasts" aria-live="polite"></div>`;
+  if (keptToasts.length) app.querySelector('#toasts')!.append(...keptToasts);
   app.querySelectorAll<HTMLElement>('[data-lang]').forEach((c) => c.addEventListener('click', () => { prefs.lang = c.dataset.lang as Lang; savePrefs(); render(); }));
   app.querySelectorAll<HTMLElement>('[data-tab]').forEach((c) => c.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('[data-close]')) return; prefs.tab = c.dataset.tab!; savePrefs(); render(); }));
   app.querySelectorAll<HTMLElement>('[data-close]').forEach((c) => c.addEventListener('click', () => { prefs.closedTabs.push(c.dataset.close!); savePrefs(); render(); }));
@@ -793,7 +808,7 @@ let selectTool: ((op: string) => void) | undefined;
 
 async function undoLast() {
   if (!world) return;
-  if (prefs.editLock) { notify(tx('editLocked'), true); return; }
+  if (prefs.editLock) { refuseLocked('editLock'); return; }
   try {
     const r = await api<{ undid: string }>('/api/history/undo', { method: 'POST', body: {} });
     notify(tx('undone', { what: r.undid })); play('undo');
@@ -877,7 +892,7 @@ async function editorView(view: HTMLElement): Promise<void> {
     if (op === 'replace') { body.from = v('from'); body.to = v('to'); }
     if (op === 'biome') body.biome = v('biome').trim();
     if (op === 'clone') { const [x, y, z] = v('dest').split(',').map((s) => Math.trunc(Number(s.trim()))); body.dest = { x, y, z }; }
-    if (prefs.editLock) { notify(tx('editLocked'), true); return; }
+    if (prefs.editLock) { refuseLocked('editLock'); return; }
     runBtn.setAttribute('disabled', '');
     busy++;
     try {
@@ -899,7 +914,7 @@ async function editorView(view: HTMLElement): Promise<void> {
     notify(tx('structExported', { size: `${n.x2 - n.x1 + 1}×${n.y2 - n.y1 + 1}×${n.z2 - n.z1 + 1}` }));
   });
   const stFile = toolEl.querySelector<HTMLInputElement>('#st-file')!;
-  toolEl.querySelector('#st-place')!.addEventListener('click', () => { if (prefs.editLock) { notify(tx('editLocked'), true); return; } stFile.click(); });
+  toolEl.querySelector('#st-place')!.addEventListener('click', () => { if (prefs.editLock) { refuseLocked('editLock'); return; } stFile.click(); });
   stFile.addEventListener('change', async () => {
     const f = stFile.files?.[0]; stFile.value = ''; if (!f) return;
     const at = { x: Math.min(sel.x1, sel.x2), y: Math.min(sel.y1, sel.y2), z: Math.min(sel.z1, sel.z2) };
@@ -1359,7 +1374,7 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
     for (const id of ['#hfrom', '#hto']) view.querySelector(id)!.addEventListener('input', filter);
     filter();
     view.querySelectorAll<HTMLElement>('[data-sha]').forEach((b) => b.addEventListener('click', async () => {
-      if (prefs.editLock) { notify(tx('editLocked'), true); return; }
+      if (prefs.editLock) { refuseLocked('editLock'); return; }
       if (!await askConfirm(tx('restoreAsk'), tx('restore'), true)) return;
       try { await api('/api/history/restore', { method: 'POST', body: { sha: b.dataset.sha } }); notify(tx('restored')); play('undo'); historyView(outer, embedded); }
       catch (err) { notify((err as Error).message, true); }

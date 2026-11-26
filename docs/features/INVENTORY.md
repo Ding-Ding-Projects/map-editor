@@ -6,7 +6,7 @@ lands; anything not rechecked keeps its last audited status.
 
 Re-audited on 2026-11-25 after the changes of that day.
 
-Counts (126 features): built 14 / partial 85 / unbuilt 13 / not applicable 14
+Counts (126 features): built 14 / partial 86 / unbuilt 12 / not applicable 14
 
 
 ## Language, voice, and personalization
@@ -53,7 +53,7 @@ Counts (126 features): built 14 / partial 85 / unbuilt 13 / not applicable 14
 `guided-forms` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/ui/clearable.ts (clear control on every text field), block suggestions, world presets, validation in scripts/setup.mjs | MISSING: per-element optional guided wizard with worked example and playground; per-element guidance and complexity inventories; novice/Custom mapping; help identifiers
 `info-icon-guidance` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: none | MISSING: info icon button above each control, its contextual panel, per-control inventory and tests
 `settings-explanations` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: main.ts `sw()` rows show a note per switch | MISSING: progressive disclosure; provenance line (saved value vs built-in default, naming the default); notes for sliders/time fields; hand-written settings inventory test
-`settings-quick-add` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: none (e.g. the Ollama-unreachable message points to an environment variable) | MISSING: quick-add input + Save beside every Settings pointer; pointer inventory test
+`settings-quick-add` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: main.ts `refuseLocked`: the two messages that point at a setting (editing locked, tabs locked) carry a button that changes it on the spot, and respect a locked setting | MISSING: the local AI helper's address is still set outside the app; no inventory test of every message that names a setting
 `data-folder-choice` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: desktop app Settings › Backup and history shows the data folder, its size and file count and the worlds folder, with Open data folder and Copy path (src/desktop/main.ts `data-folder`, `open-data-root`; main.ts `wireDataFolder`) | MISSING: choosing or moving the data folder, default path row, move with progress and rollback; not run on a real Windows PC
 `blank-editors` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: src/ui/worlds.ts + src/core/archive.ts `createFlatWorld` presets | MISSING: presets for the blank notes editor and blank tools; preset description of exactly what is created; undo of a preset through history
 
