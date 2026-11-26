@@ -103,3 +103,15 @@ describe('Bedrock worlds', () => {
     expect(await discoverWorlds([root])).toEqual([{ path: dir, name: 'My Bedrock Base', versionName: 'Bedrock Edition', dimensions: ['overworld', 'nether', 'end'], edition: 'bedrock' }]);
   });
 });
+
+describe('a second flat world with the same name', () => {
+  it('is shown under its own folder name, so the two can be told apart', async () => {
+    const os = await import('node:os'); const fsp = await import('node:fs/promises');
+    const root = await fsp.mkdtemp(path.join(os.tmpdir(), 'me-dup-'));
+    const a = await createFlatWorld(root, 'Flat World', 1), b = await createFlatWorld(root, 'Flat World', 1);
+    expect(path.basename(a)).toBe('Flat World');
+    expect(path.basename(b)).not.toBe('Flat World');
+    expect((await World.open(a)).info.name).toBe('Flat World');
+    expect((await World.open(b)).info.name).toBe(path.basename(b));
+  });
+});

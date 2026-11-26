@@ -177,7 +177,7 @@ export async function createFlatWorld(root: string, name: string, radiusChunks =
   const height = layers.reduce((n, [, t]) => n + t, 0);
   const surface = preset === 'void' ? -60 : -64 + height - 1;
   const dir = await uniqueFolder(root, name);
-  await createWorld(dir, safeFolderName(name), 4189, surface + 1);
+  await createWorld(dir, path.basename(dir), 4189, surface + 1); // the name shown in lists matches the folder, so a second "Flat World" reads "Flat World (2)"
   const w = await World.open(dir);
   for (let cx = -radiusChunks; cx < radiusChunks; cx++) for (let cz = -radiusChunks; cz < radiusChunks; cz++) {
     const c = (await w.chunk('overworld', cx, cz, true))!;
