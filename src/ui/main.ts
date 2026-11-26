@@ -44,7 +44,7 @@ import { blockColor } from '../core/colors.js';
 import { argbFromHex, themeFromSourceColor, applyTheme as applyM3Theme } from '@material/material-color-utilities';
 import { notesPanel as notesPanelImpl } from './notes.js';
 import { contextMenu, initMenus, type MenuItem } from './menu.js';
-import { TOOL_KEYS, MAP_MODE_KEYS, UNDO_KEY, PALETTE_KEY, hitKey, shownKey, ariaKey } from './shortcuts.js';
+import { TOOL_KEYS, MAP_MODE_KEYS, UNDO_KEY, PALETTE_KEY, hitKey, shownKey, ariaKey, keysInText } from './shortcuts.js';
 import { iconSvg, initButtonIcons } from './icons.js';
 import { renderMarkdown } from './markdown.js';
 import { openSupportDesk } from './tickets.js';
@@ -141,7 +141,7 @@ let mapView: { x: number; z: number; s: number; moved: boolean } | undefined;
 // names the upstream project and keeps its wording; the built-in name itself is left as the fallback.
 const NAME_KEPT = new Set<Key>(['appName', 'aboutLegal', 'appNameSet', 'appNameNote' as Key]);
 const tx = (k: Key, v: Record<string, string | number> = {}) => {
-  const out = tr(prefs, k, v);
+  const out = keysInText(tr(prefs, k, v));
   const own = (prefs.appName ?? '').trim().slice(0, 40);
   return own && !NAME_KEPT.has(k) ? out.replace(/(?<!Amulet )Map Editor(?! Deploy)/g, own).replace(/地圖編輯器/g, own) : out;
 };

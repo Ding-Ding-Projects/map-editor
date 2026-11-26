@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { SHORTCUTS, TOOL_KEYS, MAP_MODE_KEYS, UNDO_KEY, PALETTE_KEY, hitKey, shownKey, ariaKey } from '../src/ui/shortcuts.js';
+import { SHORTCUTS, TOOL_KEYS, MAP_MODE_KEYS, UNDO_KEY, PALETTE_KEY, hitKey, shownKey, ariaKey, keysInText } from '../src/ui/shortcuts.js';
 
 const press = (key: string, mods: Partial<Record<'ctrlKey' | 'metaKey' | 'shiftKey' | 'altKey', boolean>> = {}) =>
   ({ key, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, ...mods });
@@ -22,6 +22,12 @@ describe('keyboard shortcuts', () => {
     expect(hitKey(press('z'), UNDO_KEY)).toBe(false);
     expect(hitKey(press('f'), TOOL_KEYS.fill)).toBe(true);
     expect(hitKey(press('f', { ctrlKey: true }), TOOL_KEYS.fill)).toBe(false);
+  });
+  it('rewrites the keys named in a sentence on a Mac and leaves other text alone', () => {
+    const t = 'Click here or press Ctrl+Shift+F. Ctrl+Z works too, Shift+click selects a range, Ctrl+A selects all.';
+    expect(keysInText(t, false)).toBe(t);
+    expect(keysInText(t, true)).toBe('Click here or press ⇧⌘F. ⌘Z works too, Shift+click selects a range, ⌘A selects all.');
+    expect(keysInText('撳呢度或者 Ctrl+Shift+F，就可以搜', true)).toBe('撳呢度或者 ⇧⌘F，就可以搜');
   });
   it('writes a combo the way the machine does', () => {
     expect(shownKey(PALETTE_KEY, false)).toBe('Ctrl+Shift+F');

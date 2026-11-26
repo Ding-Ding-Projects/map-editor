@@ -35,3 +35,8 @@ export function shownKey(combo: string, mac = isMac()): string {
 
 /** The value for `aria-keyshortcuts`, which has its own spelling for modifiers. */
 export const ariaKey = (combo: string, mac = isMac()): string => combo.replace(/Ctrl/g, mac ? 'Meta' : 'Control');
+
+/** Help text names keys the Windows way; on a Mac every combo in a sentence is rewritten the Mac way. */
+export function keysInText(text: string, mac = isMac()): string {
+  return mac ? text.replace(/\b(?:(?:Ctrl|Shift|Alt)\+)+[A-Z0-9]\b/g, (c) => shownKey(c, true)) : text;
+}
