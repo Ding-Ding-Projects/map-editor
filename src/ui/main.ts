@@ -1566,6 +1566,7 @@ async function extensionsPanel(view: HTMLElement) {
   let data: ExtState;
   try { data = await loadExtensions(); } catch (e) { host.innerHTML = `<p class="muted">${esc((e as Error).message)}</p>`; return; }
   const q = searchBox('extension-search', tx('searchExtensions'), rx, { compact: true });
+  { const old = view.querySelector('#ext-fold'); if (old) { old.previousElementSibling?.remove(); old.replaceWith(...Array.from(old.childNodes)); } } // a redraw starts from the plain row
   const qHost = view.querySelector('#ext-q') ?? view.querySelector('[data-search=extension-search]');
   qHost?.replaceWith(q.el);
   view.querySelector('.ext-bar')?.remove(); view.querySelector('.ext-runs')?.remove();
@@ -1578,6 +1579,8 @@ async function extensionsPanel(view: HTMLElement) {
     ${data.folder && desktopBridge?.openDataFolder ? `<md-text-button id="ext-open">${esc(tx('extOpenFolder'))}</md-text-button>` : ''}
     <md-text-button id="ext-reload">${esc(tx('extReload'))}</md-text-button>`;
   q.el.before(bar);
+  const syncExtFold = foldFilters(q.el, [q.el], () => (q.query().trim() ? 1 : 0), 'ext-fold');
+  q.onChange(syncExtFold);
   bar.querySelector('#ext-master')!.addEventListener('change', async (ev) => {
     const on = (ev.target as HTMLElement & { selected: boolean }).selected;
     await api('/api/extensions/master', { method: 'POST', body: { on } }).catch((err) => notify((err as Error).message, true));
@@ -1661,7 +1664,7 @@ async function extensionsPanel(view: HTMLElement) {
     // One line says how many were switched off and names the ones that were not, with the reason.
     notify(tx('extOffDone', { n: shown.length - failed.length }) + (failed.length ? ` ${tx('binSkipped', { list: failed.join('; ') })}` : ''), failed.length > 0); void loadExtensions().catch(() => undefined); void extensionsPanel(view);
   });
-  ex.after(bulk);
+  (view.querySelector('#ext-fold') ?? ex).after(bulk); // an action, so it stays in view when the filters are folded away
   let run = 0;
   q.onChange(async () => {
     const my = ++run;
@@ -1952,7 +1955,8 @@ async function aboutView(view: HTMLElement): Promise<void> {
     listEl.innerHTML = shown.length ? shown.map((e, i) => `<li class="cl-entry${i === 0 && !q ? ' newest' : ''}" style="--i:${Math.min(i, 12)}"><span class="cl-kind ${kind(e.subject)}">${esc(tx(kind(e.subject) as Key))}</span>
       <span class="cl-text"><b>${esc(e.subject)}</b><small>${esc(new Date(e.date).toLocaleString('en-GB'))} · <a class="cl-link" href="https://github.com/Ding-Ding-Projects/map-editor/commit/${esc(e.sha)}" target="_blank" rel="noopener noreferrer"><code>${esc(e.sha.slice(0, 7))}</code></a></small>${e.body ? `<details class="cl-more"><summary>${esc(tx('clDetails'))}</summary><div class="md-body">${renderMarkdown(e.body, { base: 'https://github.com/Ding-Ding-Projects/map-editor/blob/main/' })}</div></details>` : ''}</span></li>`).join('') : `<li class="muted">${esc(tx('noMatches'))}</li>`;
   };
-  clq.onChange(draw);
+  const syncClFold = foldFilters(clq.el, [clq.el, ...(clq.el.nextElementSibling ? [clq.el.nextElementSibling] : [])], () => (clq.query().trim() ? 1 : 0), 'cl-fold');
+  clq.onChange(() => { syncClFold(); void draw(); });
   draw();
   // Dock last: dockview detaches the content of a panel that is not showing (phone width), so
   // everything above is wired up while both sections are still on the page.
