@@ -105,7 +105,7 @@ export async function worldsView(view: HTMLElement, c: WorldsContext): Promise<v
   }
   view.querySelector('#sel-bin')!.addEventListener('click', async () => {
     const picked = [...sel].sort((a, b) => a - b).map((i) => shown[i]).filter(Boolean); if (!picked.length) return;
-    const ask = tx('binAsk', { n: picked.length, list: picked.map((w) => w.name).slice(0, 8).join(', ') + (picked.length > 8 ? '…' : '') });
+    const ask = tx('binAsk', { n: picked.length, list: picked.map((w) => { const f = w.path.split(/[\\/]/).filter(Boolean).pop() ?? ''; return f && f !== w.name ? `${w.name} (${tx('worldFolderLine', { folder: f })})` : w.name; }).slice(0, 8).join(', ') + (picked.length > 8 ? '…' : '') });
     if (!(c.confirm ? await c.confirm(ask, tx('binMove')) : false)) return;
     try {
       const r = await c.api<{ moved: string[]; skipped: Array<{ name: string; reason: string }> }>('/api/worlds/bin', { method: 'POST', body: { paths: picked.map((w) => w.path) } });
