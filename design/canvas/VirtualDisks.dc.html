@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map Editor Deploy virtual disks</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,400..1000&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button,a{font:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.moving .rise{animation:rise .55s cubic-bezier(.2,0,0,1) both}
+.moving li.rise:nth-child(2){animation-delay:.05s}.moving li.rise:nth-child(3){animation-delay:.1s}.moving li.rise:nth-child(4){animation-delay:.15s}.moving li.rise:nth-child(5){animation-delay:.2s}.moving li.rise:nth-child(6){animation-delay:.25s}
+.moving .mark{animation:spin 18s linear infinite}
+.moving .entry{transition:border-radius .22s cubic-bezier(.2,0,0,1),background-color .2s}
+.moving .entry:hover{border-radius:12px}
+.still *{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div class="{{motionClass}}" style="min-height: 900px; padding: 24px; box-sizing: border-box; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif; font-size: 14px">
+  <div style="max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px">
+    <header style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+      <div aria-hidden="true" class="mark" style="width: 40px; height: 40px; border-radius: 14px 20px 14px 20px; background: {{t.primaryContainer}}"></div>
+      <span style="font-size: 20px; font-weight: 800; flex: 1">Put Map Editor on your network</span>
+      <div role="tablist" aria-label="Views" style="display: flex; gap: 4px">
+        <span style="height: 40px; padding: 0 16px; display: inline-flex; align-items: center; border-radius: 20px; font-weight: 600">Deploy</span>
+        <span style="height: 40px; padding: 0 16px; display: inline-flex; align-items: center; border-radius: 20px; font-weight: 600">Instances</span>
+        <span aria-current="page" style="height: 40px; padding: 0 16px; display: inline-flex; align-items: center; border-radius: 20px; font-weight: 700; background: {{t.primary}}; color: {{t.onPrimary}}">Virtual disks</span>
+        <span style="height: 40px; padding: 0 16px; display: inline-flex; align-items: center; border-radius: 20px; font-weight: 600">Guide</span>
+      </div>
+    </header>
+    <section class="rise" aria-label="Virtual disks" style="padding: 28px 32px; border-radius: 40px 40px 40px 12px; background: {{t.surfaceContainerLow}}; display: flex; flex-direction: column; gap: 12px">
+      <h1 style="margin: 0; font-size: 36px; line-height: 40px; font-weight: 900; letter-spacing: -0.5px">Virtual disks</h1>
+      <p style="margin: 0; font-size: 16px; color: {{t.onSurfaceVariant}}">A virtual disk is one file that Windows shows as a drive. Windows asks for permission before each change. Detaching keeps the file; this screen never deletes anything.</p>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center">
+        <button onClick="{{openNew}}" style="height: 48px; padding: 0 24px; border: 0; border-radius: 24px; background: {{t.primary}}; color: {{t.onPrimary}}; font-weight: 700">New virtual disk…</button>
+        <button onClick="{{attach}}" style="height: 48px; padding: 0 24px; border: 0; border-radius: 24px; background: {{t.secondaryContainer}}; color: {{t.onSecondaryContainer}}; font-weight: 700">Attach a file…</button>
+        <button onClick="{{refresh}}" style="height: 48px; padding: 0 16px; border: 0; border-radius: 24px; background: transparent; color: {{t.primary}}; font-weight: 700">Refresh</button>
+      </div>
+      <button role="checkbox" aria-checked="{{ro}}" onClick="{{flipRo}}" style="align-self: flex-start; min-height: 48px; padding: 0 12px 0 4px; border: 0; background: transparent; color: inherit; display: inline-flex; align-items: center; gap: 12px; font-size: 16px">
+        <span aria-hidden="true" style="{{roBox}}">{{roTick}}</span>Attach read-only
+      </button>
+      <p role="status" style="margin: 0; padding: 12px 16px; border-radius: 16px; background: {{t.tertiaryContainer}}; color: {{t.onTertiaryContainer}}; display: {{statusShow}}">{{status}}</p>
+      <sc-if value="{{newOpen}}" hint-placeholder-val="{{ false }}">
+        <div aria-label="New virtual disk" style="padding: 20px; border-radius: 24px; background: {{t.surfaceContainerHigh}}; display: flex; flex-direction: column; gap: 12px">
+          <b style="font-size: 18px">New virtual disk</b>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap">
+            <label style="display: flex; flex-direction: column; gap: 4px; flex: 2 1 320px; font-size: 12px; color: {{t.onSurfaceVariant}}">File<input value="C:\Disks\club-worlds.vhdx" style="height: 52px; padding: 0 14px; border-radius: 12px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-size: 16px"></label>
+            <label style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 140px; font-size: 12px; color: {{t.onSurfaceVariant}}">Size in GB<input value="8" inputmode="numeric" style="height: 52px; padding: 0 14px; border-radius: 12px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-size: 16px"></label>
+          </div>
+          <button role="checkbox" aria-checked="{{fixed}}" onClick="{{flipFixed}}" style="align-self: flex-start; min-height: 48px; padding: 0 12px 0 4px; border: 0; background: transparent; color: inherit; display: inline-flex; align-items: center; gap: 12px; font-size: 15px; text-align: left">
+            <span aria-hidden="true" style="{{fixedBox}}">{{fixedTick}}</span>Take all the space now (slower to make; otherwise the file grows as it fills)
+          </button>
+          <div style="display: flex; gap: 8px; justify-content: flex-end">
+            <button onClick="{{closeNew}}" style="height: 40px; padding: 0 20px; border: 0; border-radius: 20px; background: transparent; color: {{t.primary}}; font-weight: 700">Cancel</button>
+            <button onClick="{{create}}" style="height: 40px; padding: 0 24px; border: 0; border-radius: 20px; background: {{t.primary}}; color: {{t.onPrimary}}; font-weight: 700">Create and attach</button>
+          </div>
+        </div>
+      </sc-if>
+      <span style="color: {{t.onSurfaceVariant}}">{{count}}</span>
+      <div style="display: flex; gap: 8px">
+        <label style="flex: 1; max-width: 420px; display: flex; flex-direction: column; gap: 2px; padding: 6px 16px; border-radius: 16px; border: 1px solid {{t.outline}}; font-size: 12px; color: {{t.onSurfaceVariant}}">Search virtual disks<input aria-label="Search virtual disks" style="border: 0; outline: 0; background: transparent; color: {{t.onSurface}}; font-size: 16px; height: 24px"></label>
+        <button aria-label="Open regex builder" style="width: 48px; border-radius: 12px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurfaceVariant}}; font-family: 'Roboto Mono', monospace">.*</button>
+      </div>
+      <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+        <sc-for list="{{disks}}" as="d" hint-placeholder-count="2">
+          <li class="rise entry" style="display: flex; align-items: center; gap: 16px; padding: 14px 16px; border-radius: 20px; background: {{t.surfaceContainerHigh}}">
+            <span style="flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-family: 'Roboto Mono', monospace; font-size: 15px; overflow-wrap: anywhere">{{d.file}}</span><span style="color: {{t.onSurfaceVariant}}">{{d.info}}</span></span>
+            <button onClick="{{d.detach}}" aria-label="{{d.detachLabel}}" style="height: 40px; padding: 0 20px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 700">Detach</button>
+          </li>
+        </sc-for>
+      </ul>
+      <p style="margin: 0; color: {{t.onSurfaceVariant}}; display: {{noneShow}}">No virtual disks are attached. Create one or attach a file.</p>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"seed":{"editor":"color","default":"#4C8C4A"},"motion":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? true;
+    const t = dark ? {
+      primary:'#8FD88A', onPrimary:'#00390A', primaryContainer:'#1B5220', onPrimaryContainer:'#AAF5A4', secondaryContainer:'#3B4B38', onSecondaryContainer:'#D6E8CF',
+      tertiaryContainer:'#1F4D53', onTertiaryContainer:'#BCEBF2', surface:'#10140F', surfaceContainerLow:'#181D17', surfaceContainerHigh:'#262B25', onSurface:'#E0E4DA', onSurfaceVariant:'#C2C9BD', outline:'#8C9388'
+    } : {
+      primary:'#2E6B2C', onPrimary:'#FFFFFF', primaryContainer:'#AFF4A6', onPrimaryContainer:'#002204', secondaryContainer:'#D6E8CF', onSecondaryContainer:'#111F0F',
+      tertiaryContainer:'#BCEBF2', onTertiaryContainer:'#001F23', surface:'#F7FBF1', surfaceContainerLow:'#F1F5EB', surfaceContainerHigh:'#E5EAE0', onSurface:'#181D17', onSurfaceVariant:'#42493F', outline:'#72796E'
+    };
+    const seed = this.props.seed ?? '#4C8C4A';
+    if (seed.toLowerCase() !== '#4c8c4a') { t.primary = seed; t.onPrimary = '#FFFFFF'; }
+    const st = this.state ?? {};
+    const set = (x) => this.setState(x);
+    const list = st.list ?? [{ file: 'C:\\Disks\\worlds.vhdx', info: 'Drive E: · 8.0 GB' }, { file: 'D:\\Backups\\old-server.vhd', info: 'No drive letter · 512 MB · read-only' }];
+    const ro = Boolean(st.ro), fixed = Boolean(st.fixed);
+    const box = (on) => 'width: 18px; height: 18px; margin: 15px; border-radius: 3px; display: grid; place-items: center; font-size: 14px; font-weight: 900; ' + (on ? 'background: ' + t.primary + '; color: ' + t.onPrimary + '; border: 2px solid ' + t.primary : 'border: 2px solid ' + t.onSurfaceVariant + '; color: transparent');
+    const disks = list.map((d, i) => ({ ...d, detachLabel: 'Detach ' + d.file, detach: () => set({ list: list.filter((_, k) => k !== i), status: 'Detached ' + d.file + '. The file is kept.' }) }));
+    return { t, motionClass: (this.props.motion ?? true) ? 'moving' : 'still', disks,
+      ro: String(ro), roBox: box(ro), roTick: ro ? '✓' : '', flipRo: () => set({ ro: !ro }),
+      fixed: String(fixed), fixedBox: box(fixed), fixedTick: fixed ? '✓' : '', flipFixed: () => set({ fixed: !fixed }),
+      newOpen: Boolean(st.newOpen), openNew: () => set({ newOpen: true }), closeNew: () => set({ newOpen: false }),
+      create: () => set({ newOpen: false, list: [...list, { file: 'C:\\Disks\\club-worlds.vhdx', info: 'Drive F: · 8.0 GB' + (fixed ? ' · fixed size' : '') }], status: 'Created and attached C:\\Disks\\club-worlds.vhdx after Windows asked for permission.' }),
+      attach: () => set({ list: [...list, { file: 'D:\\Images\\spare.vhdx', info: 'Drive G: · 2.0 GB' + (ro ? ' · read-only' : '') }], status: 'Attached D:\\Images\\spare.vhdx' + (ro ? ' read-only.' : '.') }),
+      refresh: () => set({ status: 'List read again from Windows.' }),
+      status: st.status ?? '', statusShow: st.status ? 'block' : 'none',
+      count: list.length + ' attached', noneShow: list.length ? 'none' : 'block' };
+  }
+}
+</script>
+</body>
+</html>

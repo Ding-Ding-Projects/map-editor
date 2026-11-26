@@ -258,6 +258,16 @@
    "page": "settings",
    "is_interactive": true
   },
+  "VirtualDisks.dc.html": {
+   "x": 4040,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Deploy app: virtual disks on Windows",
+   "expand": "fill",
+   "page": "deploy",
+   "is_interactive": true
+  },
   "Guide.dc.html": {
    "x": 0,
    "y": 0,
@@ -299,6 +309,7 @@
   "Sketch.dc.html",
   "DataFolder.dc.html",
   "OwnWords.dc.html",
+  "VirtualDisks.dc.html",
   "Guide.dc.html",
   "SiteHome.dc.html"
  ],
@@ -566,6 +577,14 @@
    "text": "Settings, Language and voice: your own words. Try: Upload words (stands for a good file), then each faulty file, then Back to the built-in words, then School mode; watch the section names at the top; Tweaks dark, seed, motion.\nIn the app: one fault refuses the whole file and nothing changes; the message names the kind of fault only; the same dialog is in the deploy app behind the pencil button.",
    "fill": "yellow",
    "page": "settings"
+  },
+  "n_virtualdisks": {
+   "x": 5560,
+   "y": 0,
+   "w": 420,
+   "text": "Deploy app, Virtual disks view (Windows). Try: New virtual disk (Create and attach or Cancel), Attach a file with and without Attach read-only, Detach until the list is empty, Refresh; Tweaks dark, seed, motion.\nIn the app: the list comes from Windows, each change waits for the Windows permission prompt, the search has the regex builder, and the checkboxes are Material checkboxes on a 48-high row. Detaching never deletes the file.",
+   "fill": "yellow",
+   "page": "deploy"
   },
   "n_guide": {
    "x": 1520,
