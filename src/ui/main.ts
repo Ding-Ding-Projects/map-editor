@@ -1202,6 +1202,23 @@ async function editorView(view: HTMLElement): Promise<void> {
 }
 
 /** Activity panel: accounts, settings, extensions and worlds from the server's activity record. */
+/** Folds a panel's filters away behind one button; the fold is remembered and says how many filters are still on. */
+function foldFilters(before: Element, parts: Element[], active: () => number, id: string): () => void {
+  const fold = document.createElement('div'); fold.className = 'fold-bar';
+  fold.innerHTML = `<button type="button" class="fold-toggle" aria-controls="${id}" data-icon="sliders"></button><span class="muted" aria-live="polite"></span>`;
+  const body = document.createElement('div'); body.id = id;
+  before.before(fold, body); body.append(...parts);
+  const sync = () => {
+    const shut = prefs.filtersCollapsed; body.hidden = shut;
+    const b = fold.querySelector<HTMLElement>('.fold-toggle')!; b.setAttribute('aria-expanded', String(!shut));
+    b.querySelector('.lbl')?.remove(); b.insertAdjacentHTML('beforeend', `<span class="lbl">${esc(tx(shut ? 'filtersShow' : 'filtersHide'))}</span>`);
+    const n = active(); fold.querySelector('span.muted')!.textContent = shut && n ? tx('filtersActive', { n }) : '';
+  };
+  fold.querySelector('.fold-toggle')!.addEventListener('click', () => { prefs.filtersCollapsed = !prefs.filtersCollapsed; savePrefs(); sync(); });
+  sync();
+  return sync;
+}
+
 /** Tick boxes on list rows, with a bar (count, Select all shown, Invert) placed before the list. Returns the ticked row numbers. */
 function pickBar(rows: HTMLElement[], before: Element, name: (i: number) => string, note: Key = 'selectExportNote'): Set<number> {
   const picked = new Set<number>(); let anchor: number | undefined;
@@ -1254,6 +1271,9 @@ function activityPanel(): HTMLElement {
       host.querySelectorAll<HTMLElement & { selected: boolean }>('[data-k]').forEach((c) => { if (c.tagName === 'MD-FILTER-CHIP') c.addEventListener('click', () => { setTimeout(() => { if (c.selected) on.add(c.dataset.k!); else on.delete(c.dataset.k!); void filter(); }); }); });
       box.onChange(() => { void filter(); });
       void filter();
+      // The same fold as History: search, export and kinds tuck away to leave the list the room.
+      const chips = host.querySelector('md-chip-set')!;
+      foldFilters(box.el, [box.el, ...Array.from(host.querySelectorAll('.export-button, .export-wrap')).filter((x) => x.parentElement === host), chips], () => (box.query().trim() ? 1 : 0) + on.size, 'af-body');
     } catch (err) { el.querySelector('#act')!.textContent = (err as Error).message; }
   })();
   return el;
