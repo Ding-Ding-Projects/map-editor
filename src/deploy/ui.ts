@@ -6,7 +6,7 @@ import { showTakeover } from '../ui/takeover.js';
 import { downloadRows, exportButton } from '../ui/exporter.js';
 import { iconSvg, initButtonIcons } from '../ui/icons.js';
 import { superConfirm } from '../ui/moments.js';
-import { englishOf, initLang, langSwitch, setLang, setWords, wordCount, type Lang } from './lang.js';
+import { englishOf, initLang, langSwitch, pauseWords, setLang, setWords, wordCount, type Lang } from './lang.js';
 import { readVocabFile, VocabError, VOCAB_LIMITS } from '../ui/vocabfile.js';
 import { configureSounds, play } from '../ui/sounds.js';
 import { openPalette, type Command } from '../ui/palette.js';
@@ -42,7 +42,16 @@ interface Step { label: string; state: 'waiting' | 'running' | 'done' | 'failed'
 interface Disk { id: string; name: string; sizeBytes: number }
 interface Instance { name: string; target: string; version: string; port: number; host: string; sshHost?: string }
 declare global { interface Window { deploy: any } }
-const d = window.deploy;
+// School mode for a classroom computer: this copy can look, read the guide and open instances, and nothing else.
+// Every call that would deploy, remove, change an instance, write a drive or change a virtual disk is refused here,
+// in one place, with a message that says why.
+const SCHOOL_KEY = 'map-editor-deploy.school';
+let schoolMode = false; try { schoolMode = localStorage.getItem(SCHOOL_KEY) === 'on'; } catch { /* off */ }
+const SCHOOL_BLOCKED = new Set(['docker', 'vmware', 'virtualbox', 'flash', 'action', 'duplicate', 'vdiskJob']);
+const schoolText = () => by('School mode is on, so this copy cannot deploy, remove or change anything. Switch it off first.', '學校模式開緊，所以呢份程式唔可以部署、移除或者改任何嘢。要先熄咗佢。');
+const d = new Proxy(window.deploy ?? {}, { get: (target, prop: string) => (schoolMode && SCHOOL_BLOCKED.has(prop)
+  ? async () => { const message = schoolText(); toast(message, true); return { ok: false, message, error: message, refusedBySchoolMode: true }; }
+  : target[prop]) });
 const esc = (s: unknown) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
@@ -243,7 +252,7 @@ function stepsHtml(steps: Step[]) {
 /** Run one deploy from its button: the button is off while it runs, so a second press cannot start another. */
 function runOnce(form: Element, run: () => Promise<void>) {
   const go = form.querySelector('#go') as HTMLElement & { disabled: boolean };
-  go.addEventListener('click', () => { if (go.disabled) return; go.disabled = true; void run().finally(() => { if (go.isConnected) go.disabled = false; }); });
+  go.addEventListener('click', () => { if (go.disabled) return; if (schoolMode) { toast(schoolText(), true); return; } go.disabled = true; void run().finally(() => { if (go.isConnected) go.disabled = false; }); });
 }
 
 // Update ready banner: same wording and behaviour as the editor's; restart is never automatic.
@@ -295,6 +304,7 @@ async function render() {
       <div class="muted" id="prov"></div></div></div>
     <md-chip-set class="views"><md-filter-chip id="v-deploy" label="Deploy" ${view === 'deploy' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-inst" label="Instances" ${view === 'instances' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-disks" label="Virtual disks" ${view === 'disks' ? 'selected' : ''}></md-filter-chip><md-filter-chip id="v-guide" label="Guide" ${view === 'guide' ? 'selected' : ''}></md-filter-chip></md-chip-set><md-text-button id="tour">Take a tour</md-text-button><button type="button" id="cmd" class="icon-btn" aria-label="Find commands (Ctrl+Shift+F)" title="Find commands (Ctrl+Shift+F)" aria-keyshortcuts="Control+Shift+F">${iconSvg('search', 20)}</button><button type="button" id="msgs" class="icon-btn msgs-btn" aria-label="Messages" title="Messages">${iconSvg('list', 20)}<span class="badge" ${unread ? '' : 'hidden'}>${unread || ''}</span></button><button type="button" id="words" class="icon-btn" aria-label="Your own words" title="Your own words">${iconSvg('pencil', 20)}</button>${langSwitch()}<button type="button" id="snd" class="icon-btn" aria-pressed="${soundsOn}" aria-label="Sound effects" title="Sound effects">${iconSvg('sound', 20)}</button></header>
     <div id="update-banner" class="update-banner" role="region" aria-label="Update" hidden></div>
+    ${schoolMode ? `<div class="hint-bar school-bar" role="status"><span>${esc(schoolText())}</span><md-filled-tonal-button id="school-off">${esc(by('Switch school mode off', '熄學校模式'))}</md-filled-tonal-button></div>` : ''}
     <div class="body"><main class="view" id="main"></main></div><div id="toasts" class="toasts"></div>`;
   showUpdate();
   // Front-screen provenance: the version and when this build was made.
@@ -376,6 +386,7 @@ async function render() {
       main.querySelectorAll<HTMLElement>('[data-bulk]').forEach((btn) => btn.addEventListener('click', async () => {
         const action = btn.dataset.bulk!, chosen = [...picked].sort((x, y) => x - y).map((k) => list[k]);
         if (!chosen.length) return;
+        if (schoolMode) { toast(schoolText(), true); return; } // said once, not once per instance
         main.querySelectorAll('[data-bulk]').forEach((b) => b.setAttribute('disabled', ''));
         const failed: string[] = []; let ok = 0;
         for (const i of chosen) { try { const r = await d.action(i.name, action, false); if (r.ok) ok++; else failed.push(`${i.name}: ${r.message}`); } catch (e) { failed.push(`${i.name}: ${(e as Error).message}`); } }
@@ -575,6 +586,7 @@ function failTakeover(o: { what: string; error: string; steps: Step[]; retry: { 
 enableClearControls((field) => `Clear ${field}`);
 initButtonIcons(englishOf);
 initLang();
+if (schoolMode) pauseWords(true);
 let soundsOn = true; try { soundsOn = localStorage.getItem('map-editor-deploy.sounds') !== 'off'; } catch { /* default on */ }
 configureSounds(soundsOn, 0.4);
 document.addEventListener('click', (e) => {
@@ -630,11 +642,24 @@ function onboarding(main: Element) {
 /** Change language. Lists whose lines are composed as they are drawn (instances, virtual disks, guide) are drawn again; a form being filled in is left alone. */
 function switchLang(l: Lang) { setLang(l); if (view !== 'deploy' && !managing) void render(); }
 
+/** Switch School mode. Turning it on asks first; turning it off asks too, so a class cannot do it by accident. */
+async function setSchool(on: boolean) {
+  if (on === schoolMode) return;
+  if (!await askYesNo(on ? by('Turn on School mode? This copy will only look and read: no deploying, removing, drive writing or virtual disk changes, and the built-in wording is shown.', '開學校模式？呢份程式之後只可以睇同讀：唔可以部署、移除、寫磁碟或者改虛擬磁碟，仲會用內置用字。')
+    : by('Switch School mode off? Deploying, removing and drive writing will work again.', '熄學校模式？之後又可以部署、移除同寫磁碟。'), on ? by('Turn on', '開') : by('Switch off', '熄'))) { void render(); return; }
+  schoolMode = on;
+  try { on ? localStorage.setItem(SCHOOL_KEY, 'on') : localStorage.removeItem(SCHOOL_KEY); } catch { /* not kept */ }
+  pauseWords(on); await render();
+  toast(on ? by('School mode is on.', '學校模式開咗。') : by('School mode is off.', '學校模式熄咗。'));
+}
+document.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('#school-off')) void setSchool(false); });
+
 // Your own words: one local JSON file, checked whole before any of it is used.
 let wordsRefused = false;
 /** Check one chosen or dropped file whole, then use it or change nothing. */
 async function takeWordsFile(f: File): Promise<boolean> {
   const pt = paletteText;
+  if (schoolMode) { toast(pt('vocabStateSchool'), true); return false; }
   try {
     if (f.size > VOCAB_LIMITS.bytes) throw new VocabError('size');
     const got = readVocabFile(await f.text(), new Set());
@@ -665,8 +690,8 @@ function ownWords() {
   const paint = () => {
     const n = wordCount();
     dlg.innerHTML = `<div slot="headline">${esc(pt('vocab'))}</div><div slot="content" class="words-body"><p>${esc(pt('vocabNote'))}</p>
-      <p id="words-state" role="status" class="${wordsRefused ? 'bad' : ''}"><b>${esc(wordsRefused ? pt('vocabStateBad') : n ? pt('vocabStateOn', { n }) : pt('vocabStateNone'))}</b></p>
-      <div class="row-actions"><md-filled-tonal-button id="words-up">${esc(pt(n ? 'vocabReplace' : 'vocabUpload'))}</md-filled-tonal-button><md-outlined-button id="words-template">${esc(pt('vocabTemplate'))}</md-outlined-button>${n ? `<md-text-button id="words-reset">${esc(pt('vocabReset'))}</md-text-button>` : ''}<input type="file" id="words-file" accept=".json,application/json" hidden></div></div>
+      <p id="words-state" role="status" class="${wordsRefused ? 'bad' : ''}"><b>${esc(schoolMode ? pt('vocabStateSchool') : wordsRefused ? pt('vocabStateBad') : n ? pt('vocabStateOn', { n }) : pt('vocabStateNone'))}</b></p>
+      <div class="row-actions"><md-filled-tonal-button id="words-up" ${schoolMode ? 'disabled' : ''}>${esc(pt(n ? 'vocabReplace' : 'vocabUpload'))}</md-filled-tonal-button><md-outlined-button id="words-template">${esc(pt('vocabTemplate'))}</md-outlined-button>${n ? `<md-text-button id="words-reset">${esc(pt('vocabReset'))}</md-text-button>` : ''}<input type="file" id="words-file" accept=".json,application/json" hidden></div></div>
       <div slot="actions"><md-text-button id="words-close">${esc(pt('close'))}</md-text-button></div>`;
     const file = dlg.querySelector<HTMLInputElement>('#words-file')!;
     dlg.querySelector('#words-up')!.addEventListener('click', () => file.click());
@@ -698,6 +723,7 @@ function deployCommands(): Command[] {
     { id: 'tour', label: 'Take a tour', where: 'Help', run: () => deployTour() },
     { id: 'support', label: 'Report a problem', where: 'Help', run: () => { void supportDesk(); } },
     { id: 'setup', label: 'Run first-time setup again', where: 'Help', run: () => { obSave({ step: 0, done: false }); void render(); } },
+    { id: 'school', label: 'School mode', where: 'Settings, live', toggle: { get: () => schoolMode, set: (v) => { void setSchool(v); } } },
     { id: 'words', label: 'Your own words', where: 'Settings', run: () => ownWords() },
     { id: 'msgs', label: 'Messages', where: 'Help', run: () => openMessages() },
     { id: 'snd', label: 'Sound effects', where: 'Settings, live', toggle: { get: () => soundsOn, set: (v) => { if (v !== soundsOn) document.querySelector<HTMLElement>('#snd')?.click(); } } },

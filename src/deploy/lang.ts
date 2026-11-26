@@ -21,8 +21,11 @@ const WORDS_KEY = 'map-editor-deploy.words.v1';
 let words: Record<string, string> = {};
 let reword: (s: string) => string = (s) => s;
 export const wordCount = () => Object.keys(words).length;
+/** School mode shows the built-in wording; the saved words are kept and come back when it is switched off. */
+let wordsPaused = false;
+export function pauseWords(on: boolean) { wordsPaused = on; reword = makeReplacer(on ? {} : words); if (document.body) walk(document.body); }
 export function setWords(entries: Record<string, string>) {
-  words = entries; reword = makeReplacer(entries);
+  words = entries; reword = makeReplacer(wordsPaused ? {} : entries);
   try { if (wordCount()) localStorage.setItem(WORDS_KEY, JSON.stringify({ schemaVersion: 1, entries })); else localStorage.removeItem(WORDS_KEY); } catch { /* storage blocked */ }
   if (document.body) walk(document.body);
 }
@@ -34,7 +37,7 @@ function render(en: string): string {
   if (out !== en) shownToEnglish.set(out, en);
   return out;
 }
-const handled = (en: string) => !!YUE[en] || wordCount() > 0;
+const handled = (en: string) => !!YUE[en] || wordCount() > 0; // paused words still count here, so swapped text is put back
 
 // What this module last wrote into a node or attribute. Anything else found there was put by the app,
 // so it is taken as fresh English; comparing with the last written text (not the current rendering)
