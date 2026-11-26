@@ -179,7 +179,7 @@ async function virtualDisks(main: Element) {
   main.innerHTML = `<section class="card"><h1 class="md-typescale-display-small">Virtual disks</h1>
       <p class="muted">A virtual disk is one file that Windows shows as a drive. Windows asks for permission before each change. Detaching keeps the file; this screen never deletes anything.</p>
       <div class="vd-actions"><md-filled-button id="vd-new">New virtual disk…</md-filled-button><md-filled-tonal-button id="vd-attach">Attach a file…</md-filled-tonal-button><md-text-button id="vd-refresh">Refresh</md-text-button></div>
-      <label class="check"><input type="checkbox" id="vd-ro"> Attach read-only</label>
+      <label class="check"><md-checkbox id="vd-ro" touch-target="wrapper"></md-checkbox> Attach read-only</label>
       <p id="vd-status" class="muted" role="status" aria-live="polite">Loading…</p><md-list id="vd-list"></md-list></section>`;
   const status = main.querySelector('#vd-status')!, listEl = main.querySelector('#vd-list')!;
   const busy = (on: boolean) => main.querySelectorAll<HTMLElement & { disabled: boolean }>('md-filled-button, md-filled-tonal-button, md-text-button, md-outlined-button').forEach((b) => { b.disabled = on; });
@@ -224,7 +224,7 @@ async function virtualDisks(main: Element) {
         <div class="vd-file"><md-outlined-text-field id="vd-file" label="File" readonly style="flex:1"></md-outlined-text-field><md-filled-tonal-button type="button" id="vd-pick">Choose…</md-filled-tonal-button></div>
         <md-outlined-text-field id="vd-size" label="Largest size in GB" type="number" min="1" max="2048" value="8"></md-outlined-text-field>
         <md-outlined-text-field id="vd-label" label="Drive name" value="Worlds" maxlength="32"></md-outlined-text-field>
-        <label class="check"><input type="checkbox" id="vd-fixed"> Take all the space now (slower to make; otherwise the file grows as it fills)</label>
+        <label class="check"><md-checkbox id="vd-fixed" touch-target="wrapper"></md-checkbox> Take all the space now (slower to make; otherwise the file grows as it fills)</label>
         <p id="vd-err" class="error" role="alert"></p></form>
       <div slot="actions"><md-text-button id="vd-cancel">Cancel</md-text-button><md-filled-button id="vd-go">Create</md-filled-button></div>`;
     document.body.append(dlg); dlg.show();
@@ -610,7 +610,7 @@ function onboarding(main: Element) {
   const body = main.querySelector('#ob-body')!;
   if (st.step === 0) {
     body.innerHTML = `<h1 id="ob-h" class="md-typescale-display-small">Welcome to Map Editor Deploy</h1><p>Choose how this app talks to you. You can change both later from the top bar.</p>${langSwitch()}
-      <p><label class="check"><input type="checkbox" id="ob-snd" ${soundsOn ? 'checked' : ''}> Play a short sound when something finishes or fails</label></p>`;
+      <p><label class="check"><md-checkbox id="ob-snd" touch-target="wrapper" ${soundsOn ? 'checked' : ''}></md-checkbox> Play a short sound when something finishes or fails</label></p>`;
     body.querySelector('#ob-snd')!.addEventListener('change', (e) => { if ((e.target as HTMLInputElement).checked !== soundsOn) document.querySelector<HTMLElement>('#snd')?.click(); });
   } else if (st.step === 1) {
     body.innerHTML = `<h1 id="ob-h" class="md-typescale-display-small">Check this computer</h1><p>This looks for the tools each deploy target needs. Nothing is installed or changed.</p>

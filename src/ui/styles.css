@@ -1330,3 +1330,4 @@ details.set-more ul { margin: 4px 0 6px; padding-inline-start: 20px; display: gr
   .top:has(#words) .brand > div { min-width: 0; }
   .top:has(#words) .brand .title { white-space: normal; overflow: visible; text-overflow: clip; }
 }
+.card label.check:has(md-checkbox), .vd-form label.check:has(md-checkbox), p > label.check:has(md-checkbox), label.check.check:has(md-checkbox) { display: inline-flex; align-items: center; gap: 4px; min-height: 48px; cursor: pointer; }
