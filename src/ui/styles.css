@@ -1162,3 +1162,7 @@ md-dialog:has(#nf) { max-block-size: min(760px, calc(100% - 32px)); }
 [data-lang="both"] .note-centre h2 { flex: 1 1 100%; font-size: 20px; }
 [data-lang="both"] .note-centre header { justify-content: flex-start; }
 .tour-card footer button, .tour-card .tour-actions button { white-space: nowrap; }
+/* Two-key confirmation in bilingual mode: a wider card keeps each key label on one line. */
+[data-lang="both"] .sc-card { inline-size: min(680px, calc(100vw - 32px)); max-inline-size: none; }
+[data-lang="both"] .sc-card { inline-size: min(740px, calc(100vw - 32px)); } [data-lang="both"] .sc-key { font-size: 14px; }
+@media (min-width: 800px) { [data-lang="both"] .sc-key { white-space: nowrap; } }
