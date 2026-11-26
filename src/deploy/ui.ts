@@ -297,7 +297,7 @@ async function render() {
     const list: Instance[] = await d.instances();
     if (managing && list.some((i) => i.name === managing)) return manage(main, list.find((i) => i.name === managing)!);
     managing = undefined;
-    main.innerHTML = `<section class="card"><h1 class="md-typescale-display-small">${list.length} ${list.length === 1 ? 'instance' : 'instances'}</h1>
+    main.innerHTML = `<section class="card"><h1 class="md-typescale-display-small">${esc(by(`${list.length} ${list.length === 1 ? 'instance' : 'instances'}`, `${list.length} 個實例`))}</h1>
       <p class="muted">Only instances this app created are listed.</p>
       ${list.length ? `<div class="h-selbar" id="inst-bar" role="toolbar" aria-label="Select"><b id="inst-count" role="status"></b><md-text-button id="inst-all">Select all</md-text-button><md-text-button id="inst-inv">Invert</md-text-button><md-outlined-button data-bulk="start" disabled>Start selected</md-outlined-button><md-outlined-button data-bulk="stop" disabled>Stop selected</md-outlined-button><md-outlined-button data-bulk="restart" disabled>Restart selected</md-outlined-button></div><p class="muted" id="inst-report" role="status" hidden></p>
       <md-list>${list.map((i) => `<md-list-item><input type="checkbox" slot="start" class="h-pick" data-pick="${esc(i.name)}" aria-label="Select ${esc(i.name)}"><div slot="headline">${esc(i.name)} · ${esc(i.target)} · ${esc(i.version)}</div>
@@ -499,7 +499,7 @@ let soundsOn = true; try { soundsOn = localStorage.getItem('map-editor-deploy.so
 configureSounds(soundsOn, 0.4);
 document.addEventListener('click', (e) => {
   const t = (e.target as HTMLElement).closest<HTMLElement>('[data-set-lang], #snd');
-  if (t?.dataset.setLang) setLang(t.dataset.setLang as Lang);
+  if (t?.dataset.setLang) switchLang(t.dataset.setLang as Lang);
   else if (t?.id === 'snd') { soundsOn = !soundsOn; configureSounds(soundsOn, 0.4); try { localStorage.setItem('map-editor-deploy.sounds', soundsOn ? 'on' : 'off'); } catch { /* not kept */ } t.setAttribute('aria-pressed', String(soundsOn)); if (soundsOn) play('success'); }
 });
 // ---------- First run: three short steps that each do something real ----------
@@ -546,6 +546,9 @@ function onboarding(main: Element) {
   main.querySelector('#ob-next')!.addEventListener('click', () => (st.step === 2 ? move(2, true) : move(st.step + 1)));
   body.querySelector<HTMLElement>('h1')?.setAttribute('tabindex', '-1'); body.querySelector<HTMLElement>('h1')?.focus();
 }
+
+/** Change language. Lists whose lines are composed as they are drawn (instances, virtual disks, guide) are drawn again; a form being filled in is left alone. */
+function switchLang(l: Lang) { setLang(l); if (view !== 'deploy' && !managing) void render(); }
 
 // Your own words: one local JSON file, checked whole before any of it is used.
 let wordsRefused = false;
@@ -617,7 +620,7 @@ function deployCommands(): Command[] {
     { id: 'setup', label: 'Run first-time setup again', where: 'Help', run: () => { obSave({ step: 0, done: false }); void render(); } },
     { id: 'words', label: 'Your own words', where: 'Settings', run: () => ownWords() },
     { id: 'snd', label: 'Sound effects', where: 'Settings, live', toggle: { get: () => soundsOn, set: (v) => { if (v !== soundsOn) document.querySelector<HTMLElement>('#snd')?.click(); } } },
-    ...(['en', 'yue', 'both'] as const).map((l) => ({ id: `lang-${l}`, label: `Language: ${l === 'en' ? 'English' : l === 'yue' ? '粵語' : 'English + 粵語'}`, where: 'Settings', run: () => setLang(l) })),
+    ...(['en', 'yue', 'both'] as const).map((l) => ({ id: `lang-${l}`, label: `Language: ${l === 'en' ? 'English' : l === 'yue' ? '粵語' : 'English + 粵語'}`, where: 'Settings', run: () => switchLang(l) })),
   ];
 }
 const paletteText = (k: string, v?: Record<string, string | number>) => tr({ lang: currentLang(), funnyEn: 1, funnyYue: 1 }, k as Key, v);
