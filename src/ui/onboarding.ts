@@ -6,6 +6,8 @@ import { colorPicker } from './colorpicker.js';
 interface Prefs { lang: Lang; funnyEn: number; funnyYue: number; dark: boolean; reduceMotion: boolean; seed: string; rainbowSpeed: number }
 interface Ctx {
   tx: (k: Key, v?: Record<string, string | number>) => string;
+  /** The colour picker's fixed phrases in the chosen language. */
+  pickerText?: (english: string) => string;
   esc: (s: unknown) => string;
   prefs: Prefs;
   step: number;
@@ -51,6 +53,7 @@ export function onboarding(view: HTMLElement, c: Ctx) {
       body.append(holder);
       colorPicker(holder, {
         value: prefs.seed, label: tx('seed'), allowRainbow: true, rainbowSpeed: prefs.rainbowSpeed,
+        text: c.pickerText,
         surface: getComputedStyle(document.documentElement).getPropertyValue('--md-sys-color-surface').trim() || '#10140f',
         onChange: (v) => { prefs.seed = v.length === 9 ? v.slice(0, 7) : v; c.apply(); },
         onSpeed: (lv) => { prefs.rainbowSpeed = lv; c.apply(); },

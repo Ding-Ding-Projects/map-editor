@@ -28,16 +28,16 @@ export function colorPicker(host: HTMLElement, o: PickerOptions) {
   let typedNote = '';
 
   host.innerHTML = `<div class="picker" role="group" aria-label="${esc(o.label)}">
-    <div class="picker-field" tabindex="0" role="slider" aria-label="Saturation and brightness" aria-valuetext="">
+    <div class="picker-field" tabindex="0" role="slider" aria-label="${esc(T('Saturation and brightness'))}" aria-valuetext="">
       <canvas width="280" height="160"></canvas><span class="picker-thumb" aria-hidden="true"></span></div>
     <label class="picker-row"><span>${esc(T('Hue'))}</span><md-slider class="h" min="0" max="360" step="0.1" labeled></md-slider></label>
     <label class="picker-row"><span>${esc(T('Opacity'))}</span><md-slider class="a" min="0" max="100" step="1" labeled></md-slider></label>
     <md-outlined-text-field class="any" label="${esc(T('Any colour: name, HEX, rgb(), hsl(), oklch(), cmyk()…'))}"></md-outlined-text-field>
     <div class="picker-note" aria-live="polite"></div>
     <div class="picker-formats"></div>
-    ${o.allowRainbow ? `<div class="picker-rainbow"><md-outlined-button class="rb">Animated rainbow</md-outlined-button>
-      <label class="picker-row"><span>Rainbow speed</span><md-slider class="sp" min="1" max="5" step="1" ticks labeled value="${o.rainbowSpeed}"></md-slider></label></div>` : ''}
-    <div class="picker-recent" aria-label="Recent colours"></div>
+    ${o.allowRainbow ? `<div class="picker-rainbow"><md-outlined-button class="rb">${esc(T('Animated rainbow'))}</md-outlined-button>
+      <label class="picker-row"><span>${esc(T('Rainbow speed'))}</span><md-slider class="sp" min="1" max="5" step="1" ticks labeled value="${o.rainbowSpeed}"></md-slider></label></div>` : ''}
+    <div class="picker-recent" aria-label="${esc(T('Recent colours'))}"></div>
   </div>`;
   const field = host.querySelector<HTMLElement>('.picker-field')!;
   const canvas = field.querySelector('canvas')!;
