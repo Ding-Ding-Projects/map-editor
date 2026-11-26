@@ -1,7 +1,7 @@
 // Map Editor web UI, shared by the desktop app, the Docker web app and the appliance.
 import '@material/web/all.js';
 import { styles as typescaleStyles } from '@material/web/typography/md-typescale-styles.js';
-import { t as tr, englishOf, setVocabulary, parseVocabulary, STRINGS, type I18nState, type Key, type Lang } from './i18n.js';
+import { t as tr, englishOf, setVocabulary, setWords, parseVocabulary, STRINGS, ALL_KEYS, type I18nState, type Key, type Lang } from './i18n.js';
 import { mountWorkspace, PHONE, resetLayout } from './workspace.js';
 import { searchBox, type RegexText } from './regex.js';
 import { enableClearControls } from './clearable.js';
@@ -47,7 +47,8 @@ import { renderMarkdown } from './markdown.js';
 import { openSupportDesk } from './tickets.js';
 import { pickItem } from './select.js';
 import { ARTICLES, docsView, docTitle, openDoc } from './docs.js';
-import { levelUp, otpauthParts, qrSvg, superConfirm, vocabHeadline } from './moments.js';
+import { levelUp, otpauthParts, qrSvg, superConfirm } from './moments.js';
+import { readVocabFile, readWordsCache, VocabError, VOCAB_LIMITS, type VocabProblem } from './vocabfile.js';
 
 if (typescaleStyles.styleSheet) document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
 
@@ -149,6 +150,30 @@ const customLogo = () => { try { const v = localStorage.getItem(LOGO_KEY); retur
 function loadVocab(): Record<string, { en?: string; yue?: string }> { try { return parseVocabulary(JSON.parse(localStorage.getItem(VOCAB_KEY) ?? '{}')).ok; } catch { return {}; } }
 function saveVocab(v: Record<string, { en?: string; yue?: string }>) { try { localStorage.setItem(VOCAB_KEY, JSON.stringify(v)); } catch { /* storage blocked */ } setVocabulary(v); }
 setVocabulary(loadVocab());
+// The portable kind: wording to replacement. A damaged cache gives the built-in wording.
+const WORDS_KEY = 'map-editor.words.v1';
+const loadWords = (): Record<string, string> => { try { return readWordsCache(localStorage.getItem(WORDS_KEY)); } catch { return {}; } };
+function saveWords(entries: Record<string, string>) {
+  try { if (Object.keys(entries).length) localStorage.setItem(WORDS_KEY, JSON.stringify({ schemaVersion: 1, entries })); else localStorage.removeItem(WORDS_KEY); } catch { /* storage blocked */ }
+  setWords(entries);
+}
+setWords(loadWords());
+const vocabCount = () => Object.keys(loadVocab()).length + Object.keys(loadWords()).length;
+let vocabRefused = false;
+const VOCAB_ERR: Record<VocabProblem, Key> = { size: 'vocabErrSize', json: 'vocabErrJson', duplicate: 'vocabErrDuplicate', depth: 'vocabErrDepth', shape: 'vocabErrShape', version: 'vocabErrVersion', key: 'vocabErrKey', value: 'vocabErrValue', count: 'vocabErrCount', unknown: 'vocabErrUnknown', empty: 'vocabErrEmpty' };
+/** Check a chosen file whole, then use it or change nothing. Returns how many entries are now in use. */
+async function useVocabFile(f: File): Promise<number> {
+  try {
+    if (f.size > VOCAB_LIMITS.bytes) throw new VocabError('size');
+    const got = readVocabFile(await f.text(), new Set<string>(ALL_KEYS));
+    if (got.kind === 'words') { saveVocab({}); saveWords(got.entries); } else { saveWords({}); saveVocab(got.ids); }
+    vocabRefused = false;
+    return vocabCount();
+  } catch (err) {
+    vocabRefused = true;
+    throw new Error(tx(VOCAB_ERR[err instanceof VocabError ? err.problem : 'json'])); // a category only, never the file's contents
+  }
+}
 const rx: RegexText = (k, v) => tx(k, v);
 initMenus({ rx, search: () => tx('searchMenu'), none: () => tx('menuNone') });
 initButtonIcons(englishOf);
@@ -163,13 +188,9 @@ window.addEventListener('drop', (e) => {
   e.preventDefault();
   void (async () => {
     try {
-      if (f.size > 256 * 1024) throw new Error(tx('vocabTooBig'));
-      const raw = JSON.parse(await f.text());
-      const { ok } = parseVocabulary(raw);
-      if (!Object.keys(ok).length) throw new Error(tx('vocabNone'));
-      saveVocab(ok); play('tada'); render();
-      levelUp(vocabHeadline(raw, tx('vocabApplied')), tx('vocabDropSub'));
-    } catch (err) { play('invalid'); notify(tx('vocabBad', { e: (err as Error).message }), true); }
+      await useVocabFile(f); play('tada'); render();
+      levelUp(tx('vocabApplied'), tx('vocabDropSub'));
+    } catch (err) { play('invalid'); render(); notify(tx('vocabBad', { e: (err as Error).message }), true); }
   })();
 });
 const esc = (s: unknown) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
@@ -350,7 +371,7 @@ function askConfirm(text: string, ok = tx('ok'), danger = false, title?: string)
 
 /** Every setting a palette row can teleport to: [control selector, settings section, label key]. */
 const SETTING_TARGETS: Array<[string, string, Key]> = [
-  ['.set-langs', 'language', 'secLanguage'], ['#fen', 'language', 'funnyEn'], ['#fyue', 'language', 'funnyYue'],
+  ['.set-langs', 'language', 'secLanguage'], ['#vocab-up', 'language', 'vocab'], ['#vocab-template', 'language', 'vocabTemplate'], ['#vocab-reset', 'language', 'vocabReset'], ['#fen', 'language', 'funnyEn'], ['#fyue', 'language', 'funnyYue'],
   ['#dark', 'appearance', 'dark'], ['#dsched', 'appearance', 'darkSchedule'], ['#dfrom', 'appearance', 'darkFrom'], ['#ds', 'appearance', 'dimSum'], ['#seed-picker', 'appearance', 'seed'], ['#reset-layouts', 'appearance', 'resetLayouts'],
   ['#rm', 'comfort', 'reduceMotion'], ['#lt', 'comfort', 'largeText'], ['#elock', 'comfort', 'editLock'], ['#tko', 'comfort', 'takeovers'], ['#llock', 'comfort', 'layoutLocked'], ['#tlock', 'comfort', 'tabsLocked'], ['#slock', 'comfort', 'settingsLocked'], ['#focus', 'comfort', 'focusMode'], ['#school', 'comfort', 'schoolMode'],
   ['#snd', 'sounds', 'soundEffects'], ['#vol', 'sounds', 'soundVolume'], ['#quiet', 'sounds', 'quietHours'], ['#qfrom', 'sounds', 'quietFrom'], ['#nar', 'sounds', 'narrate'], ['#nar-rate', 'sounds', 'narrateRate'],
@@ -1698,8 +1719,8 @@ function settingsView(view: HTMLElement) {
       </div><p class="muted">${esc(tx('funnyNote'))}</p>
       <div class="set-row" data-find="${esc(tx('appNameSet'))} ${esc(tx('appNameNote'))}"><label for="app-name"><span><b>${esc(tx('appNameSet'))}</b><small>${esc(tx('appNameNote'))}</small></span></label><md-outlined-text-field id="app-name" maxlength="40" value="${esc(prefs.appName)}" placeholder="${esc(tx('appName'))}" aria-label="${esc(tx('appNameSet'))}"></md-outlined-text-field><md-text-button id="app-name-reset">${esc(tx('reset'))}</md-text-button></div>
       ${sw('emoji', 'emojiDialogs', 'emojiDialogsNote', prefs.emojiDialogs)}
-      <div class="set-row vocab-row" data-find="${esc(tx('vocab'))} ${esc(tx('vocabNote'))}"><span><b>${esc(tx('vocab'))}</b><small>${esc(tx('vocabNote'))} ${esc(tx('vocabCount', { n: Object.keys(loadVocab()).length }))}</small></span></div>
-      <div class="row-actions"><md-filled-tonal-button id="vocab-up">${esc(tx('vocabUpload'))}</md-filled-tonal-button><md-outlined-button id="vocab-template">${esc(tx('vocabTemplate'))}</md-outlined-button>${Object.keys(loadVocab()).length ? `<md-text-button id="vocab-reset">${esc(tx('vocabReset'))}</md-text-button>` : ''}<input type="file" id="vocab-file" accept=".json,application/json" hidden></div>`,
+      <div class="set-row vocab-row" data-find="${esc(tx('vocab'))} ${esc(tx('vocabNote'))}"><span><b>${esc(tx('vocab'))}</b><small>${esc(tx('vocabNote'))}</small><small id="vocab-state" role="status" class="${vocabRefused ? 'vocab-bad' : ''}">${esc(vocabRefused ? tx('vocabStateBad') : vocabCount() ? tx('vocabStateOn', { n: vocabCount() }) : tx('vocabStateNone'))}</small></span></div>
+      <div class="row-actions"><md-filled-tonal-button id="vocab-up">${esc(tx(vocabCount() ? 'vocabReplace' : 'vocabUpload'))}</md-filled-tonal-button><md-outlined-button id="vocab-template">${esc(tx('vocabTemplate'))}</md-outlined-button>${vocabCount() ? `<md-text-button id="vocab-reset">${esc(tx('vocabReset'))}</md-text-button>` : ''}<input type="file" id="vocab-file" accept=".json,application/json" hidden></div>`,
     appearance: `${sw('dark', 'dark', 'darkNote', prefs.dark)}${sw('dsched', 'darkSchedule', 'darkScheduleNote', prefs.darkSchedule)}
       <div class="set-times" data-find="${esc(tx('darkSchedule'))} ${esc(tx('darkFrom'))} ${esc(tx('darkTo'))}"><md-outlined-text-field id="dfrom" type="time" label="${esc(tx('darkFrom'))}" value="${prefs.darkFrom}"></md-outlined-text-field><md-outlined-text-field id="dto" type="time" label="${esc(tx('darkTo'))}" value="${prefs.darkTo}"></md-outlined-text-field></div>${sw('ds', 'dimSum', 'dimSumNote', prefs.dimSum)}
       <div class="set-row seed-row" data-find="${esc(tx('seed'))}"><span><b>${esc(tx('seed'))}</b></span><span class="seed-now"><span class="seed-swatch ${prefs.seed === RAINBOW ? 'rainbow' : ''}" style="background:${prefs.seed === RAINBOW ? 'none' : esc(prefs.seed)}"></span><code>${esc(prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed)}</code><md-text-button id="seed-reset">${esc(tx('reset'))}</md-text-button></span></div>
@@ -1782,19 +1803,17 @@ function settingsView(view: HTMLElement) {
   vf.addEventListener('change', async () => {
     const f = vf.files?.[0]; vf.value = ''; if (!f) return;
     try {
-      if (f.size > 256 * 1024) throw new Error(tx('vocabTooBig'));
-      const { ok, skipped } = parseVocabulary(JSON.parse(await f.text()));
-      saveVocab(ok);
-      notify(tx('vocabLoaded', { n: Object.keys(ok).length, s: skipped.length }), skipped.length > 0 && !Object.keys(ok).length);
-      render();
-    } catch (err) { notify(tx('vocabBad', { e: (err as Error).message }), true); }
+      const n = await useVocabFile(f);
+      render(); notify(tx('vocabStateOn', { n }));
+    } catch (err) { render(); notify(tx('vocabBad', { e: (err as Error).message }), true); }
   });
   view.querySelector('#vocab-template')!.addEventListener('click', () => {
-    const cur = loadVocab();
-    const all = Object.fromEntries(Object.entries(STRINGS).map(([k, e]) => [k, { en: cur[k]?.en ?? e.en, yue: cur[k]?.yue ?? e.yue }]));
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' })); a.download = 'map-editor-words.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    // The portable shape, with a few of the app's own short names as neutral examples to edit.
+    const sample = ['worlds', 'tools', 'history', 'settings', 'undo'] as const;
+    const entries = Object.fromEntries(sample.flatMap((k) => [[STRINGS[k].en, STRINGS[k].en], [STRINGS[k].yue, STRINGS[k].yue]]));
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ schemaVersion: 1, entries }, null, 2)], { type: 'application/json' })); a.download = 'map-editor-words.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   });
-  view.querySelector('#vocab-reset')?.addEventListener('click', async () => { if (!await askConfirm(tx('vocabResetAsk'), tx('vocabReset'), true)) return; saveVocab({}); notify(tx('vocabCleared')); render(); });
+  view.querySelector('#vocab-reset')?.addEventListener('click', async () => { if (!await askConfirm(tx('vocabResetAsk'), tx('vocabReset'), true)) return; saveVocab({}); saveWords({}); vocabRefused = false; notify(tx('vocabCleared')); render(); });
   view.querySelector('#fyue')!.addEventListener('change', () => { prefs.funnyYue = num('#fyue'); savePrefs(); render(); });
   view.querySelector('#dark')!.addEventListener('change', (e) => { prefs.dark = sel(e); savePrefs(); applyTheme(); });
   view.querySelector('#rm')!.addEventListener('change', (e) => { prefs.reduceMotion = sel(e); savePrefs(); applyTheme(); });

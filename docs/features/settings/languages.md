@@ -18,6 +18,12 @@ English and Cantonese each have a funny level from 1 to 5. It changes the wordin
 
 英文同粵語各自有一個由 1 到 5 嘅搞笑程度。佢只會改訊息嘅用字；數字、事實同警告喺每一級都一模一樣。
 
+## Your own words
+
+Settings, Language and voice has Upload words. Pick a JSON file shaped like this: {"schemaVersion": 1, "entries": {"Worlds": "Places"}}. Each entry swaps one wording for yours wherever the app shows it. The file is checked whole before anything changes: at most 256 KiB, 8 levels deep, 5,000 entries, keys up to 160 characters and replacements up to 1,000, and no key written twice. If any part is wrong, nothing changes and the message says what kind of fault it was without repeating the file. Download the template gives a small file to edit; Back to the built-in words removes yours. The words stay in this browser and are not sent anywhere.
+
+設定嘅「語言同聲音」有「上載用字」。揀一個咁樣嘅 JSON 檔：{"schemaVersion": 1, "entries": {"Worlds": "Places"}}。每一項會將一句用字換成你嗰句，程式邊度顯示都會換。未改任何嘢之前會先驗晒成個檔：最多 256 KiB、8 層深、5,000 項，鍵最長 160 字，替換最長 1,000 字，同一個鍵唔可以寫兩次。有一處唔啱就乜都唔改，訊息只會講係邊類問題，唔會讀返個檔出嚟。「下載範本」會俾一個細檔你改；「還原內置用字」會移走你嗰套。啲用字留喺呢個瀏覽器，唔會傳去邊度。
+
 ## Related
 
 - [Theme colours and the colour picker](../settings/appearance.md)

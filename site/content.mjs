@@ -121,6 +121,7 @@ export const features = [
     body: [
       ['Languages', 'Choose English, 粵語, or EN + 粵 to show both together. The choice is saved in your browser.'],
       ['Funny levels', 'English and Cantonese each have a funny level from 1 to 5. It changes the wording of messages only; numbers, facts and warnings are identical at every level.'],
+      ['Your own words', 'Settings, Language and voice has Upload words. Pick a JSON file shaped like this: {"schemaVersion": 1, "entries": {"Worlds": "Places"}}. Each entry swaps one wording for yours wherever the app shows it. The file is checked whole before anything changes: at most 256 KiB, 8 levels deep, 5,000 entries, keys up to 160 characters and replacements up to 1,000, and no key written twice. If any part is wrong, nothing changes and the message says what kind of fault it was without repeating the file. Download the template gives a small file to edit; Back to the built-in words removes yours. The words stay in this browser and are not sent anywhere.'],
     ], related: ['appearance', 'editing', 'web-app'] },
   { slug: 'roadmap', title: 'What is next', group: 'Project', summary: 'What is verified, what is built but unverified, and what is still to do.',
     body: [

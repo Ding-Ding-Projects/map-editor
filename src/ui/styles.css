@@ -1178,3 +1178,7 @@ md-dialog:has(#nf) { max-block-size: min(760px, calc(100% - 32px)); }
 .totp-pair + .row-actions { align-items: flex-start; margin-block-start: 12px; } .totp-pair + .row-actions > md-filled-button { flex: none; margin-block-start: 8px; }
 
 .set-slider .slider-reset { justify-self: start; margin-block-start: 2px; }
+
+/* Personal wording: the state line under the note; a refused file is said in the error colour. */
+#vocab-state { display: block; margin-top: 4px; font-weight: 600; }
+#vocab-state.vocab-bad { color: var(--md-sys-color-error); }

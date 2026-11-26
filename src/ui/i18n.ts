@@ -1,3 +1,4 @@
+import { makeReplacer } from './vocabfile.js';
 // English, Hong Kong Cantonese and bilingual copy. Funny level 1 (serious) to 5 (playful)
 // changes tone only; every number and fact is passed in and printed identically.
 export type Lang = 'en' | 'yue' | 'both';
@@ -27,7 +28,22 @@ const S = {
   bedrockNote: { en: 'Bedrock Edition world. Fill, Replace, Delete blocks and Clone work; use blocks picked from the map.', yue: '基岩版世界。填充、替換、刪除方塊同複製都用得；方塊要喺地圖吸返嚟用。' },
   bedrockEditorNote: { en: 'Bedrock Edition world: Fill and Replace take blocks that are already in this world. Choose one in the Blocks panel (it lists the blocks found so far), use Pick block (I) on the map, or type minecraft:air. Biomes, waterlogging and structure files are for Java Edition worlds.', yue: '基岩版世界：填充同替換只收呢個世界本身有嘅方塊。喺「方塊」面板揀（會列出暫時搵到嘅方塊），或者喺地圖用「吸方塊」(I)，又或者打 minecraft:air。生態域、加水同結構檔只限 Java 版世界。' },
   vocab: { en: 'Your own words', yue: '自己嘅用字' },
-  vocabNote: { en: 'Upload a JSON file to change any wording in this browser, in English, Cantonese or both. Download the template to see every id.', yue: '上載 JSON 檔，喺呢個瀏覽器改任何用字，英文、廣東話或者兩樣都得。下載範本就睇到所有 id。' },
+  vocabNote: { en: 'Upload a JSON file to change wording in this browser. The file is checked whole first: if any part is wrong, nothing changes. Download the template to see the shape.', yue: '上載 JSON 檔，喺呢個瀏覽器改用字。成個檔會先驗晒：有一處唔啱，就乜都唔改。下載範本睇格式。' },
+  vocabReplace: { en: 'Replace with another file…', yue: '換過另一個檔…' },
+  vocabStateNone: { en: 'No file loaded; built-in wording.', yue: '未載入檔案；用緊內置用字。' },
+  vocabStateOn: { en: 'Your wording is on: {n} entries.', yue: '用緊你嘅用字：{n} 項。' },
+  vocabStateBad: { en: 'The last file was refused; nothing changed.', yue: '上一個檔唔收；乜都冇改。' },
+  vocabErrSize: { en: 'the file is over 256 KiB. Use a smaller file.', yue: '個檔大過 256 KiB。用細啲嘅檔。' },
+  vocabErrJson: { en: 'it is not valid JSON. Check brackets, commas and quotes.', yue: '唔係啱格式嘅 JSON。睇吓括號、逗號同引號。' },
+  vocabErrDuplicate: { en: 'the same key is written twice. Keep each key once.', yue: '同一個鍵寫咗兩次。每個鍵留一次。' },
+  vocabErrDepth: { en: 'it nests deeper than 8 levels. Flatten it.', yue: '巢狀深過 8 層。整平佢。' },
+  vocabErrShape: { en: 'the shape is not the one in the template. It needs exactly schemaVersion and entries.', yue: '格式同範本唔同。只可以有 schemaVersion 同 entries。' },
+  vocabErrVersion: { en: 'this schema version is not supported. Use schemaVersion 1.', yue: '唔支援呢個 schema 版本。用 schemaVersion 1。' },
+  vocabErrKey: { en: 'a key is empty, longer than 160 characters or not allowed.', yue: '有個鍵係空嘅、長過 160 字，或者唔准用。' },
+  vocabErrValue: { en: 'a replacement is not text, is empty or is longer than 1,000 characters.', yue: '有個替換唔係文字、係空嘅，或者長過 1,000 字。' },
+  vocabErrCount: { en: 'it has more than 5,000 entries.', yue: '多過 5,000 項。' },
+  vocabErrUnknown: { en: 'it names a string id this version does not have. Download a fresh template.', yue: '入面有呢個版本冇嘅字串 id。下載新範本。' },
+  vocabErrEmpty: { en: 'it has no entries.', yue: '入面冇任何項目。' },
   vocabCount: { en: '{n} words changed now.', yue: '而家改咗 {n} 個。' },
   vocabUpload: { en: 'Upload words…', yue: '上載用字…' },
   vocabTemplate: { en: 'Download the template', yue: '下載範本' },
@@ -724,6 +740,9 @@ function fill(s: string, vars: Record<string, string | number>) {
 /** Personal vocabulary: the owner's own wording for any string, in either or both languages. */
 let overrides: Record<string, { en?: string; yue?: string }> = {};
 export function setVocabulary(v: Record<string, { en?: string; yue?: string }>) { overrides = v; }
+/** Wording swapped wherever it is shown: the portable kind of personal wording file. */
+let reword: (text: string) => string = (s) => s;
+export function setWords(entries: Record<string, string>) { reword = makeReplacer(entries); }
 
 /**
  * Check an uploaded vocabulary file: { key: "text" } or { key: { en, yue } }. Unknown keys and
@@ -751,8 +770,8 @@ export function parseVocabulary(raw: unknown): { ok: Record<string, { en?: strin
 export function t(state: I18nState, key: Key, vars: Record<string, string | number> = {}): string {
   const o = overrides[key];
   const e = (o ? { ...(S[key] as Entry), ...(o.en ? { en: o.en, en5: o.en } : {}), ...(o.yue ? { yue: o.yue, yue5: o.yue } : {}) } : S[key]) as Entry;
-  const en = fill(pick(e, 'en', state.funnyEn), vars);
-  const yue = fill(pick(e, 'yue', state.funnyYue), vars);
+  const en = reword(fill(pick(e, 'en', state.funnyEn), vars));
+  const yue = reword(fill(pick(e, 'yue', state.funnyYue), vars));
   const out = state.lang === 'en' ? en : state.lang === 'yue' ? yue : en === yue ? en : `${en} · ${yue}`; // a name that is the same in both is shown once
   // Remember the plain English behind each shown string, so icons can be chosen in any language mode.
   if (out.length < 80) { if (shown.size > 4000) shown.clear(); shown.set(out, fill((S[key] as Entry).en, vars)); }
