@@ -20,4 +20,11 @@ describe('where a setting comes from', () => {
   it('draws the line inside the row for every switch', () => {
     expect(main).toContain("${fromLine(id, on)}");
   });
+  it('gives every value that is not a switch the same line', () => {
+    // Hand-written list of the value controls in Settings.
+    const VALUES = ['lang', 'funnyEn', 'funnyYue', 'darkTimes', 'seed', 'volume', 'quietTimes', 'narrateRate'];
+    const table = /const VALUE_FROM: .*?\}> = \{([\s\S]*?)\n  \};/.exec(main)![1];
+    expect([...table.matchAll(/^\s{4}(\w+): \{ keys/gm)].map((m) => m[1]).sort()).toEqual([...VALUES].sort());
+    for (const v of VALUES) expect(main, v).toContain(`\${valFrom('${v}')}`);
+  });
 });

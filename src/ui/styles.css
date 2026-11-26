@@ -1309,3 +1309,5 @@ md-list-item[hidden], .act-list > li[hidden] { display: none !important; }
 
 /* Where a setting's value comes from */
 .set-row small.set-from { font-size: 12px; opacity: .85; } .set-row small.set-from.changed { color: var(--md-sys-color-primary); opacity: 1; font-weight: 600; }
+.set-times small.set-from { flex-basis: 100%; } small.set-from { display: block; font-size: 12px; color: var(--md-sys-color-on-surface-variant); } small.set-from.changed { color: var(--md-sys-color-primary); font-weight: 600; }
+.set-langs + small.set-from { margin: 6px 4px 14px; } .seed-row > span:first-child { display: flex; flex-direction: column; gap: 2px; }
