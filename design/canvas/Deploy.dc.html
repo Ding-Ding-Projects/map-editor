@@ -32,12 +32,19 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
         <h1 style="margin: 0; font-size: 57px; line-height: 60px; font-weight: 800; letter-spacing: -1.5px; font-variation-settings: 'wdth' 115">Put Map Editor on your network</h1>
         <p style="margin: 0; font-size: 18px; line-height: 26px">Pick where it runs. One click deploys it and gives you the working link.</p>
       </div>
-      <div role="group" aria-label="View" style="display: flex; gap: 4px">
+      <div role="group" aria-label="View" style="display: flex; gap: 4px; align-items: center">
         <sc-for list="{{views}}" as="v" hint-placeholder-count="2">
           <button onClick="{{v.pick}}" aria-pressed="{{v.on}}" style="{{v.style}}">{{v.label}}</button>
         </sc-for>
+        <button onClick="{{msgToggle}}" aria-label="Messages" aria-expanded="{{msgOpen}}" style="position: relative; margin-left: 8px; height: 48px; padding: 0 18px; border-radius: 24px; border: 0; background: {{t.onPrimaryContainer}}; color: {{t.primaryContainer}}; font-weight: 700">Messages<span style="display: {{msgBadge}}; position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; border-radius: 10px; background: {{t.error}}; color: {{t.onError}}; font-size: 11px; line-height: 20px; text-align: center">2</span></button>
       </div>
     </header>
+    <section aria-label="Messages" style="display: {{msgShow}}; padding: 20px 24px; border-radius: 28px 28px 28px 8px; background: {{t.surfaceContainerHigh}}; flex-direction: column; gap: 8px">
+      <strong style="font-size: 20px">Messages</strong>
+      <span style="font-size: 13px; color: {{t.onSurfaceVariant}}">Messages from this run of the app, newest first. They are not kept after it closes; the Activity list on Instances is the lasting record.</span>
+      <div style="padding: 10px 12px; border-radius: 16px; background: {{t.errorContainer}}; color: {{t.onErrorContainer}}"><b>Choose the worlds folder first.</b><br><small>16:45:10</small></div>
+      <div style="padding: 10px 12px; border-radius: 16px; background: {{t.surfaceContainerHighest}}"><b>Restarted 1 of 1.</b><br><small>16:44:02</small></div>
+    </section>
 
     <sc-if value="{{isDeploy}}" hint-placeholder-val="{{ true }}">
       <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start">
@@ -196,6 +203,7 @@ class Component extends DCLogic {
       steps, deploy, stepCount: at < 0 ? 'Press Deploy to see the steps run.' : Math.min(at, labels.length) + ' of ' + labels.length + ' steps done',
       goStyle: 'height: 64px; border-radius: 32px; border: 0; font-size: 18px; font-weight: 800; ' + (busy ? 'background: ' + t.surfaceContainerHighest + '; color: ' + t.onSurfaceVariant + '; cursor: default' : 'background: ' + t.primary + '; color: ' + t.onPrimary),
       iq, iTries, iqBorder: iq ? '2px solid ' + t.primary : '1px solid ' + t.outline, iShown: iq ? 'Showing ' + instances.length + ' of 3' : '',
+      msgOpen: String(!!this.state.msg), msgShow: this.state.msg ? 'flex' : 'none', msgBadge: this.state.msgSeen ? 'none' : 'block', msgToggle: () => this.setState({ msg: !this.state.msg, msgSeen: true }),
       t, views, targets, instances,
       isDeploy: view === 'Deploy', isInstances: view === 'Instances',
       isUsb: sel === 3 || sel === 4, isOther: !(sel === 3 || sel === 4),
