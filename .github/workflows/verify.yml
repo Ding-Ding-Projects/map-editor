@@ -17,6 +17,7 @@ jobs:
   meta:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
+    timeout-minutes: 5 # a stuck step fails the job instead of holding every later release
     outputs:
       tag: ${{ steps.r.outputs.tag }}
       version: ${{ steps.r.outputs.version }}
@@ -34,6 +35,7 @@ jobs:
   deploy-linux:
     needs: meta
     runs-on: ubuntu-24.04
+    timeout-minutes: 20 # a stuck step fails the job instead of holding every later release
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -46,7 +48,7 @@ jobs:
       - name: Docker on another computer over SSH (this runner's own sshd, key login)
         env: { MAP_EDITOR_VERSION: '${{ needs.meta.outputs.version }}' }
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq openssh-server
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o DPkg::Lock::Timeout=120 update -qq && sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o DPkg::Lock::Timeout=120 install -y -qq openssh-server
           ssh-keygen -t ed25519 -N '' -f ~/.ssh/id_ed25519 -q
           cat ~/.ssh/id_ed25519.pub >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys
           sudo systemctl start ssh
@@ -65,6 +67,7 @@ jobs:
     needs: meta
     if: needs.meta.outputs.prev != ''
     runs-on: windows-2022
+    timeout-minutes: 40 # a stuck step fails the job instead of holding every later release
     steps:
       - name: Install the previous release, then update it to this release with Squirrel
         shell: pwsh
@@ -94,12 +97,13 @@ jobs:
   pi-boot:
     needs: meta
     runs-on: ubuntu-latest # needs a QEMU new enough to have the raspi4b machine, which the 24.04 image lacks
+    timeout-minutes: 30 # a stuck step fails the job instead of holding every later release
     steps:
       - name: Boot the Raspberry Pi image on QEMU's raspi4b machine
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |
           set -eu
-          sudo apt-get update -qq && sudo apt-get install -y -qq qemu-system-arm mtools xz-utils device-tree-compiler
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o DPkg::Lock::Timeout=120 update -qq && sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o DPkg::Lock::Timeout=120 install -y -qq qemu-system-arm mtools xz-utils device-tree-compiler
           qemu-system-aarch64 --version | head -1
           gh release download ${{ needs.meta.outputs.tag }} --repo ${{ github.repository }} --pattern 'map-editor-appliance-rpi-arm64.img.xz'
           xz -d map-editor-appliance-rpi-arm64.img.xz

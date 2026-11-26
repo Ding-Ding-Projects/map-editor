@@ -16,6 +16,7 @@ env:
 jobs:
   meta:
     runs-on: ubuntu-24.04
+    timeout-minutes: 5 # a stuck step fails the job instead of holding every later release
     outputs:
       version: ${{ steps.v.outputs.version }}
       tag: ${{ steps.v.outputs.tag }}
@@ -38,6 +39,7 @@ jobs:
     # The unit tests and the type check gate every build.
     needs: meta
     runs-on: ubuntu-24.04
+    timeout-minutes: 15 # a stuck step fails the job instead of holding every later release
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -49,6 +51,7 @@ jobs:
   docker:
     needs: [meta, test]
     runs-on: ubuntu-24.04
+    timeout-minutes: 30 # a stuck step fails the job instead of holding every later release
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
@@ -101,11 +104,12 @@ jobs:
   appliance:
     needs: [meta, docker]
     runs-on: ubuntu-24.04
+    timeout-minutes: 40 # a stuck step fails the job instead of holding every later release
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with: { name: image-tar }
-      - run: sudo apt-get update && sudo apt-get install -y qemu-utils qemu-system-x86 curl fdisk e2fsprogs parted
+      - run: sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o DPkg::Lock::Timeout=120 update && sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o DPkg::Lock::Timeout=120 install -y qemu-utils qemu-system-x86 curl fdisk e2fsprogs parted
       - name: Build appliance image
         run: sudo appliance/build.sh map-editor-image.tar ${{ needs.meta.outputs.version }}
       - name: Boot test under QEMU
@@ -124,6 +128,7 @@ jobs:
     # so a failure does not block the other downloads.
     needs: [meta, docker]
     runs-on: ubuntu-24.04
+    timeout-minutes: 30 # a stuck step fails the job instead of holding every later release
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
@@ -132,7 +137,7 @@ jobs:
       # Registers static qemu for arm64 with the fix-binary flag, so arm64 programs run inside the chroot.
       - uses: docker/setup-qemu-action@v3
         with: { platforms: arm64 }
-      - run: sudo apt-get update && sudo apt-get install -y dosfstools fdisk e2fsprogs parted xz-utils
+      - run: sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o DPkg::Lock::Timeout=120 update && sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o DPkg::Lock::Timeout=120 install -y dosfstools fdisk e2fsprogs parted xz-utils
       - name: Build Raspberry Pi appliance image
         run: sudo appliance/build-pi.sh map-editor-image-arm64.tar ${{ needs.meta.outputs.version }}
       - uses: actions/upload-artifact@v4
@@ -145,6 +150,7 @@ jobs:
   desktop:
     needs: [meta, test]
     runs-on: windows-2022
+    timeout-minutes: 40 # a stuck step fails the job instead of holding every later release
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -171,6 +177,7 @@ jobs:
     # without them a release would be empty or useless to update to.
     if: always() && needs.meta.result == 'success' && needs.docker.result == 'success' && needs.desktop.result == 'success'
     runs-on: ubuntu-24.04
+    timeout-minutes: 15 # a stuck step fails the job instead of holding every later release
     defaults:
       run:
         shell: bash

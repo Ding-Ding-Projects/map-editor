@@ -14,6 +14,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15 # a stuck step fails the job instead of holding every later release
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -34,7 +35,7 @@ jobs:
             --print-to-pdf=site/dist/map-editor-guide-phone.pdf http://127.0.0.1:8765/map-editor/phone/
           test -s site/dist/map-editor-guide-phone.pdf && ls -l site/dist/map-editor-guide-phone.pdf
           # The Cantonese edition needs a Chinese font on the runner, or the PDF would be empty boxes.
-          sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk >/dev/null
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o DPkg::Lock::Timeout=120 update -qq && sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o DPkg::Lock::Timeout=120 install -y -qq fonts-noto-cjk >/dev/null
           fc-list :lang=zh-hk | head -1 | grep -q . || { echo 'No Chinese font installed'; exit 1; }
           google-chrome --headless=new --no-sandbox --disable-gpu --no-pdf-header-footer \
             --print-to-pdf=site/dist/map-editor-guide-phone-yue.pdf http://127.0.0.1:8765/map-editor/phone-yue/
@@ -47,6 +48,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-24.04
+    timeout-minutes: 10 # a stuck step fails the job instead of holding every later release
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
