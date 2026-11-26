@@ -14,6 +14,41 @@ export function routes() {
   return [...found.values()].sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method));
 }
 
+/** The fields each state-changing route reads from its JSON body, taken from the server's own code. */
+export function bodyFields() {
+  const src = readFileSync(path.join(root, 'src', 'server', 'server.ts'), 'utf8');
+  const marks = [...src.matchAll(/p === '(\/api\/[^']+)'(?:[^\n]*?req\.method === '([A-Z]+)')?/g)].map((m) => ({ i: m.index, key: `${m[2] ?? 'GET'} ${m[1]}` }));
+  const out = new Map();
+  marks.forEach((a, n) => {
+    if (a.key.startsWith('GET') || out.has(a.key) && out.get(a.key).length) return;
+    const seg = src.slice(a.i, marks[n + 1]?.i ?? src.length);
+    const m = /const \{([^}]*)\} = await body\(req\)/.exec(seg);
+    out.set(a.key, m ? m[1].split(',').map((f) => f.trim().split(':')[0].trim()).filter(Boolean) : []);
+  });
+  return out;
+}
+
+/** Routes that take a file as the raw body instead of JSON. */
+export const UPLOADS = new Set(['POST /api/worlds/upload', 'POST /api/extensions/upload', 'POST /api/structure/place']);
+/** Bodies written by hand where the server reads a whole object. */
+const WHOLE = { 'POST /api/op': { op: 'fill', dimension: 'overworld', box: { x1: 0, y1: 64, z1: 0, x2: 7, y2: 64, z2: 7 }, block: 'minecraft:stone' } };
+/**
+ * An example value for every field name a route reads. Hand-written: a field the server starts reading
+ * that is not listed here fails the test, so no request is published with a made-up placeholder.
+ */
+export const EXAMPLES = {
+  name: 'Alex', password: 'correct horse battery', code: '123456', ticket: '<ticket from the options request>', response: {}, id: '<id from the list request>',
+  model: 'llama3.2', prompt: 'How do I fill an area with stone?', kind: 'settings', message: 'Dark theme switched on', preset: 'classic', size: 4,
+  paths: ['/srv/minecraft/worlds/Practice'], root: '/srv/minecraft/worlds', path: '/srv/minecraft/worlds/Practice', replace: false,
+  url: 'https://example.com/extension.zip', sha256: '<sha256 of the file, 64 hex characters>', on: true, enabled: true, permissionKey: '<permissionKey from the extension list>',
+  command: '<command id from the extension list>', selection: { x1: 0, y1: 64, z1: 0, x2: 7, y2: 64, z2: 7 }, sha: '<sha from the history list>',
+};
+
+export function bodyFor(key) {
+  if (WHOLE[key]) return WHOLE[key];
+  return Object.fromEntries((bodyFields().get(key) ?? []).map((f) => [f, EXAMPLES[f]]));
+}
+
 const AREAS = [['Sign-in and accounts', /^\/api\/(auth|passkeys|authenticator|me|health)/], ['Worlds', /^\/api\/worlds?/], ['Editing and views', /^\/api\/(op|undo|render|top|slice|volume|blocks|structure)/],
   ['History and activity', /^\/api\/(history|activity)/], ['Extensions', /^\/api\/extensions/], ['Tools', /^\/api\/(ollama|notes)/]];
 
@@ -22,7 +57,16 @@ export function collection() {
   for (const r of routes()) {
     const area = AREAS.find(([, re]) => re.test(r.path))?.[0] ?? 'Other';
     const item = { name: `${r.method} ${r.path}`, request: { method: r.method, header: r.method === 'GET' ? [] : [{ key: 'Content-Type', value: 'application/json' }], url: { raw: `{{baseUrl}}${r.path}`, host: ['{{baseUrl}}'], path: r.path.split('/').filter(Boolean) } } };
-    if (r.method !== 'GET') item.request.body = { mode: 'raw', raw: '{}' };
+    const key = `${r.method} ${r.path}`;
+    if (UPLOADS.has(key)) {
+      item.request.header = [{ key: 'X-Map-Editor', value: '1' }];
+      item.request.body = { mode: 'file', file: { src: '' } };
+      item.request.description = 'Send the file itself as the request body (choose it under Body, binary). The X-Map-Editor header is required.';
+    } else if (r.method !== 'GET') {
+      const example = bodyFor(key); const fields = Object.keys(example);
+      item.request.body = { mode: 'raw', raw: JSON.stringify(example, null, 2), options: { raw: { language: 'json' } } };
+      item.request.description = fields.length ? `Reads: ${fields.join(', ')}. Values in angle brackets come from an earlier request.` : 'Takes no fields; send an empty JSON object.';
+    }
     groups.get(area).push(item);
   }
   return {

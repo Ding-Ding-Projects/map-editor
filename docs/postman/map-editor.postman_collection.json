@@ -37,8 +37,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"name\": \"Alex\",\n  \"password\": \"correct horse battery\",\n  \"code\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: name, password, code. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -64,8 +70,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Takes no fields; send an empty JSON object."
           }
         },
         {
@@ -92,8 +104,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Takes no fields; send an empty JSON object."
           }
         },
         {
@@ -120,8 +138,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"ticket\": \"<ticket from the options request>\",\n  \"response\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: ticket, response. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -147,8 +171,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"name\": \"Alex\",\n  \"password\": \"correct horse battery\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: name, password. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -209,8 +239,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Takes no fields; send an empty JSON object."
           }
         },
         {
@@ -236,8 +272,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"code\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: code. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -263,8 +305,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"code\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: code. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -324,8 +372,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"ticket\": \"<ticket from the options request>\",\n  \"response\": {},\n  \"name\": \"Alex\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: ticket, response, name. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -351,8 +405,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Takes no fields; send an empty JSON object."
           }
         },
         {
@@ -378,8 +438,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"id\": \"<id from the list request>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: id. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -405,8 +471,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"id\": \"<id from the list request>\",\n  \"name\": \"Alex\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: id, name. Values in angle brackets come from an earlier request."
           }
         }
       ]
@@ -489,8 +561,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"paths\": [\n    \"/srv/minecraft/worlds/Practice\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: paths. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -534,8 +612,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"name\": \"Alex\",\n  \"preset\": \"classic\",\n  \"size\": 4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: name, preset, size. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -561,8 +645,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"path\": \"/srv/minecraft/worlds/Practice\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: path. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -588,8 +678,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"root\": \"/srv/minecraft/worlds\",\n  \"id\": \"<id from the list request>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: root, id. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -598,8 +694,8 @@
             "method": "POST",
             "header": [
               {
-                "key": "Content-Type",
-                "value": "application/json"
+                "key": "X-Map-Editor",
+                "value": "1"
               }
             ],
             "url": {
@@ -614,9 +710,12 @@
               ]
             },
             "body": {
-              "mode": "raw",
-              "raw": "{}"
-            }
+              "mode": "file",
+              "file": {
+                "src": ""
+              }
+            },
+            "description": "Send the file itself as the request body (choose it under Body, binary). The X-Map-Editor header is required."
           }
         }
       ]
@@ -663,8 +762,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"op\": \"fill\",\n  \"dimension\": \"overworld\",\n  \"box\": {\n    \"x1\": 0,\n    \"y1\": 64,\n    \"z1\": 0,\n    \"x2\": 7,\n    \"y2\": 64,\n    \"z2\": 7\n  },\n  \"block\": \"minecraft:stone\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: op, dimension, box, block. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -724,8 +829,8 @@
             "method": "POST",
             "header": [
               {
-                "key": "Content-Type",
-                "value": "application/json"
+                "key": "X-Map-Editor",
+                "value": "1"
               }
             ],
             "url": {
@@ -740,9 +845,12 @@
               ]
             },
             "body": {
-              "mode": "raw",
-              "raw": "{}"
-            }
+              "mode": "file",
+              "file": {
+                "src": ""
+              }
+            },
+            "description": "Send the file itself as the request body (choose it under Body, binary). The X-Map-Editor header is required."
           }
         },
         {
@@ -823,8 +931,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"kind\": \"settings\",\n  \"message\": \"Dark theme switched on\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: kind, message. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -867,8 +981,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"sha\": \"<sha from the history list>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: sha. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -894,8 +1014,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"sha\": \"<sha from the history list>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: sha. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -939,8 +1065,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Takes no fields; send an empty JSON object."
           }
         }
       ]
@@ -988,8 +1120,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"path\": \"/srv/minecraft/worlds/Practice\",\n  \"replace\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: path, replace. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -1015,8 +1153,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"url\": \"https://example.com/extension.zip\",\n  \"replace\": false,\n  \"sha256\": \"<sha256 of the file, 64 hex characters>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: url, replace, sha256. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -1042,8 +1186,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"id\": \"<id from the list request>\",\n  \"enabled\": true,\n  \"permissionKey\": \"<permissionKey from the extension list>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: id, enabled, permissionKey. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -1069,8 +1219,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"on\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: on. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -1096,8 +1252,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"id\": \"<id from the list request>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: id. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -1123,8 +1285,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"id\": \"<id from the list request>\",\n  \"command\": \"<command id from the extension list>\",\n  \"selection\": {\n    \"x1\": 0,\n    \"y1\": 64,\n    \"z1\": 0,\n    \"x2\": 7,\n    \"y2\": 64,\n    \"z2\": 7\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: id, command, selection. Values in angle brackets come from an earlier request."
           }
         },
         {
@@ -1151,8 +1319,8 @@
             "method": "POST",
             "header": [
               {
-                "key": "Content-Type",
-                "value": "application/json"
+                "key": "X-Map-Editor",
+                "value": "1"
               }
             ],
             "url": {
@@ -1167,9 +1335,12 @@
               ]
             },
             "body": {
-              "mode": "raw",
-              "raw": "{}"
-            }
+              "mode": "file",
+              "file": {
+                "src": ""
+              }
+            },
+            "description": "Send the file itself as the request body (choose it under Body, binary). The X-Map-Editor header is required."
           }
         }
       ]
@@ -1217,8 +1388,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
-            }
+              "raw": "{\n  \"model\": \"llama3.2\",\n  \"prompt\": \"How do I fill an area with stone?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Reads: model, prompt. Values in angle brackets come from an earlier request."
           }
         },
         {

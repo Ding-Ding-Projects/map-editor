@@ -222,6 +222,23 @@ describe('Postman collection', () => {
     expect(names.length).toBe(routes().length);
     for (const must of ['POST /api/auth/login', 'GET /api/worlds', 'POST /api/worlds/open', 'GET /api/render', 'GET /api/blocks']) expect(names).toContain(must);
   });
+  it('gives every state-changing request the fields the server reads, with a real example for each', async () => {
+    // @ts-expect-error the script is plain JavaScript with no type file
+    const { bodyFields, collection, EXAMPLES, UPLOADS } = await import('../scripts/postman.mjs');
+    const fields: Map<string, string[]> = bodyFields();
+    expect(fields.get('POST /api/auth/login')).toEqual(['name', 'password', 'code']);
+    expect(fields.get('POST /api/extensions/enable')).toEqual(['id', 'enabled', 'permissionKey']);
+    for (const [route, list] of fields) for (const f of list) expect(EXAMPLES, `${route} reads ${f}`).toHaveProperty(f);
+    const items = collection().item.flatMap((g: { item: Array<{ name: string; request: { body?: { mode: string; raw?: string }; header: Array<{ key: string }>; description?: string } }> }) => g.item);
+    for (const i of items) {
+      if (i.name.startsWith('GET')) { expect(i.request.body).toBeUndefined(); continue; }
+      expect(i.request.description, i.name).toBeTruthy();
+      if (UPLOADS.has(i.name)) { expect(i.request.body?.mode).toBe('file'); expect(i.request.header.map((h: { key: string }) => h.key)).toContain('X-Map-Editor'); continue; }
+      const sent = Object.keys(JSON.parse(i.request.body?.raw ?? 'null'));
+      if (i.name === 'POST /api/op') expect(sent).toEqual(['op', 'dimension', 'box', 'block']);
+      else expect(sent, i.name).toEqual(fields.get(i.name));
+    }
+  });
 });
 
 describe('notes are cleaned before they are stored', () => {

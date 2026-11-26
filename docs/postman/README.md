@@ -8,5 +8,7 @@
 3. Send `POST /api/auth/login` first; Postman keeps the session cookie for the other requests.
 
 The collection is written from the server's own route list by `node scripts/postman.mjs`, and a test fails when
-the two differ, so it cannot fall behind the code. Request bodies are left as `{}`; the fields each route takes
-are described in the documentation site.
+the two differ, so it cannot fall behind the code. Each state-changing request carries the fields the server reads, also
+taken from the server's code, with an example value for each. Values in angle brackets, such as an id or a ticket,
+come from an earlier request. Uploads (a world archive, an extension, a structure file) take the file itself as the
+body together with the `X-Map-Editor: 1` header.
