@@ -148,16 +148,18 @@ const TONES = ['primary', 'secondary', 'tertiary', 'surface'];
 const LOGO_KEY = 'map-editor.logo.v1';
 const customLogo = () => { try { const v = localStorage.getItem(LOGO_KEY); return v && /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v) ? v : undefined; } catch { return undefined; } };
 function loadVocab(): Record<string, { en?: string; yue?: string }> { try { return parseVocabulary(JSON.parse(localStorage.getItem(VOCAB_KEY) ?? '{}')).ok; } catch { return {}; } }
-function saveVocab(v: Record<string, { en?: string; yue?: string }>) { try { localStorage.setItem(VOCAB_KEY, JSON.stringify(v)); } catch { /* storage blocked */ } setVocabulary(v); }
-setVocabulary(loadVocab());
+function saveVocab(v: Record<string, { en?: string; yue?: string }>) { try { localStorage.setItem(VOCAB_KEY, JSON.stringify(v)); } catch { /* storage blocked */ } applyWording(); }
 // The portable kind: wording to replacement. A damaged cache gives the built-in wording.
 const WORDS_KEY = 'map-editor.words.v1';
 const loadWords = (): Record<string, string> => { try { return readWordsCache(localStorage.getItem(WORDS_KEY)); } catch { return {}; } };
 function saveWords(entries: Record<string, string>) {
   try { if (Object.keys(entries).length) localStorage.setItem(WORDS_KEY, JSON.stringify({ schemaVersion: 1, entries })); else localStorage.removeItem(WORDS_KEY); } catch { /* storage blocked */ }
-  setWords(entries);
+  applyWording();
 }
-setWords(loadWords());
+/** School mode shows the built-in wording; the saved words are kept and come back when it is switched off. */
+let wordingOff: boolean | undefined;
+function applyWording() { const off = prefs.schoolMode; wordingOff = off; setVocabulary(off ? {} : loadVocab()); setWords(off ? {} : loadWords()); }
+applyWording();
 const vocabCount = () => Object.keys(loadVocab()).length + Object.keys(loadWords()).length;
 let vocabRefused = false;
 const VOCAB_ERR: Record<VocabProblem, Key> = { size: 'vocabErrSize', json: 'vocabErrJson', duplicate: 'vocabErrDuplicate', depth: 'vocabErrDepth', shape: 'vocabErrShape', version: 'vocabErrVersion', key: 'vocabErrKey', value: 'vocabErrValue', count: 'vocabErrCount', unknown: 'vocabErrUnknown', empty: 'vocabErrEmpty' };
@@ -188,6 +190,7 @@ window.addEventListener('drop', (e) => {
   e.preventDefault();
   void (async () => {
     try {
+      if (prefs.schoolMode) throw new Error(tx('vocabStateSchool'));
       await useVocabFile(f); play('tada'); render();
       levelUp(tx('vocabApplied'), tx('vocabDropSub'));
     } catch (err) { play('invalid'); render(); notify(tx('vocabBad', { e: (err as Error).message }), true); }
@@ -566,6 +569,7 @@ function applyTheme() {
   // Per-element appearance: each part can take its own tone of the theme.
   for (const [el] of TONE_ELEMENTS) { const v = prefs.tones?.[el]; if (v && TONES.includes(v)) document.documentElement.dataset[`tone${el[0].toUpperCase()}${el.slice(1)}`] = v; else delete document.documentElement.dataset[`tone${el[0].toUpperCase()}${el.slice(1)}`]; }
   document.documentElement.classList.toggle('school-mode', prefs.schoolMode);
+  if (wordingOff !== prefs.schoolMode) applyWording();
   configureSounds(prefs.sounds && !quiet(), prefs.soundVolume / 100);
   document.documentElement.dataset.lang = prefs.lang; document.documentElement.lang = prefs.lang === 'yue' ? 'zh-Hant-HK' : 'en';
 }
@@ -994,7 +998,7 @@ async function editorView(view: HTMLElement): Promise<void> {
   stFile.addEventListener('change', async () => {
     const f = stFile.files?.[0]; stFile.value = ''; if (!f) return;
     const at = { x: Math.min(sel.x1, sel.x2), y: Math.min(sel.y1, sel.y2), z: Math.min(sel.z1, sel.z2) };
-    if (!await askConfirm(tx('structPlaceAsk', { name: f.name, x: at.x, y: at.y, z: at.z }), tx('structPlaceOk'))) return;
+    if (!await askConfirm(tx('structPlaceAsk', { name: f.name, x: at.x, y: at.y, z: at.z }), tx('structPlaceOk'), true, tx('structPlaceOk'))) return;
     busy++;
     try {
       const r = await fetch(`/api/structure/place?dim=${dim}&x=${at.x}&y=${at.y}&z=${at.z}`, { method: 'POST', headers: { 'x-map-editor': '1', 'x-file-name': encodeURIComponent(f.name) }, body: f });
@@ -1586,7 +1590,7 @@ async function extensionsPanel(view: HTMLElement) {
     let r = await doIt(false);
     let j = await r.json().catch(() => ({}));
     if (r.status === 409 && j.replace) {
-      if (!await askConfirm(tx('extReplace', { id: j.id, installed: j.installed, incoming: j.incoming }), tx('extReplaceOk'))) return;
+      if (!await askConfirm(tx('extReplace', { id: j.id, installed: j.installed, incoming: j.incoming }), tx('extReplaceOk'), true, tx('extReplaceOk'))) return;
       r = await doIt(true); j = await r.json().catch(() => ({}));
     }
     if (!r.ok) { notify(j.error ?? `${r.status}`, true); return; }
@@ -1651,7 +1655,7 @@ async function extensionsPanel(view: HTMLElement) {
   bulk.addEventListener('click', async () => {
     const shown = data.list.filter((e, i) => xTake(i) && e.enabled);
     if (!shown.length) { notify(tx('extOffNone')); return; }
-    if (!await askConfirm(tx('extOffAsk', { n: shown.length, list: shown.map((e) => e.name).join(', ') }), tx('extOffOk'))) return;
+    if (!await askConfirm(tx('extOffAsk', { n: shown.length, list: shown.map((e) => e.name).join(', ') }), tx('extOffOk'), true, tx('extOffOk'))) return;
     const failed: string[] = [];
     for (const e of shown) { try { await api('/api/extensions/enable', { method: 'POST', body: { id: e.id, enabled: false } }); } catch (err) { failed.push(`${e.name}: ${(err as Error).message}`); } }
     // One line says how many were switched off and names the ones that were not, with the reason.
@@ -1719,8 +1723,8 @@ function settingsView(view: HTMLElement) {
       </div><p class="muted">${esc(tx('funnyNote'))}</p>
       <div class="set-row" data-find="${esc(tx('appNameSet'))} ${esc(tx('appNameNote'))}"><label for="app-name"><span><b>${esc(tx('appNameSet'))}</b><small>${esc(tx('appNameNote'))}</small></span></label><md-outlined-text-field id="app-name" maxlength="40" value="${esc(prefs.appName)}" placeholder="${esc(tx('appName'))}" aria-label="${esc(tx('appNameSet'))}"></md-outlined-text-field><md-text-button id="app-name-reset">${esc(tx('reset'))}</md-text-button></div>
       ${sw('emoji', 'emojiDialogs', 'emojiDialogsNote', prefs.emojiDialogs)}
-      <div class="set-row vocab-row" data-find="${esc(tx('vocab'))} ${esc(tx('vocabNote'))}"><span><b>${esc(tx('vocab'))}</b><small>${esc(tx('vocabNote'))}</small><small id="vocab-state" role="status" class="${vocabRefused ? 'vocab-bad' : ''}">${esc(vocabRefused ? tx('vocabStateBad') : vocabCount() ? tx('vocabStateOn', { n: vocabCount() }) : tx('vocabStateNone'))}</small></span></div>
-      <div class="row-actions"><md-filled-tonal-button id="vocab-up">${esc(tx(vocabCount() ? 'vocabReplace' : 'vocabUpload'))}</md-filled-tonal-button><md-outlined-button id="vocab-template">${esc(tx('vocabTemplate'))}</md-outlined-button>${vocabCount() ? `<md-text-button id="vocab-reset">${esc(tx('vocabReset'))}</md-text-button>` : ''}<input type="file" id="vocab-file" accept=".json,application/json" hidden></div>`,
+      <div class="set-row vocab-row" data-find="${esc(tx('vocab'))} ${esc(tx('vocabNote'))}"><span><b>${esc(tx('vocab'))}</b><small>${esc(tx('vocabNote'))}</small><small id="vocab-state" role="status" class="${vocabRefused ? 'vocab-bad' : ''}">${esc(prefs.schoolMode ? tx('vocabStateSchool') : vocabRefused ? tx('vocabStateBad') : vocabCount() ? tx('vocabStateOn', { n: vocabCount() }) : tx('vocabStateNone'))}</small></span></div>
+      <div class="row-actions"><md-filled-tonal-button id="vocab-up" ${prefs.schoolMode ? 'disabled' : ''}>${esc(tx(vocabCount() ? 'vocabReplace' : 'vocabUpload'))}</md-filled-tonal-button><md-outlined-button id="vocab-template">${esc(tx('vocabTemplate'))}</md-outlined-button>${vocabCount() ? `<md-text-button id="vocab-reset">${esc(tx('vocabReset'))}</md-text-button>` : ''}<input type="file" id="vocab-file" accept=".json,application/json" hidden></div>`,
     appearance: `${sw('dark', 'dark', 'darkNote', prefs.dark)}${sw('dsched', 'darkSchedule', 'darkScheduleNote', prefs.darkSchedule)}
       <div class="set-times" data-find="${esc(tx('darkSchedule'))} ${esc(tx('darkFrom'))} ${esc(tx('darkTo'))}"><md-outlined-text-field id="dfrom" type="time" label="${esc(tx('darkFrom'))}" value="${prefs.darkFrom}"></md-outlined-text-field><md-outlined-text-field id="dto" type="time" label="${esc(tx('darkTo'))}" value="${prefs.darkTo}"></md-outlined-text-field></div>${sw('ds', 'dimSum', 'dimSumNote', prefs.dimSum)}
       <div class="set-row seed-row" data-find="${esc(tx('seed'))}"><span><b>${esc(tx('seed'))}</b></span><span class="seed-now"><span class="seed-swatch ${prefs.seed === RAINBOW ? 'rainbow' : ''}" style="background:${prefs.seed === RAINBOW ? 'none' : esc(prefs.seed)}"></span><code>${esc(prefs.seed === RAINBOW ? tx('rainbow') : prefs.seed)}</code><md-text-button id="seed-reset">${esc(tx('reset'))}</md-text-button></span></div>
@@ -1861,7 +1865,7 @@ function settingsView(view: HTMLElement) {
     const on = sel(e);
     if (on && !await askConfirm(tx('schoolAsk'), tx('schoolOn'))) { render(); return; }
     // School mode: extensions off and none added, editing history kept, and Settings locked so a class cannot change them.
-    prefs.schoolMode = on;
+    prefs.schoolMode = on; applyWording();
     if (on) { prefs.settingsLocked = true; prefs.takeovers = false; try { await api('/api/extensions/master', { method: 'POST', body: { on: false } }); } catch { /* not allowed or offline */ } }
     savePrefs(); render(); notify(tx(on ? 'schoolDone' : 'schoolOff'));
   });

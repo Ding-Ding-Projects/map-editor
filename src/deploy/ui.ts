@@ -549,6 +549,31 @@ function onboarding(main: Element) {
 
 // Your own words: one local JSON file, checked whole before any of it is used.
 let wordsRefused = false;
+/** Check one chosen or dropped file whole, then use it or change nothing. */
+async function takeWordsFile(f: File): Promise<boolean> {
+  const pt = paletteText;
+  try {
+    if (f.size > VOCAB_LIMITS.bytes) throw new VocabError('size');
+    const got = readVocabFile(await f.text(), new Set());
+    if (got.kind !== 'words') throw new VocabError('shape');
+    setWords(got.entries); wordsRefused = false; toast(pt('vocabStateOn', { n: wordCount() }));
+    return true;
+  } catch (err) {
+    wordsRefused = true;
+    const kind = err instanceof VocabError ? err.problem : 'json';
+    toast(pt('vocabBad', { e: pt(`vocabErr${kind[0].toUpperCase()}${kind.slice(1)}`) }), true); // the kind of fault only
+    return false;
+  }
+}
+// A wording file dropped anywhere on the window goes through the same check. Other files are left to the page.
+window.addEventListener('dragover', (e) => { if (e.dataTransfer?.types.includes('Files')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } });
+window.addEventListener('drop', (e) => {
+  const f = e.dataTransfer?.files?.[0];
+  if (!f) return;
+  e.preventDefault();
+  if (!/\.json$/i.test(f.name) && f.type !== 'application/json') { toast(by('That is not a wording file. Drop a .json file to change the wording.', '呢個唔係用字檔。要改用字就放 .json 檔。'), true); return; }
+  void takeWordsFile(f).then(() => { if (document.querySelector('#words-dlg')) ownWords(); });
+});
 function ownWords() {
   document.querySelector('#words-dlg')?.remove();
   const dlg = document.createElement('md-dialog') as HTMLElement & { show: () => void; close: () => void };
@@ -563,19 +588,7 @@ function ownWords() {
     const file = dlg.querySelector<HTMLInputElement>('#words-file')!;
     dlg.querySelector('#words-up')!.addEventListener('click', () => file.click());
     dlg.querySelector('#words-close')!.addEventListener('click', () => dlg.close());
-    file.addEventListener('change', async () => {
-      const f = file.files?.[0]; if (!f) return;
-      try {
-        if (f.size > VOCAB_LIMITS.bytes) throw new VocabError('size');
-        const got = readVocabFile(await f.text(), new Set());
-        if (got.kind !== 'words') throw new VocabError('shape');
-        setWords(got.entries); wordsRefused = false; paint(); toast(pt('vocabStateOn', { n: wordCount() }));
-      } catch (err) {
-        wordsRefused = true; paint();
-        const kind = err instanceof VocabError ? err.problem : 'json';
-        toast(pt('vocabBad', { e: pt(`vocabErr${kind[0].toUpperCase()}${kind.slice(1)}`) }), true); // the kind of fault only
-      }
-    });
+    file.addEventListener('change', async () => { const f = file.files?.[0]; if (f) { await takeWordsFile(f); paint(); } });
     dlg.querySelector('#words-template')!.addEventListener('click', () => {
       const entries = Object.fromEntries(['Deploy', 'Instances', 'Virtual disks', 'Guide'].map((w) => [w, w]));
       const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ schemaVersion: 1, entries }, null, 2)], { type: 'application/json' })); a.download = 'map-editor-deploy-words.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);

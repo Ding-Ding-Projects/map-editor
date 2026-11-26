@@ -49,7 +49,7 @@ function open() {
   dlg.className = 'words-dialog'; dlg.setAttribute('aria-labelledby', 'words-title');
   const paint = () => {
     const n = Object.keys(words).length;
-    const state = refused ? two('The last file was refused; nothing changed.', '上一個檔唔收；乜都冇改。') : n ? two(`Your wording is on: ${n} entries.`, `用緊你嘅用字：${n} 項。`) : two('No file loaded; built-in wording.', '未載入檔案；用緊內置用字。');
+    const state = refused ? two('The last file was refused; nothing changed.', '上一個檔唔收；乜都冇改。') : n ? two(`Your wording is on. Entries in use: ${n}.`, `用緊你嘅用字：${n} 項。`) : two('No file loaded; built-in wording.', '未載入檔案；用緊內置用字。');
     const fault = FAULT[refused];
     dlg.innerHTML = `<h2 id="words-title">${two('Your own words', '自己嘅用字')}</h2>
       <p>${two('Upload a JSON file to change wording on this site, in this browser only. The file is checked whole first: if any part is wrong, nothing changes.', '上載 JSON 檔，改呢個網站嘅用字，只限呢個瀏覽器。成個檔會先驗晒：有一處唔啱，就乜都唔改。')}</p>
