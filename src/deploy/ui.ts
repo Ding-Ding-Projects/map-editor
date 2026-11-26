@@ -535,7 +535,7 @@ function onboarding(main: Element) {
     const w = savedWorlds();
     body.innerHTML = `<h1 id="ob-h" class="md-typescale-display-small">Worlds folder</h1><p>Choose the folder that holds your Minecraft worlds. Deploy will offer it every time, so you only pick it once. This step is optional.</p>
       <div class="row-actions"><md-filled-tonal-button id="ob-pick">Choose worlds folder</md-filled-tonal-button><md-text-button id="ob-clear">Forget this folder</md-text-button></div><p id="ob-w" role="status" aria-live="polite"><code>${esc(w || 'No folder chosen')}</code></p>`;
-    const show = (v: string) => { body.querySelector('#ob-w')!.innerHTML = `<code>${esc(v || 'No folder chosen')}</code>`; };
+    const show = (v: string) => { body.querySelector('#ob-w')!.innerHTML = v ? `<code>${esc(v)}</code>` : `<span class="muted">${esc(by('No folder chosen', '未揀資料夾'))}</span>`; };
     body.querySelector('#ob-pick')!.addEventListener('click', async () => { const f = await d.pickFolder(); if (!f) return; try { localStorage.setItem('map-editor-deploy.worlds', f); } catch { /* not kept */ } show(f); toast('Worlds folder saved.'); });
     body.querySelector('#ob-clear')!.addEventListener('click', () => { try { localStorage.removeItem('map-editor-deploy.worlds'); } catch { /* nothing kept */ } show(''); });
   }

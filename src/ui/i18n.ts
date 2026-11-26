@@ -498,7 +498,7 @@ const S = {
   binOpen: { en: 'Bin ({n})', yue: '回收筒（{n}）' },
   binAsk: { en: 'Move {n} to the bin: {list}? They leave the list and are kept, whole, in a bin folder inside the worlds folder. You can put them back from Bin.', yue: '將 {n} 個掉入回收筒：{list}？佢哋會喺清單消失，但成個原封不動留喺世界資料夾入面嘅回收筒資料夾。你可以喺「回收筒」放返出嚟。' },
   binDone: { en: 'Moved {n} of {total} to the bin.', yue: '掉咗 {n} 個入回收筒，共 {total} 個。' },
-  binSkipped: { en: 'Not moved: {list}', yue: '冇掉到：{list}' },
+  binSkipped: { en: 'Not done: {list}', yue: '未搞掂：{list}' },
   binTitle: { en: 'Bin', yue: '回收筒' },
   binNote: { en: 'Worlds here are kept on disk until you put them back. This app never deletes them; to free the space, remove them yourself from the bin folder.', yue: '呢度啲世界會一直留喺磁碟，直到你放返出嚟。呢個程式永遠唔會刪除佢哋；想騰出空間，就自己去回收筒資料夾移除。' },
   binRestore: { en: 'Put back', yue: '放返出嚟' },

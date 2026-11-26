@@ -507,7 +507,13 @@ function paletteCommands(): Command[] {
   const SWITCH_OF: Record<string, string> = { 'focus-mode': 'focus', dark: 'dark', motion: 'rm', 'large-text': 'lt', sounds: 'snd', 'edit-lock': 'elock', narrate: 'nar', 'dim-sum-toggle': 'ds' };
   for (const c of cmds) {
     const sid = SWITCH_OF[c.id];
-    if (c.toggle && ((sid && prefs.lockedSettings.includes(sid)) || prefs.settingsLocked)) { c.where = `${c.where} · ${tx('lockedSettings')}`; c.toggle = { get: c.toggle.get, set: () => notify(tx('settingLocked'), true) }; }
+    if (c.toggle && ((sid && prefs.lockedSettings.includes(sid)) || prefs.settingsLocked)) { c.where = `${c.where} · ${tx('lockedSettings')}`; c.toggle = { get: c.toggle.get, set: () => notify(tx('settingLocked'), true, {
+      // The refusal carries the way through: unlock here (with the usual unlock question), then change it.
+      label: tx('unlockSetting', { name: '' }).trim() || 'Unlock', run: async () => {
+        if (!await askUnlock(c.label)) return;
+        if (prefs.settingsLocked) prefs.settingsLocked = false; else if (sid) prefs.lockedSettings = prefs.lockedSettings.filter((x) => x !== sid);
+        savePrefs(); render(); notify(tx('settingUnlockedMsg'));
+      } }) }; }
   }
   return cmds;
 }
@@ -1625,8 +1631,10 @@ async function extensionsPanel(view: HTMLElement) {
     const shown = data.list.filter((e, i) => xTake(i) && e.enabled);
     if (!shown.length) { notify(tx('extOffNone')); return; }
     if (!await askConfirm(tx('extOffAsk', { n: shown.length, list: shown.map((e) => e.name).join(', ') }), tx('extOffOk'))) return;
-    for (const e of shown) { try { await api('/api/extensions/enable', { method: 'POST', body: { id: e.id, enabled: false } }); } catch (err) { notify((err as Error).message, true); } }
-    notify(tx('extOffDone', { n: shown.length })); void loadExtensions().catch(() => undefined); void extensionsPanel(view);
+    const failed: string[] = [];
+    for (const e of shown) { try { await api('/api/extensions/enable', { method: 'POST', body: { id: e.id, enabled: false } }); } catch (err) { failed.push(`${e.name}: ${(err as Error).message}`); } }
+    // One line says how many were switched off and names the ones that were not, with the reason.
+    notify(tx('extOffDone', { n: shown.length - failed.length }) + (failed.length ? ` ${tx('binSkipped', { list: failed.join('; ') })}` : ''), failed.length > 0); void loadExtensions().catch(() => undefined); void extensionsPanel(view);
   });
   ex.after(bulk);
   let run = 0;
