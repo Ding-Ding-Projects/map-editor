@@ -63,6 +63,12 @@ this file covers testing.
   read-back, the Windows app updating itself from the previous complete release, and the Pi image
   booting on QEMU until the web app answered.
 
+- The real desktop app and the real deploy wizard were started on Linux (Electron under a virtual display, throwaway
+  profile). Desktop app: sign-up, first-run steps, a new flat world in the saves folder, open, a fill, History, the data
+  folder card, a saved data folder choice used at the next start, moving back to the built-in folder, and the outside
+  editor hand-off with a stand-in editor on PATH. Deploy wizard: first-run steps, all four views, the Guide and the
+  support desk. No page errors in either. This was Linux only; the folder-picking dialog was not clicked.
+
 ## Checks left to run
 
 The test suite, the builds and the real-world checks have passed on the final feature commit (see
