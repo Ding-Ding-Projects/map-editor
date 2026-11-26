@@ -16,6 +16,14 @@ describe('design board labels', () => {
   const app = norm(SOURCES.filter((f) => existsSync(new URL(f, root))).map((f) => readFileSync(new URL(f, root), 'utf8')).join('\n'));
   const boards = readdirSync(new URL('design/canvas/', root)).filter((f) => f.endsWith('.dc.html'));
   it('covers every board', () => { expect(boards.length).toBeGreaterThanOrEqual(23); });
+  it('shows host names, never a private network address', () => {
+    for (const file of boards) expect(readFileSync(new URL(`design/canvas/${file}`, root), 'utf8'), file).not.toMatch(/\b(192\.168|10\.\d+|172\.(1[6-9]|2\d|3[01]))\.\d+\.\d+/);
+  });
+  it('lists only release jobs that exist on the update tile', () => {
+    const palette = readFileSync(new URL('design/canvas/Palette.dc.html', root), 'utf8');
+    expect(palette).not.toMatch(/Tests · /);
+    for (const job of ['Docker image', 'Desktop installers', 'Appliance image', 'Raspberry Pi image']) expect(palette).toContain(job);
+  });
   for (const file of boards) {
     const name = file.replace('.dc.html', '');
     it(`${name} uses the app's own wording`, () => {

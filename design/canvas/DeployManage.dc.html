@@ -36,7 +36,7 @@ button:focus-visible{outline:3px solid #8FD88A;outline-offset:2px}
       <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
         <div style="padding: 14px; border-radius: 18px; background: {{t.surfaceContainerHigh}}"><div style="font-size: 12px; color: {{t.onSurfaceVariant}}">State</div><div style="font-size: 20px; font-weight: 800">{{stateLabel}}</div></div>
         <div style="padding: 14px; border-radius: 18px; background: {{t.surfaceContainerHigh}}"><div style="font-size: 12px; color: {{t.onSurfaceVariant}}">Version</div><div style="font-size: 20px; font-weight: 800">0.1.0</div></div>
-        <div style="padding: 14px; border-radius: 18px; background: {{t.surfaceContainerHigh}}; grid-column: span 2"><div style="font-size: 12px; color: {{t.onSurfaceVariant}}">Link</div><div style="font-family: 'Roboto Mono', monospace; font-size: 16px; color: {{t.primary}}">http://192.168.1.42:8420/</div></div>
+        <div style="padding: 14px; border-radius: 18px; background: {{t.surfaceContainerHigh}}; grid-column: span 2"><div style="font-size: 12px; color: {{t.onSurfaceVariant}}">Link</div><div style="font-family: 'Roboto Mono', monospace; font-size: 16px; color: {{t.primary}}">http://club-pc.local:8420/</div></div>
       </div>
       <div role="group" aria-label="Instance actions" style="display: flex; flex-wrap: wrap; gap: 8px">
         <sc-for list="{{actions}}" as="a" hint-placeholder-count="6"><button style="{{a.style}}">{{a.label}}</button></sc-for>
@@ -81,7 +81,7 @@ class Component extends DCLogic {
     ];
     const log = [
       '01:49:58  Map Editor 0.1.0 listening on 0.0.0.0:8420',
-      '01:49:58    http://172.18.0.2:8420/',
+      '01:49:58    http://club-pc.local:8420/',
       '01:50:14  GET /api/health 200 2 ms',
       '01:50:31  POST /api/auth/register 201 (owner created)',
       '01:51:02  POST /api/worlds/upload 201 Survival Island',

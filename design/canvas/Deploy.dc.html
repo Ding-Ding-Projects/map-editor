@@ -172,7 +172,7 @@ class Component extends DCLogic {
     const views = ['Deploy', 'Instances'].map((label) => ({ label, on: label === view, style: 'height: 48px; padding: 0 24px; border: 0; font-size: 16px; font-weight: 700; ' + (label === view ? 'border-radius: 14px; background: ' + t.onPrimaryContainer + '; color: ' + t.primaryContainer : 'border-radius: 24px; background: transparent; color: ' + t.onPrimaryContainer + '; box-shadow: inset 0 0 0 1px ' + t.onPrimaryContainer), pick: () => this.setState({ view: label }) }));
     const defs = [
       ['Docker', 'This PC. Pulls the published image and starts it with Compose.', 'Docker found', true, 'Pull ghcr.io/ding-ding-projects/map-editor:latest', 'Start with docker compose up -d', '28px 28px 28px 8px'],
-      ['Docker on another computer', 'A server, NAS or Raspberry Pi with Docker, reached with your own SSH key. No passwords stored.', 'ssh pi@192.168.1.50', true, 'Pull :latest there over SSH', 'Start with docker compose up -d there', '28px'],
+      ['Docker on another computer', 'A server, NAS or Raspberry Pi with Docker, reached with your own SSH key. No passwords stored.', 'ssh pi@club-pi.local', true, 'Pull :latest there over SSH', 'Start with docker compose up -d there', '28px'],
       ['VirtualBox', 'Imports the appliance image as a VM with bridged networking so your LAN can reach it.', 'VirtualBox 7.1 found', true, 'Import map-editor-appliance.ova', 'Start the VM on a bridged adapter', '28px'],
       ['VMware', 'The same appliance image in VMware Workstation or Player, bridged, started without a window.', 'Workstation 17 found', true, 'Import with ovftool on a bridged network', 'Start it with vmrun, read its address', '8px 28px 28px 28px'],
       ['USB drive', 'Writes the appliance image to a USB stick. A spare PC boots straight into Map Editor.', '2 removable drives', true, '', '', '28px 8px 28px 28px'],
@@ -189,9 +189,9 @@ class Component extends DCLogic {
     const iq = this.state.iq ?? '';
     const iTries = ['docker', 'stopped', ''].map((v) => ({ label: v || 'Clear', pick: () => this.setState({ iq: v }), style: 'height: 32px; padding: 0 12px; border-radius: 16px; font-size: 12px; font-weight: 700; ' + (v === iq ? 'border: 0; background: ' + t.secondaryContainer + '; color: ' + t.onSecondaryContainer : 'border: 1px solid ' + t.outline + '; background: transparent; color: ' + t.primary) }));
     const instances = [
-      ['map-editor-1', 'Docker · this PC', '0.1.0', 'Healthy', 'http://192.168.1.42:8420/', true],
-      ['map-editor-vm', 'VirtualBox', '0.1.0', 'Healthy', 'http://192.168.1.77:8420/', true],
-      ['survival-test', 'Docker · nas.local over SSH', '0.1.0', 'Stopped', 'http://192.168.1.10:8421/', false]
+      ['map-editor-1', 'Docker · this PC', '0.1.0', 'Healthy', 'http://club-pc.local:8420/', true],
+      ['map-editor-vm', 'VirtualBox', '0.1.0', 'Healthy', 'http://lab-vm.local:8420/', true],
+      ['survival-test', 'Docker · nas.local over SSH', '0.1.0', 'Stopped', 'http://club-pi.local:8421/', false]
     ].filter((r) => r.slice(0, 5).join(' ').toLowerCase().includes(iq)).map(([name, target, version, health, link, ok]) => ({
       name, target, version, health, link,
       pill: 'height: 28px; padding: 0 12px; border-radius: 8px; font-size: 12px; line-height: 28px; font-weight: 600; ' + (ok ? 'background: ' + t.primaryContainer + '; color: ' + t.onPrimaryContainer : 'background: ' + t.surfaceContainerHighest + '; color: ' + t.onSurfaceVariant)

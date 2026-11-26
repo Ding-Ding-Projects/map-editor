@@ -57,7 +57,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offse
       <span style="font-size: 12px; font-weight: 700">Update coming soon</span>
       <span style="font-size: 22px; line-height: 28px; font-weight: 800">Build 0.1.1 #57 is being made</span>
       <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px">
-        <span>✓ Tests · 1 m 12 s</span><span>✓ Desktop installer · 3 m 40 s</span><span>● Docker image · running 1 m 05 s</span><span>○ Appliance image · waiting</span>
+        <span>✓ Docker image · 1 m 12 s</span><span>✓ Desktop installers · 3 m 40 s</span><span>● Appliance image · running 1 m 05 s</span><span>● Raspberry Pi image · running 1 m 05 s</span>
       </div>
       <div role="progressbar" aria-label="Build progress" aria-valuenow="55" aria-valuemin="0" aria-valuemax="100" style="height: 8px; border-radius: 4px; background: rgba(0,0,0,.2); overflow: hidden"><div style="width: 55%; height: 8px; border-radius: 4px; background: {{t.onTertiaryContainer}}"></div></div>
       <span style="font-size: 12px">Started 16:38:02 EST · estimate about 6 min left · nothing installs until it is published</span>
@@ -103,10 +103,10 @@ class Component extends DCLogic {
       onSurface:'#181D17', onSurfaceVariant:'#42493F', outline:'#72796E', outlineVariant:'#C2C9BD'
     };
     const cmds = [
-      { n: 'Switch map to dark render style', where: 'Editor › View', k: 'Ctrl+Alt+D' },
-      { n: 'Fill selection', where: 'Editor › Tools', k: 'F' },
-      { n: 'Roll back last edit', where: 'History', k: 'Ctrl+Z' },
-      { n: 'Deploy to Docker', where: 'Deploy', k: '' }
+      { n: 'Open every tab', where: 'Tabs', k: '' },
+      { n: 'Fill', where: 'Editor › Tools', k: 'F' },
+      { n: 'Undo', where: 'History', k: 'Ctrl+Z' },
+      { n: 'Pan', where: 'Editor › Map tools', k: 'H' }
     ];
     const dot = (c) => 'width: 10px; height: 10px; margin-top: 6px; flex: none; border-radius: 5px; background: ' + c;
     const notes = [
