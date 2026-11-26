@@ -25,7 +25,9 @@ describe('where a setting comes from', () => {
     const VALUES = ['lang', 'funnyEn', 'funnyYue', 'darkTimes', 'seed', 'volume', 'quietTimes', 'narrateRate'];
     const table = /const VALUE_FROM: .*?\}> = \{([\s\S]*?)\n  \};/.exec(main)![1];
     expect([...table.matchAll(/^\s{4}(\w+): \{ keys/gm)].map((m) => m[1]).sort()).toEqual([...VALUES].sort());
-    for (const v of VALUES) expect(main, v).toContain(`\${valFrom('${v}')}`);
+    for (const v of VALUES) expect(main, v).toContain(`\${valFrom('${v}')}\${valMore('${v}')}`);
+    const titles = /const VALUE_TITLE[^=]*= \{([^}]*)\}/.exec(main)![1];
+    expect([...titles.matchAll(/(\w+): '/g)].map((m) => m[1]).sort()).toEqual([...VALUES].sort());
   });
   it('folds a full explanation under every switch', () => {
     expect(main).toContain("</md-switch>${moreAbout(id, tx(label))}</div>");

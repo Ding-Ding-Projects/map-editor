@@ -2,7 +2,7 @@
 
 Made from [INVENTORY.md](../INVENTORY.md), which is the record of what is built and what is not.
 
-Built 27 · partly built 75 · not built 10 · does not apply 14
+Built 28 · partly built 74 · not built 10 · does not apply 14
 
 ## Language, voice, and personalization
 
@@ -47,7 +47,7 @@ Built 27 · partly built 75 · not built 10 · does not apply 14
 - [Rich controls](rich-controls.md): Partly built
 - [Guided forms](guided-forms.md): Partly built
 - [Info icon guidance](info-icon-guidance.md): Not built
-- [Settings explanations](settings-explanations.md): Partly built
+- [Settings explanations](settings-explanations.md): Built
 - [Settings quick add](settings-quick-add.md): Partly built
 - [Data folder choice](data-folder-choice.md): Partly built
 - [Blank editors](blank-editors.md): Partly built

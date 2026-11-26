@@ -1319,3 +1319,5 @@ details.set-more > summary:hover { background: color-mix(in srgb, var(--md-sys-c
 details.set-more ul { margin: 4px 0 6px; padding-inline-start: 20px; display: grid; gap: 4px; line-height: 1.45; }
 .set-row { row-gap: 0; } .set-row > details.set-more { margin: 0 0 2px; }
 .set-row > details.set-more { margin: 4px 0 2px; }
+.set-times > details.set-more { flex-basis: 100%; } .set-langs ~ details.set-more { margin: -8px 4px 12px; } details.set-more { font-size: 13px; color: var(--md-sys-color-on-surface-variant); }
+.set-times > details.set-more { margin-top: -8px; }
