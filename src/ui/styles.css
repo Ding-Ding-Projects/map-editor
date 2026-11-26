@@ -1172,3 +1172,7 @@ md-dialog:has(#nf) { max-block-size: min(760px, calc(100% - 32px)); }
 [data-lang="both"] .tone-row { flex-direction: column; align-items: stretch; gap: 6px; }
 .tone-row .select-button, .tone-row select { min-inline-size: 0; }
 [data-lang="both"] .picker-row { grid-template-columns: 170px 1fr; } [data-lang="both"] .picker-row > span { white-space: nowrap; }
+/* Authenticator set-up: the link uses the theme colour, and Turn on keeps its own width beside the code field. */
+.totp-steps a { color: var(--md-sys-color-primary); font-weight: 600; text-underline-offset: 3px; }
+.totp-steps a:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; border-radius: 4px; }
+.totp-pair + .row-actions { align-items: flex-start; margin-block-start: 12px; } .totp-pair + .row-actions > md-filled-button { flex: none; margin-block-start: 8px; }
