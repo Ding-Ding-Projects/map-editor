@@ -48,6 +48,12 @@ Settings › Sounds turns short sound effects on or off and sets their volume. T
 
 「設定（Settings）› 聲音（Sounds）」可以開或者閂短音效，同埋設定佢哋嘅音量。音效會喺一次編輯、一次復原或者還原、一個新建或者上載嘅世界之後播放，出咗問題嗰陣都會播，而且永遠都會同畫面上面嘅訊息一齊出現。閂咗就會即刻靜音。
 
+## What each sound means
+
+There are six sounds, and Settings › Sounds lists them with a play button each. Done (two rising notes) follows an edit or a saved setting. Something new (three rising notes) follows a new or uploaded world, a passkey or an extension being added. Taken back (two falling notes) follows an undo, a restore from history or settings being put back. Level up (a four-note fanfare) plays when a wording file dropped on the window is accepted. Not accepted (a low double note) plays when a dropped file is refused. Something went wrong (two low notes) plays with an error message. Where they come from: the app makes every sound itself as it plays, from plain tones; no sound file is shipped or downloaded, so there is nothing to license.
+
+一共有六個聲，設定嘅「聲音」會逐個列出嚟，每個都有播放掣。「搞掂」（兩粒音向上）係編輯或者儲存設定之後。「有新嘢」（三粒音向上）係加咗新世界或者上載咗世界、加咗通行密鑰或者擴充功能之後。「收返」（兩粒音向下）係復原、由歷史還原，或者設定還原之後。「升級」（四粒音嘅號角聲）係拖入視窗嘅用字檔收咗嗰陣。「唔收」（低音兩下）係拖入嚟嘅檔唔收嗰陣。「出咗事」（兩粒低音）會同錯誤訊息一齊出。來源：每個聲都係程式播嗰陣用純音自己整出嚟；冇附帶亦冇下載任何聲音檔，所以冇授權問題。
+
 ## Clearing a field
 
 Every text box shows a small × once it has text in it. It empties that box only and puts the cursor back in it.

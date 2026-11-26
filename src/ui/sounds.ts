@@ -13,6 +13,11 @@ const CUES: Record<Cue, Array<[number, number]>> = {
   error: [[220, 0], [196, 0.11]],
 };
 
+/** What each cue is for, in the order Settings lists them. Every cue the app can play is here. */
+export const CUE_ORDER: Cue[] = ['success', 'create', 'undo', 'tada', 'invalid', 'error'];
+/** The cue's notes as written above, for the list in Settings and the documentation. */
+export const cueNotes = (cue: Cue): number[] => CUES[cue].map(([hz]) => Math.round(hz));
+
 let ctx: AudioContext | undefined;
 let enabled = true;
 let volume = 0.4;

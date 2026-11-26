@@ -5,7 +5,7 @@ import { t as tr, englishOf, setVocabulary, setWords, parseVocabulary, STRINGS, 
 import { mountWorkspace, PHONE, resetLayout } from './workspace.js';
 import { searchBox, type RegexText } from './regex.js';
 import { enableClearControls } from './clearable.js';
-import { configureSounds, play } from './sounds.js';
+import { configureSounds, play, CUE_ORDER, cueNotes, type Cue } from './sounds.js';
 import { startTour, type TourStep } from './tour.js';
 import { worldsView } from './worlds.js';
 import { openPalette, type Command } from './palette.js';
@@ -1745,6 +1745,8 @@ function settingsView(view: HTMLElement) {
     sounds: `${sw('snd', 'soundEffects', 'soundEffectsNote', prefs.sounds)}
       <label class="set-slider" data-find="${esc(tx('soundVolume'))}"><span><b>${esc(tx('soundVolume'))}</b><em id="vol-n">${prefs.soundVolume}%</em></span><md-slider id="vol" min="0" max="100" step="10" labeled value="${prefs.soundVolume}" aria-label="${esc(tx('soundVolume'))}"></md-slider></label>
       <div class="row-actions" data-find="${esc(tx('soundTry'))}"><md-outlined-button id="snd-try">${esc(tx('soundTry'))}</md-outlined-button></div>
+      <section class="cue-list" data-find="${esc(tx('cueList'))} ${esc(tx('cueListNote'))}" aria-labelledby="cue-list-h"><h3 id="cue-list-h">${esc(tx('cueList'))}</h3><p class="muted">${esc(tx('cueListNote'))}</p>
+        <ul>${CUE_ORDER.map((c) => `<li><button type="button" class="cue-play" data-cue="${c}" aria-label="${esc(tx('cuePlay', { name: tx(`cue_${c}` as Key) }))}">${iconSvg('play', 20)}</button><span><b>${esc(tx(`cue_${c}` as Key))}</b><small>${esc(tx(`cueFor_${c}` as Key))}</small></span><code>${cueNotes(c).join(' · ')} Hz</code></li>`).join('')}</ul></section>
       ${sw('quiet', 'quietHours', 'quietHoursNote', prefs.quietHours)}
       <div class="set-times" data-find="${esc(tx('quietHours'))} ${esc(tx('quietFrom'))} ${esc(tx('quietTo'))}"><md-outlined-text-field id="qfrom" type="time" label="${esc(tx('quietFrom'))}" value="${prefs.quietFrom}"></md-outlined-text-field><md-outlined-text-field id="qto" type="time" label="${esc(tx('quietTo'))}" value="${prefs.quietTo}"></md-outlined-text-field></div>
       ${sw('nar', 'narrate', 'narrateNote', prefs.narrate)}
@@ -1830,6 +1832,7 @@ function settingsView(view: HTMLElement) {
   view.querySelector('#snd')!.addEventListener('change', (e) => { prefs.sounds = sel(e); savePrefs(); applyTheme(); });
   view.querySelector('#vol')!.addEventListener('change', () => { prefs.soundVolume = num('#vol'); view.querySelector('#vol-n')!.textContent = `${prefs.soundVolume}%`; savePrefs(); applyTheme(); play('success'); });
   view.querySelector('#snd-try')!.addEventListener('click', () => { play('create'); });
+  view.querySelectorAll<HTMLElement>('.cue-play').forEach((b) => b.addEventListener('click', () => play(b.dataset.cue as Cue)));
   view.querySelector('#set-tour')!.addEventListener('click', () => takeTour('app'));
   view.querySelector('#nar')!.addEventListener('change', (e) => { prefs.narrate = sel(e); savePrefs(); if (prefs.narrate) narrate(tx('narrateOn')); });
   view.querySelector('#nar-rate')!.addEventListener('change', () => { prefs.narrateRate = num('#nar-rate'); view.querySelector('#nar-n')!.textContent = `${(prefs.narrateRate / 10).toFixed(1)}×`; savePrefs(); });
