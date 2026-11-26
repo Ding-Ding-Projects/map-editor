@@ -6,7 +6,7 @@ lands; anything not rechecked keeps its last audited status.
 
 Re-audited on 2026-11-25 after the changes of that day.
 
-Counts (126 features): built 28 / partial 74 / unbuilt 10 / not applicable 14
+Counts (126 features): built 28 / partial 75 / unbuilt 9 / not applicable 14
 
 
 ## Language, voice, and personalization
@@ -164,7 +164,7 @@ Counts (126 features): built 28 / partial 74 / unbuilt 10 / not applicable 14
 `closeout-prompt` | APPLIES: yes | STATUS: BUILT | EVIDENCE: CLOSEOUT_PROMPT.md at the root with a fenced copy-ready prompt; committed, and `git ls-remote` shows the remote main branch at the local head; no private wording found by grep | MISSING: -
 `discussion-records` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: GitHub API `has_discussions: false` | MISSING: Discussions enabled; rolling progress discussion; one changelog announcement per release
 `project-board` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: Projects are enabled, but no linked project is recorded anywhere in the repository | MISSING: linked GitHub Project with task items (not verifiable from this session)
-`operational-skill` | APPLIES: yes | STATUS: UNBUILT | EVIDENCE: none in the repository | MISSING: repository-specific operational skill (build, packaging, UI drive, evidence, release, recovery routes)
+`operational-skill` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: .claude/skills/map-editor-operations/SKILL.md (build, run, screen drive and screenshots, checks before a commit, release and read-back, recovery; every route was used on this repository); tests/operations-skill.test.ts (named files, scripts, npm scripts and environment names must exist) | MISSING: it was not run through a skill evaluation workflow; no record of a fresh reader reproducing the routes from it alone
 
 ## Deliverables of the instruction repository itself
 

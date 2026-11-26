@@ -2,7 +2,7 @@
 
 Made from [INVENTORY.md](../INVENTORY.md), which is the record of what is built and what is not.
 
-Built 28 · partly built 74 · not built 10 · does not apply 14
+Built 28 · partly built 75 · not built 9 · does not apply 14
 
 ## Language, voice, and personalization
 
@@ -159,7 +159,7 @@ Built 28 · partly built 74 · not built 10 · does not apply 14
 - [Closeout prompt](closeout-prompt.md): Built
 - [Discussion records](discussion-records.md): Not built
 - [Project board](project-board.md): Not built
-- [Operational skill](operational-skill.md): Not built
+- [Operational skill](operational-skill.md): Partly built
 
 ## Deliverables of the instruction repository itself
 
