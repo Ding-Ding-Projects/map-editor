@@ -1147,3 +1147,7 @@ md-dialog.support-desk { max-block-size: min(820px, calc(100% - 32px)); }
 .h-selbar[hidden], .h-pick[hidden] { display: none; }
 /* The About mark keeps its size when the card grows taller than the panel (it was being squeezed flat). */
 .about-mark { flex: none; }
+
+.worlds-actions [hidden] { display: none !important; }
+/* Bilingual labels are twice as long: the tool chips take wider columns so none is cut short. */
+[data-lang="both"] #ops { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }

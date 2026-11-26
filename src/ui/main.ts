@@ -134,6 +134,11 @@ let fitPending = false; // centre the map on the world's chunks the next time th
 let mapView: { x: number; z: number; s: number; moved: boolean } | undefined;
 
 const tx = (k: Key, v: Record<string, string | number> = {}) => tr(prefs, k, v);
+/** A sentence with other translated words inside it. In bilingual mode each language is put together on its own, so the result reads "English · 粵語" once instead of nesting both inside both. */
+const txWith = (k: Key, inner: Record<string, Key>, v: Record<string, string | number> = {}) => {
+  const one = (lang: Lang) => { const st = { ...prefs, lang }; return tr(st, k, { ...v, ...Object.fromEntries(Object.entries(inner).map(([name, key]) => [name, tr(st, key)])) }); };
+  return prefs.lang === 'both' ? `${one('en')} · ${one('yue')}` : one(prefs.lang);
+};
 // Personal vocabulary, kept in this browser.
 const VOCAB_KEY = 'map-editor.vocabulary.v1';
 const TONE_ELEMENTS = [['header', 'toneHeader'], ['tabs', 'toneTabs'], ['toolbar', 'toneToolbar'], ['cards', 'toneCards']] as const;
@@ -529,7 +534,7 @@ function applyTheme() {
   for (const [el] of TONE_ELEMENTS) { const v = prefs.tones?.[el]; if (v && TONES.includes(v)) document.documentElement.dataset[`tone${el[0].toUpperCase()}${el.slice(1)}`] = v; else delete document.documentElement.dataset[`tone${el[0].toUpperCase()}${el.slice(1)}`]; }
   document.documentElement.classList.toggle('school-mode', prefs.schoolMode);
   configureSounds(prefs.sounds && !quiet(), prefs.soundVolume / 100);
-  document.documentElement.lang = prefs.lang === 'yue' ? 'zh-Hant-HK' : 'en';
+  document.documentElement.dataset.lang = prefs.lang; document.documentElement.lang = prefs.lang === 'yue' ? 'zh-Hant-HK' : 'en';
 }
 
 function provenance() {
@@ -669,7 +674,7 @@ function updateBanner() {
   el.querySelector('#ub-later')!.addEventListener('click', () => { updLater = true; updateBanner(); document.getElementById('cmd')?.focus(); });
   el.querySelector('#ub-restart')!.addEventListener('click', async () => {
     if (busy) { notify(tx('updBusy'), true); return; }
-    if (!await desktopBridge!.updates!.restart()) notify(tx('updError', { e: tx('updNotReady') }), true);
+    if (!await desktopBridge!.updates!.restart()) notify(txWith('updError', { e: 'updNotReady' }), true);
   });
 }
 async function checkForUpdates() {
@@ -906,7 +911,7 @@ async function editorView(view: HTMLElement): Promise<void> {
   const setOp = (o: typeof op) => {
     op = o;
     toolEl.querySelectorAll<HTMLElement & { selected: boolean }>('[data-op]').forEach((c) => { c.selected = c.dataset.op === o; });
-    runBtn.textContent = tx('run', { op: tx(o) });
+    runBtn.textContent = txWith('run', { op: o });
     fields.innerHTML = o === 'fill' ? `<md-outlined-text-field name="block" label="${esc(tx('block'))}" value="${bedrockWorld ? 'minecraft:air' : 'minecraft:stone_bricks'}"></md-outlined-text-field>`
       : o === 'replace' ? `<md-outlined-text-field name="from" label="${esc(tx('from'))}" value="minecraft:water"></md-outlined-text-field><md-outlined-text-field name="to" label="${esc(tx('to'))}" value="minecraft:air"></md-outlined-text-field>`
       : o === 'clone' ? `<md-outlined-text-field name="dest" label="${esc(tx('dest'))}" value="0, 64, 0"></md-outlined-text-field>`
@@ -936,7 +941,7 @@ async function editorView(view: HTMLElement): Promise<void> {
     try {
       const r = await api<{ changed: number; skipped: number; ms: number }>('/api/op', { method: 'POST', body });
       play('success');
-      notify(tx('opDone', { op: tx(op), n: r.changed.toLocaleString('en'), ms: r.ms }), false, { label: tx('history'), run: () => { prefs.tab = 'history'; render(); } });
+      notify(txWith('opDone', { op }, { n: r.changed.toLocaleString('en'), ms: r.ms }), false, { label: tx('history'), run: () => { prefs.tab = 'history'; render(); } });
       document.dispatchEvent(new Event('history-changed'));
       if (r.skipped) notify(tx('opSkipped', { n: r.skipped.toLocaleString('en') }), true);
       await drawMap();
