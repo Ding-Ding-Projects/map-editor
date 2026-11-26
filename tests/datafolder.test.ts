@@ -38,11 +38,12 @@ describe('desktop data folder', () => {
     expect(await readFile(path.join(to, 'accounts', 'a.json'), 'utf8')).toBe('{"name":"alex"}');
     expect(await readFile(path.join(data, 'activity.log'), 'utf8')).toBe('hello'); // the old folder is untouched
     expect(await currentDataDir(userData)).toEqual({ dataDir: to, isDefault: false });
-    // moving back to the default folder (used before, so it is allowed) clears the saved choice
-    await writeFile(path.join(data, '.map-editor-data'), 'x');
+    // moving back to the built-in folder is allowed (it was marked when it was left) and clears the saved choice
+    await writeFile(path.join(to, 'activity.log'), 'hello again');
     expect((await moveDataDir(userData, data)).ok).toBe(true);
     expect(await currentDataDir(userData)).toEqual({ dataDir: data, isDefault: true });
     expect(await readdir(userData)).not.toContain('data-folder.json');
+    expect(await readFile(path.join(data, 'activity.log'), 'utf8')).toBe('hello again'); // newer data replaced the stale copy
   });
   it('changes nothing when the move is refused', async () => {
     const { userData, data, root } = await setup();

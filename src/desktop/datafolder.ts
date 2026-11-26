@@ -70,6 +70,8 @@ export async function moveDataDir(userData: string, to: string, onProgress?: (do
     const after = await tally(target);
     if (after.files < before.files || after.bytes < before.bytes) return { ok: false, message: `The copy is incomplete (${after.files} of ${before.files} files). The data folder was not changed.` };
     await fs.writeFile(path.join(target, MARK), 'This folder holds Map Editor data.\n');
+    // The folder being left is marked too, so it can be chosen again later (moving back is allowed).
+    await fs.writeFile(path.join(from, MARK), 'This folder holds Map Editor data.\n').catch(() => undefined);
     const def = path.join(userData, 'data');
     if (target === path.resolve(def)) await fs.rm(path.join(userData, CONFIG), { force: true });
     else await fs.writeFile(path.join(userData, CONFIG), JSON.stringify({ dataDir: target }, null, 2));
