@@ -228,6 +228,26 @@
    "page": "tools",
    "is_interactive": true
   },
+  "Sketch.dc.html": {
+   "x": 2020,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Sketch board",
+   "expand": "fill",
+   "page": "tools",
+   "is_interactive": true
+  },
+  "DataFolder.dc.html": {
+   "x": 3120,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Desktop app: data folder and worlds folders",
+   "expand": "fill",
+   "page": "settings",
+   "is_interactive": true
+  },
   "Guide.dc.html": {
    "x": 0,
    "y": 0,
@@ -266,6 +286,8 @@
   "SupportDesk.dc.html",
   "Tour.dc.html",
   "Tools.dc.html",
+  "Sketch.dc.html",
+  "DataFolder.dc.html",
   "Guide.dc.html",
   "SiteHome.dc.html"
  ],
@@ -509,6 +531,22 @@
    "text": "Tools tab. Try: Encode and Decode; Tweaks dark, seed, motion.\nIn the app: Base64 for text and files up to 20 MiB, JSON to TypeScript (lists merged, missing keys optional), coordinates (chunk, place in chunk, region file, Nether and Overworld), all in the page with a tour. Not yet: general file converter, Ollama suite, server manager. Also: file converter (PNG, JPEG, WebP; NBT to JSON), server.properties editor, local AI helper through Ollama (not tried against a running Ollama). Every button now carries an icon chosen from its own words; narrow map panels show icon-only tools; badges on tool cards and deploy targets; lists as soft tiles. Since then: a Sketch board with seven pens, a partial eraser, straight lines with Shift, undo and redo, and SVG or PNG export.",
    "fill": "yellow",
    "page": "tools"
+  },
+  "n_sketch": {
+   "x": 3540,
+   "y": 0,
+   "w": 420,
+   "text": "Sketch board on the Tools tab. Try: pick a pen (the chosen one opens out to show its name), pick a colour, Undo, Clear; Tweaks dark, seed, motion.\nIn the app: seven pens and an eraser that removes only what it touches, straight lines with Shift or the L lock, undo and redo, keys 1 to 7 and E, SVG and PNG export, kept on the device.",
+   "fill": "yellow",
+   "page": "tools"
+  },
+  "n_datafolder": {
+   "x": 4640,
+   "y": 0,
+   "w": 420,
+   "text": "Desktop app, Settings, Backup and history: the data folder and extra worlds folders. Try: Move data folder, Use the built-in folder again, Add a worlds folder, Take off the list; Tweaks dark, seed, motion.\nIn the app: the move copies everything, checks it, saves the choice and takes effect after a restart; the old folder is never deleted; extra worlds folders show their worlds without a restart.",
+   "fill": "yellow",
+   "page": "settings"
   },
   "n_guide": {
    "x": 1520,

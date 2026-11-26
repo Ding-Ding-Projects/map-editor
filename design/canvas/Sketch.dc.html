@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map Editor sketch board</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,400..1000&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button,a{font:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.moving .rise{animation:rise .55s cubic-bezier(.2,0,0,1) both}
+.moving li.rise:nth-child(2){animation-delay:.05s}.moving li.rise:nth-child(3){animation-delay:.1s}.moving li.rise:nth-child(4){animation-delay:.15s}.moving li.rise:nth-child(5){animation-delay:.2s}.moving li.rise:nth-child(6){animation-delay:.25s}
+.moving .mark{animation:spin 18s linear infinite}
+.moving .entry{transition:border-radius .22s cubic-bezier(.2,0,0,1),background-color .2s}
+.moving .entry:hover{border-radius:12px}
+.still *{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div class="{{motionClass}}" style="min-height: 900px; padding: 24px; box-sizing: border-box; background: {{t.surface}}; color: {{t.onSurface}}; font-family: 'Roboto Flex', Roboto, system-ui, sans-serif; font-size: 14px">
+  <div style="max-width: 1360px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px">
+    <section class="rise" aria-label="Sketch board" style="padding: 28px; border-radius: 40px 40px 40px 12px; background: {{t.surfaceContainerLow}}; display: flex; flex-direction: column; gap: 12px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 900">Sketch board</h1>
+      <p style="margin: 0; color: {{t.onSurfaceVariant}}; font-size: 16px">Plan a build or mark up an idea. The drawing stays on this device.</p>
+      <div role="toolbar" aria-label="Drawing tools" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px">
+        <span style="display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 999px; background: {{t.surfaceContainerHigh}}"><sc-for list="{{pens}}" as="p" hint-placeholder-count="8"><button onClick="{{p.pick}}" aria-pressed="{{p.on}}" style="{{p.style}}"><span aria-hidden="true" style="{{p.nib}}"></span><span style="{{p.nameStyle}}">{{p.name}}</span></button></sc-for></span>
+        <span role="group" aria-label="Colour" style="display: flex; gap: 6px"><sc-for list="{{colours}}" as="c" hint-placeholder-count="8"><button onClick="{{c.pick}}" aria-pressed="{{c.on}}" aria-label="{{c.hex}}" style="{{c.style}}"></button></sc-for></span>
+        <span style="flex: 1"></span>
+        <button onClick="{{undo}}" style="height: 40px; padding: 0 12px; border: 0; border-radius: 20px; background: transparent; color: {{t.primary}}; font-weight: 700">Undo</button>
+        <button onClick="{{clear}}" style="height: 40px; padding: 0 12px; border: 0; border-radius: 20px; background: transparent; color: {{t.primary}}; font-weight: 700">Clear</button>
+        <button style="height: 40px; padding: 0 18px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 700">Save as SVG</button>
+        <button style="height: 40px; padding: 0 18px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 700">Save as PNG</button>
+      </div>
+      <svg viewBox="0 0 960 420" role="img" aria-label="Sketch" style="display: block; width: 100%; border-radius: 20px; border: 1px solid {{t.outline}}; background: #fff"><sc-for list="{{strokes}}" as="s" hint-placeholder-count="4"><path d="{{s.d}}" fill="none" stroke="{{s.color}}" stroke-width="{{s.w}}" stroke-opacity="{{s.o}}" stroke-linecap="round" stroke-linejoin="round"></path></sc-for></svg>
+      <p role="status" style="margin: 0; color: {{t.onSurfaceVariant}}; font-size: 13px">{{status}}</p>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"seed":{"editor":"color","default":"#4C8C4A"},"motion":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? true;
+    const t = dark ? {
+      primary:'#8FD88A', onPrimary:'#00390A', primaryContainer:'#1B5220', onPrimaryContainer:'#AAF5A4', secondaryContainer:'#3B4B38', onSecondaryContainer:'#D6E8CF',
+      tertiaryContainer:'#1F4D53', onTertiaryContainer:'#BCEBF2', surface:'#10140F', surfaceContainerLow:'#181D17', surfaceContainerHigh:'#262B25', onSurface:'#E0E4DA', onSurfaceVariant:'#C2C9BD', outline:'#8C9388'
+    } : {
+      primary:'#2E6B2C', onPrimary:'#FFFFFF', primaryContainer:'#AFF4A6', onPrimaryContainer:'#002204', secondaryContainer:'#D6E8CF', onSecondaryContainer:'#111F0F',
+      tertiaryContainer:'#BCEBF2', onTertiaryContainer:'#001F23', surface:'#F7FBF1', surfaceContainerLow:'#F1F5EB', surfaceContainerHigh:'#E5EAE0', onSurface:'#181D17', onSurfaceVariant:'#42493F', outline:'#72796E'
+    };
+    const seed = this.props.seed ?? '#4C8C4A';
+    if (seed.toLowerCase() !== '#4c8c4a') { t.primary = seed; t.onPrimary = '#FFFFFF'; }
+    const st = this.state ?? {};
+    const pen = st.pen ?? 'pen';
+    const colour = st.colour ?? '#c62828';
+    const shown = st.shown ?? 4;
+    const set = (x) => this.setState(x);
+    const kinds = [['pen', 'Pen', 3, 1], ['fine', 'Fine liner', 1.5, 1], ['marker', 'Marker', 8, 1], ['highlighter', 'Highlighter', 14, .35], ['pencil', 'Pencil', 2, .6], ['brush', 'Brush', 12, .85], ['chalk', 'Chalk', 6, .5], ['eraser', 'Eraser', 10, 1]];
+    const pens = kinds.map(([id, name, w, o]) => ({ name, on: String(pen === id), pick: () => set({ pen: id }),
+      style: 'display: inline-flex; align-items: center; height: 40px; min-width: 40px; padding: 0 ' + (pen === id ? '16px' : '12px') + '; border: 0; border-radius: 999px; font-weight: 700; background: ' + (pen === id ? t.primary : 'transparent') + '; color: ' + (pen === id ? t.onPrimary : t.onSurface),
+      nib: id === 'eraser' ? 'width: 14px; height: 10px; border: 2px solid currentColor; border-radius: 4px' : 'width: 16px; height: ' + Math.min(14, w + 2) + 'px; border-radius: 999px; background: currentColor; opacity: ' + o + '; transform: rotate(-35deg)',
+      nameStyle: pen === id ? 'margin-left: 8px' : 'display: none' }));
+    const colours = ['#1b1f1a', '#c62828', '#ef6c00', '#f9a825', '#2e7d32', '#1565c0', '#6a1b9a', '#ffffff'].map((hex) => ({ hex, on: String(colour === hex), pick: () => set({ colour: hex }),
+      style: 'width: 28px; height: 28px; padding: 0; border-radius: 50%; background: ' + hex + '; border: 2px solid ' + (colour === hex ? t.primary : t.outline) + '; transform: scale(' + (colour === hex ? 1.2 : 1) + ')' }));
+    const all = [{ d: 'M120 300 L120 140 L260 60 L400 140 L400 300 Z', color: '#1b1f1a', w: 3, o: 1 }, { d: 'M220 300 L220 220 L300 220 L300 300', color: '#1565c0', w: 3, o: 1 }, { d: 'M90 320 L880 320', color: '#2e7d32', w: 12, o: .85 }, { d: 'M520 120 C600 60 700 180 820 110', color: colour, w: 14, o: .35 }];
+    const strokes = all.slice(0, shown);
+    return { t, motionClass: (this.props.motion ?? true) ? 'moving' : 'still', pens, colours, strokes,
+      undo: () => set({ shown: Math.max(0, shown - 1) }), clear: () => set({ shown: shown ? 0 : all.length }),
+      status: strokes.length + ' strokes. Hold Shift for a straight line; press L on the board to keep it on.' };
+  }
+}
+</script>
+</body>
+</html>
