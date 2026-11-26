@@ -213,3 +213,6 @@ article figure { margin: 16px 0 24px; } article figure img { width: 100%; height
 }
 
 .code-name-line { margin: 8px 0 0; color: var(--on-sv); }
+
+.words-school { margin: 16px 0 0; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; } .words-school .school-ask { flex: 1 1 220px; font-size: 14px; }
+.words-dialog button[disabled] { opacity: .45; cursor: default; }

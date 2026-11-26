@@ -4,6 +4,9 @@
 import { makeReplacer, readVocabFile, readWordsCache, VocabError, VOCAB_LIMITS } from '../src/ui/vocabfile.js';
 
 const KEY = 'map-editor-site.words.v1';
+// School mode on the site: the built-in wording is shown and no wording file can be loaded until it is switched off.
+const SCHOOL = 'map-editor-site.school';
+let school = false;
 const two = (en: string, yue: string) => `<span data-l="en" lang="en">${en}</span><span data-l="yue" lang="yue-Hant-HK">${yue}</span>`;
 const SKIP = 'script, style, code, pre, kbd, samp, textarea, input, .words-dialog';
 const original = new WeakMap<Text, string>(), written = new WeakMap<Text, string>();
@@ -15,7 +18,7 @@ function node(n: Text) {
   if (n.parentElement?.closest(SKIP)) return;
   const now = n.nodeValue ?? '';
   if (!original.has(n) || (now !== written.get(n) && now !== original.get(n))) original.set(n, now);
-  const want = reword(original.get(n)!);
+  const want = school ? original.get(n)! : reword(original.get(n)!);
   written.set(n, want);
   if (now !== want) n.nodeValue = want;
 }
@@ -49,20 +52,33 @@ function open() {
   dlg.className = 'words-dialog'; dlg.setAttribute('aria-labelledby', 'words-title');
   const paint = () => {
     const n = Object.keys(words).length;
-    const state = refused ? two('The last file was refused; nothing changed.', '上一個檔唔收；乜都冇改。') : n ? two(`Your wording is on. Entries in use: ${n}.`, `用緊你嘅用字：${n} 項。`) : two('No file loaded; built-in wording.', '未載入檔案；用緊內置用字。');
+    const state = school ? two('School mode is on, so the built-in wording is shown. Your words are kept for later.', '學校模式開緊，所以用內置用字。你嗰套會留低，遲啲用返。') : refused ? two('The last file was refused; nothing changed.', '上一個檔唔收；乜都冇改。') : n ? two(`Your wording is on. Entries in use: ${n}.`, `用緊你嘅用字：${n} 項。`) : two('No file loaded; built-in wording.', '未載入檔案；用緊內置用字。');
     const fault = FAULT[refused];
     dlg.innerHTML = `<h2 id="words-title">${two('Your own words', '自己嘅用字')}</h2>
       <p>${two('Upload a JSON file to change wording on this site, in this browser only. The file is checked whole first: if any part is wrong, nothing changes.', '上載 JSON 檔，改呢個網站嘅用字，只限呢個瀏覽器。成個檔會先驗晒：有一處唔啱，就乜都唔改。')}</p>
       <p class="words-state${refused ? ' bad' : ''}" role="status">${state}</p>
       ${fault ? `<p class="words-fault" role="alert">${two(`That file could not be used: ${fault[0]}`, `用唔到呢個檔：${fault[1]}`)}</p>` : ''}
-      <div class="words-actions"><button type="button" class="words-up primary">${n ? two('Replace with another file…', '換過另一個檔…') : two('Upload words…', '上載用字…')}</button>
+      <div class="words-actions"><button type="button" class="words-up primary" ${school ? 'disabled' : ''}>${n ? two('Replace with another file…', '換過另一個檔…') : two('Upload words…', '上載用字…')}</button>
         <button type="button" class="words-template">${two('Download the template', '下載範本')}</button>
-        ${n ? `<button type="button" class="words-reset">${two('Back to the built-in words', '還原內置用字')}</button>` : ''}
+        ${n ? `<button type="button" class="words-reset" ${school ? 'disabled' : ''}>${two('Back to the built-in words', '還原內置用字')}</button>` : ''}
         <input type="file" accept=".json,application/json" hidden></div>
+      <p class="words-school"><button type="button" class="school-toggle" aria-pressed="${school}">${school ? two('Switch school mode off', '熄學校模式') : two('School mode…', '學校模式…')}</button><span class="school-ask" role="status"></span></p>
       <div class="words-end"><button type="button" class="words-close">${two('Close', '關閉')}</button></div>`;
     const file = dlg.querySelector<HTMLInputElement>('input[type=file]')!;
     dlg.querySelector('.words-up')!.addEventListener('click', () => file.click());
     dlg.querySelector('.words-close')!.addEventListener('click', () => dlg.close());
+    // Two presses: the first says what will happen, the second does it.
+    let armed = false;
+    dlg.querySelector('.school-toggle')!.addEventListener('click', () => {
+      if (!armed) {
+        armed = true;
+        dlg.querySelector('.school-ask')!.innerHTML = school ? two('Press again to switch it off. Wording files can be loaded again.', '再撳一次就熄。之後又可以載入用字檔。') : two('Press again to switch it on. This site will show the built-in wording and refuse wording files until it is switched off.', '再撳一次就開。之後呢個網站會用內置用字，唔收用字檔，直到熄返為止。');
+        return;
+      }
+      school = !school;
+      try { school ? localStorage.setItem(SCHOOL, 'on') : localStorage.removeItem(SCHOOL); } catch { /* not kept */ }
+      walk(document.body); paint();
+    });
     dlg.querySelector('.words-reset')?.addEventListener('click', () => { use({}); refused = ''; paint(); });
     dlg.querySelector('.words-template')!.addEventListener('click', () => {
       const entries = { Guide: 'Guide', Downloads: 'Downloads', 指南: '指南', 下載: '下載' };
@@ -70,6 +86,7 @@ function open() {
     });
     file.addEventListener('change', async () => {
       const f = file.files?.[0]; if (!f) return;
+      if (school) { paint(); return; }
       try {
         if (f.size > VOCAB_LIMITS.bytes) throw new VocabError('size');
         const got = readVocabFile(await f.text(), new Set());
@@ -88,9 +105,10 @@ function open() {
 
 function start() {
   try { words = readWordsCache(localStorage.getItem(KEY)); } catch { words = {}; }
+  try { school = localStorage.getItem(SCHOOL) === 'on'; } catch { school = false; }
   reword = makeReplacer(words);
   if (Object.keys(words).length) walk(document.body);
-  new MutationObserver((ms) => { if (!Object.keys(words).length) return; for (const m of ms) m.addedNodes.forEach(walk); }).observe(document.body, { childList: true, subtree: true });
+  new MutationObserver((ms) => { if (!Object.keys(words).length || school) return; for (const m of ms) m.addedNodes.forEach(walk); }).observe(document.body, { childList: true, subtree: true });
   document.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('[data-own-words]')) { e.preventDefault(); open(); } });
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
