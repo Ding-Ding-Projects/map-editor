@@ -211,3 +211,5 @@ article figure { margin: 16px 0 24px; } article figure img { width: 100%; height
   .top nav { flex-wrap: nowrap; max-width: 100%; overflow-x: auto; scrollbar-width: thin; scroll-snap-type: x proximity; }
   .top nav a { flex: none; white-space: nowrap; scroll-snap-align: start; }
 }
+
+.code-name-line { margin: 8px 0 0; color: var(--on-sv); }

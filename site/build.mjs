@@ -99,6 +99,10 @@ const groups = [...new Set(features.map((f) => f.group))];
 let releases = [];
 try { releases = JSON.parse(readFileSync(process.env.SITE_RELEASES ?? path.join(here, 'releases.json'), 'utf8')); } catch { /* not available */ }
 const rel = releases.find((r) => !r.draft && !r.prerelease && (r.assets ?? []).some((a) => a.name === 'Map.EditorSetup.exe'));
+// The release's code name, read from its own notes: "Code name: English (中文, jyutping)". Shown only when that line is there.
+const codeNameOf = (body) => { const m = /^Code name: (.{1,160}?) \((.{1,60}?)(?:, [^)]{0,160})?\)\s*$/m.exec(String(body ?? '')); return m ? { en: m[1], yue: m[2] } : null; };
+const relName = rel ? codeNameOf(rel.body) : null;
+const relNameHtml = relName ? `<p class="code-name-line">${L('Code name of this release', '呢個版本嘅代號')}: <b>${L(relName.en, relName.yue)}</b></p>` : '';
 const asset = (n) => rel?.assets.find((a) => a.name === n);
 pagePath = '';
 writeFileSync(path.join(out, 'index.html'), page('Map Editor', 'A Minecraft world editor for your desk, your whole network, or a spare PC. Every edit can be undone.', `
@@ -164,7 +168,7 @@ const DOWNLOADS = [
 mkdirSync(path.join(out, 'downloads'), { recursive: true });
 pagePath = 'downloads/';
 writeFileSync(path.join(out, 'downloads', 'index.html'), page('Downloads · Map Editor', 'Download Map Editor for Windows, Docker, a virtual machine, a USB drive or a Raspberry Pi.', `
-<section class="article-hero"><p class="crumb"><a href="${base}">${L('Guide', '指南')}</a> › ${L('Downloads', '下載')}</p><h1>${L('Downloads', '下載')}</h1><p class="lead">${rel ? L(`Map Editor ${rel.tag_name}, published ${String(rel.published_at).slice(0, 10)}. Every file below comes from that release.`, `Map Editor ${rel.tag_name}，${String(rel.published_at).slice(0, 10)} 發佈。下面每個檔案都係嚟自呢個版本。`) : L('The newest files are on the releases page.', '最新嘅檔案喺發佈頁。')}</p></section>
+<section class="article-hero"><p class="crumb"><a href="${base}">${L('Guide', '指南')}</a> › ${L('Downloads', '下載')}</p><h1>${L('Downloads', '下載')}</h1><p class="lead">${rel ? L(`Map Editor ${rel.tag_name}, published ${String(rel.published_at).slice(0, 10)}. Every file below comes from that release.`, `Map Editor ${rel.tag_name}，${String(rel.published_at).slice(0, 10)} 發佈。下面每個檔案都係嚟自呢個版本。`) : L('The newest files are on the releases page.', '最新嘅檔案喺發佈頁。')}</p>${relNameHtml}</section>
 <section class="band-wrap"><div class="dl-grid">${rel ? DOWNLOADS.filter(([n]) => asset(n)).map(([n, t, b, slug, yt, yb]) => `<div class="dl-card"><strong>${L(t, yt)}</strong><span>${L(b, yb)}</span><a class="btn filled" href="${esc(asset(n).browser_download_url)}" download>${L('Download', '下載')} <small>${esc(mib(asset(n).size))}</small></a><a href="${base}${slug}/">${L('How it works →', '點樣運作 →')}</a></div>`).join('') : ''}
 <div class="dl-card"><strong>Docker</strong><span>${L('Run the web app on any machine with Docker.', '有 Docker 嘅機都行到網頁版。')}</span><code>docker run -d -p 8420:8420 -v map-editor-data:/data -v "$PWD/worlds:/worlds" ghcr.io/ding-ding-projects/map-editor:${rel ? esc(rel.tag_name.replace(/^v/, '')) : 'latest'}</code><a href="${base}web-app/">${L('How it works →', '點樣運作 →')}</a></div></div>
 <p class="muted">${L('Reading on a phone?', '用手機睇？')} <a href="${base}map-editor-guide-phone.pdf">${L('The whole guide as a phone-sized PDF', '成份指南嘅手機尺寸 PDF（英文版）')}</a> · <a href="${base}map-editor-guide-phone-yue.pdf" lang="yue-Hant-HK">粵語版 PDF</a>. ${rel ? `Checksums: <a href="${esc(rel.html_url)}">${esc(rel.tag_name)} on GitHub</a> lists SHA256SUMS for the appliance images. ` : ''}${L('The Windows installers are not code-signed, so Windows SmartScreen may ask before running them.', 'Windows 安裝檔冇程式碼簽署，所以 Windows SmartScreen 開之前可能會問你一次。')} All releases: <a href="${repo}/releases">${repo.replace('https://', '')}/releases</a>.</p></section>`, 'downloads'));

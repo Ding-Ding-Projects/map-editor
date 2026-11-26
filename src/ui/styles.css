@@ -1288,3 +1288,8 @@ md-list-item[hidden], .act-list > li[hidden] { display: none !important; }
 .tox.tox-tinymce .tox-tbtn--select { background: var(--md-sys-color-surface-container-highest) !important; }
 .tox.tox-tinymce .tox-statusbar, .tox.tox-tinymce .tox-statusbar__path-item { color: var(--md-sys-color-on-surface-variant) !important; }
 .tox.tox-tinymce .tox-edit-area::before { border-color: var(--md-sys-color-primary) !important; }
+
+.cl-code-name { margin: 0; flex-basis: 100%; }
+/* Changelog heading: title, code name, the fold button and the search each take their own row. */
+.cl-head .fold-bar, .cl-head #cl-fold { flex-basis: 100%; margin: 0; }
+.cl-head #cl-fold { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .cl-head #cl-fold[hidden] { display: none; }

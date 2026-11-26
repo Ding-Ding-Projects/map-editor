@@ -27,6 +27,14 @@ export function countLines(files) {
   return { kinds, parts, total, nonBlank, files: counted };
 }
 
+/** A person's time as a range, never one number: finished, tested lines a working day at a slow and a fast pace. */
+export const PACE = { slow: 30, fast: 80 };
+export function estimateDays(nonBlank) {
+  const n = Math.max(0, Math.floor(Number(nonBlank) || 0));
+  return { from: Math.ceil(n / PACE.fast), to: Math.ceil(n / PACE.slow) };
+}
+export const estimateText = (nonBlank) => { const e = estimateDays(nonBlank); return `Estimate, not a measurement: one experienced developer writing ${PACE.slow} to ${PACE.fast} finished, tested lines a working day would need about ${e.from.toLocaleString('en')} to ${e.to.toLocaleString('en')} working days for the ${Math.floor(nonBlank).toLocaleString('en')} lines that are not blank.`; };
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const tracked = execFileSync('git', ['ls-files', '-z'], { cwd: root }).toString().split('\0').filter(Boolean);
   const r = countLines(tracked.map((f) => { try { return [f, readFileSync(path.join(root, f), 'utf8')]; } catch { return [f, '']; } }));
@@ -38,5 +46,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.log(`By part: ${Object.entries(r.parts).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${n(v)}`).join(' · ')}`);
     console.log(`Total: ${n(r.total)} lines in ${n(r.files)} files, ${n(r.nonBlank)} not blank.`);
     console.log(`Not counted: ${EXCLUDED.join(', ')}.`);
+    console.log(estimateText(r.nonBlank));
   }
 }

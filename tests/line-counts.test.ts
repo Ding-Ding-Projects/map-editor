@@ -13,3 +13,17 @@ describe('line counts', () => {
     expect(r.total).toBe(1); expect(r.files).toBe(1);
   });
 });
+
+describe('the time estimate', () => {
+  it('is a range from two paces, rounded up, and says it is an estimate', async () => {
+    // @ts-expect-error plain script shared with the release workflow
+    const { estimateDays, estimateText, PACE } = await import('../scripts/line-counts.mjs');
+    expect(PACE.slow).toBeLessThan(PACE.fast);
+    expect(estimateDays(15600)).toEqual({ from: 195, to: 520 });
+    expect(estimateDays(1)).toEqual({ from: 1, to: 1 });
+    expect(estimateDays(0)).toEqual({ from: 0, to: 0 });
+    expect(estimateDays('junk')).toEqual({ from: 0, to: 0 });
+    expect(estimateText(15600)).toMatch(/^Estimate, not a measurement: .* 30 to 80 .* about 195 to 520 working days .* 15,600 lines/);
+  });
+});
+
