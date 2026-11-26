@@ -197,7 +197,7 @@ jobs:
         with: { name: appliance-pi, path: assets/appliance-pi }
       - name: Guide as phone-sized PDFs for the release (the release still goes out if this step fails)
         continue-on-error: true
-        timeout-minutes: 6
+        timeout-minutes: 4
         run: |
           npm ci --no-audit --no-fund --ignore-scripts
           echo '[]' > site/releases.json
@@ -207,11 +207,14 @@ jobs:
           google-chrome --headless=new --no-sandbox --disable-gpu --no-pdf-header-footer \
             --print-to-pdf=assets/guide/map-editor-guide-phone.pdf http://127.0.0.1:8765/map-editor/phone/
           test -s assets/guide/map-editor-guide-phone.pdf
-          # The Cantonese edition needs a Chinese font on the runner, or the PDF would be empty boxes.
-          if sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o DPkg::Lock::Timeout=120 install -y -qq fonts-noto-cjk >/dev/null; then
+          # The Cantonese edition is only made when the runner already has a Chinese font: installing one here
+          # took six minutes in one run. Without it the PDF would be empty boxes, so it is left out instead.
+          if fc-list :lang=zh | grep -q .; then
             google-chrome --headless=new --no-sandbox --disable-gpu --no-pdf-header-footer \
               --print-to-pdf=assets/guide/map-editor-guide-phone-yue.pdf http://127.0.0.1:8765/map-editor/phone-yue/
             test -s assets/guide/map-editor-guide-phone-yue.pdf || rm -f assets/guide/map-editor-guide-phone-yue.pdf
+          else
+            echo "No Chinese font on this runner; the Cantonese PDF stays on the documentation site only."
           fi
           ls -l assets/guide
       - name: Publish one normal release for this commit

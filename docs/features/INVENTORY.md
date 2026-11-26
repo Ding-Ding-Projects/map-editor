@@ -117,7 +117,7 @@ Counts (126 features): built 15 / partial 87 / unbuilt 10 / not applicable 14
 `homepage-link` | APPLIES: yes | STATUS: BUILT | EVIDENCE: GitHub API homepage = https://ding-ding-projects.github.io/map-editor/; README line 3; `SITE_BASE` in site/build.mjs and pages.yml | MISSING: -
 `vocabulary-unlock-boundary` | APPLIES: yes | STATUS: BUILT | EVIDENCE: grep of tracked files finds no private vocabulary; personal-vocabulary upload is the only route | MISSING: -
 `private-site-app` | APPLIES: no | STATUS: N-A | EVIDENCE: repository is public and hosts its site | MISSING: -
-`site-pdf-edition` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: site/build.mjs `/phone/` page (90 x 160 mm), pages.yml prints map-editor-guide-phone.pdf, linked from Downloads | MISSING: wiki content in the PDF; the release step that attaches the PDFs has not yet been read back from a published release. (release.yml builds the site and attaches the English and Cantonese phone-sized PDFs; a failure there cannot block the release.)
+`site-pdf-edition` | APPLIES: yes | STATUS: PARTIAL | EVIDENCE: site/build.mjs `/phone/` page (90 x 160 mm), pages.yml prints map-editor-guide-phone.pdf, linked from Downloads | MISSING: wiki content in the PDF; the Cantonese PDF is on the documentation site but not on releases (the release runner has no Chinese font, and installing one took six minutes). (v0.1.209 carries map-editor-guide-phone.pdf, read back from its asset list; a failure in that step cannot block a release.)
 
 ## Status Hub
 
