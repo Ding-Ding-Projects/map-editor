@@ -1693,8 +1693,8 @@ function settingsView(view: HTMLElement) {
   const body: Record<string, string> = {
     language: `<div class="set-langs" role="group" aria-label="${esc(tx('secLanguage'))}" data-find="English 粵語 ${esc(tx('secLanguage'))}">${(['en', 'yue', 'both'] as const).map((l) => `<button class="set-lang${prefs.lang === l ? ' on' : ''}" data-set-lang="${l}" aria-pressed="${prefs.lang === l}">${l === 'en' ? 'English' : l === 'yue' ? '粵語' : 'English + 粵語'}</button>`).join('')}</div>
       <div class="set-sliders">
-        <label class="set-slider" data-find="${esc(tx('funnyEn'))}"><span><b>${esc(tx('funnyEn'))}</b><em>${prefs.funnyEn}</em></span><md-slider id="fen" min="1" max="5" step="1" ticks labeled value="${prefs.funnyEn}"></md-slider></label>
-        <label class="set-slider" data-find="${esc(tx('funnyYue'))}"><span><b>${esc(tx('funnyYue'))}</b><em>${prefs.funnyYue}</em></span><md-slider id="fyue" min="1" max="5" step="1" ticks labeled value="${prefs.funnyYue}"></md-slider></label>
+        <label class="set-slider" data-find="${esc(tx('funnyEn'))}"><span><b>${esc(tx('funnyEn'))}</b><em>${prefs.funnyEn}</em></span><md-slider id="fen" min="1" max="5" step="1" ticks labeled value="${prefs.funnyEn}"></md-slider><md-text-button type="button" class="slider-reset" data-reset-level="funnyEn" ${prefs.funnyEn === defaults.funnyEn ? 'disabled' : ''} aria-label="${esc(tx('reset'))}: ${esc(tx('funnyEn'))}">${esc(tx('reset'))}</md-text-button></label>
+        <label class="set-slider" data-find="${esc(tx('funnyYue'))}"><span><b>${esc(tx('funnyYue'))}</b><em>${prefs.funnyYue}</em></span><md-slider id="fyue" min="1" max="5" step="1" ticks labeled value="${prefs.funnyYue}"></md-slider><md-text-button type="button" class="slider-reset" data-reset-level="funnyYue" ${prefs.funnyYue === defaults.funnyYue ? 'disabled' : ''} aria-label="${esc(tx('reset'))}: ${esc(tx('funnyYue'))}">${esc(tx('reset'))}</md-text-button></label>
       </div><p class="muted">${esc(tx('funnyNote'))}</p>
       <div class="set-row" data-find="${esc(tx('appNameSet'))} ${esc(tx('appNameNote'))}"><label for="app-name"><span><b>${esc(tx('appNameSet'))}</b><small>${esc(tx('appNameNote'))}</small></span></label><md-outlined-text-field id="app-name" maxlength="40" value="${esc(prefs.appName)}" placeholder="${esc(tx('appName'))}" aria-label="${esc(tx('appNameSet'))}"></md-outlined-text-field><md-text-button id="app-name-reset">${esc(tx('reset'))}</md-text-button></div>
       ${sw('emoji', 'emojiDialogs', 'emojiDialogsNote', prefs.emojiDialogs)}
@@ -1774,6 +1774,8 @@ function settingsView(view: HTMLElement) {
   view.querySelectorAll<HTMLElement>('[data-set-lang]').forEach((b) => b.addEventListener('click', () => { prefs.lang = b.dataset.setLang as Prefs['lang']; savePrefs(); applyTheme(); render(); }));
   const num = (id: string) => Number((view.querySelector(id) as HTMLInputElement).value);
   const sel = (e: Event) => (e.target as HTMLElement & { selected: boolean }).selected;
+  // Each funny level has its own Reset, back to the built-in level, without touching the other.
+  view.querySelectorAll<HTMLElement>('[data-reset-level]').forEach((b) => b.addEventListener('click', (e) => { e.preventDefault(); const k = b.dataset.resetLevel as 'funnyEn' | 'funnyYue'; prefs[k] = defaults[k]; savePrefs(); render(); }));
   view.querySelector('#fen')!.addEventListener('change', () => { prefs.funnyEn = num('#fen'); savePrefs(); render(); });
   const vf = view.querySelector<HTMLInputElement>('#vocab-file')!;
   view.querySelector('#vocab-up')!.addEventListener('click', () => vf.click());
