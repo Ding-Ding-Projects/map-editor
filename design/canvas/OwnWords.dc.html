@@ -42,6 +42,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #8FD8
         <button style="height: 40px; padding: 0 18px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 700">Download the template</button>
         <button onClick="{{reset}}" style="display: {{resetShow}}; height: 40px; padding: 0 16px; border: 0; border-radius: 20px; background: transparent; color: {{t.primary}}; font-weight: 700">Back to the built-in words</button>
       </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center"><button onClick="{{school}}" aria-pressed="{{schoolOn}}" style="{{schoolStyle}}">{{schoolLabel}}</button><span style="font-size: 13px; color: {{t.onSurfaceVariant}}">School mode shows the built-in wording and keeps your words for later. The deploy app and the site have the same switch.</span></div>
       <p style="margin: 8px 0 0; color: {{t.onSurfaceVariant}}; font-size: 13px">On this board the upload button stands for picking a good file. Try a faulty one:</p>
       <div style="display: flex; flex-wrap: wrap; gap: 8px">
         <sc-for list="{{faults}}" as="f"><button class="entry" onClick="{{f.pick}}" style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurface}}; font-weight: 600">{{f.name}}</button></sc-for>
@@ -71,12 +72,14 @@ class Component extends DCLogic {
     if (seed.toLowerCase() !== '#4c8c4a') { t.primary = seed; t.onPrimary = '#FFFFFF'; }
     const st = this.state ?? {};
     const set = (x) => this.setState(x);
-    const on = st.on ?? false, err = st.err ?? '';
+    const on = st.on ?? false, err = st.err ?? '', sch = st.sch ?? false;
     const FAULTS = [['Key written twice', 'the same key is written twice. Keep each key once.'], ['Version 3', 'this schema version is not supported. Use schemaVersion 1.'], ['Extra field', 'the shape is not the one in the template. It needs exactly schemaVersion and entries.'], ['Broken JSON', 'it is not valid JSON. Check brackets, commas and quotes.'], ['Over 256 KiB', 'the file is over 256 KiB. Use a smaller file.']];
     const faults = FAULTS.map(([name, text]) => ({ name, pick: () => set({ err: text }) }));
     return { t, motionClass: (this.props.motion ?? true) ? 'moving' : 'still', faults,
-      navWorlds: on ? 'Places' : 'Worlds', navSettings: on ? 'Knobs' : 'Settings',
-      stateText: err ? 'The last file was refused; nothing changed.' : on ? 'Your wording is on: 2 entries.' : 'No file loaded; built-in wording.',
+      navWorlds: on && !sch ? 'Places' : 'Worlds', navSettings: on && !sch ? 'Knobs' : 'Settings',
+      school: () => set({ sch: !sch }), schoolOn: String(sch), schoolLabel: sch ? 'Switch school mode off' : 'School mode',
+      schoolStyle: 'height: 40px; padding: 0 18px; border-radius: 20px; font-weight: 700; ' + (sch ? 'border: 0; background: ' + t.tertiaryContainer + '; color: ' + t.onTertiaryContainer : 'border: 1px solid ' + t.outline + '; background: transparent; color: ' + t.primary),
+      stateText: sch ? 'School mode is on, so the built-in wording is shown. Your words are kept for later.' : err ? 'The last file was refused; nothing changed.' : on ? 'Your wording is on: 2 entries.' : 'No file loaded; built-in wording.',
       stateColor: err ? (dark ? '#FFB4AB' : '#BA1A1A') : t.onSurface,
       upLabel: on ? 'Replace with another file…' : 'Upload words…', resetShow: on ? 'inline-block' : 'none',
       good: () => set({ on: true, err: '' }), reset: () => set({ on: false, err: '' }),
