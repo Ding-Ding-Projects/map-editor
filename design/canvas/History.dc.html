@@ -34,16 +34,16 @@ button:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offse
       </div>
       <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center">
         <div style="display: flex; align-items: center; gap: 8px; width: 340px; max-width: 100%; height: 56px; padding: 0 8px 0 16px; border-radius: 28px; background: {{t.surfaceContainerHigh}}">
-          <label for="hs" style="position: absolute; left: -9999px">Search history</label>
+          <label for="hs" style="position: absolute; left: -9999px">Search edits</label>
           <input id="hs" placeholder="Search edits, blocks, chunks" style="flex: 1; min-width: 0; border: 0; background: transparent; color: {{t.onSurface}}; font-size: 16px; outline: none">
           <button aria-label="Open regex builder" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurfaceVariant}}; font-family: 'Roboto Mono', monospace">.*</button>
         </div>
-        <button style="height: 40px; padding: 0 24px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 500">Export history</button>
+        <button style="height: 40px; padding: 0 24px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 500">Export…</button>
       </div>
     </header>
 
     <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
-      <button style="height: 32px; padding: 0 16px; border-radius: 8px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurfaceVariant}}; font-weight: 500">Dates: 2026-11-16 to 2026-11-23</button>
+      <button style="height: 32px; padding: 0 16px; border-radius: 8px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.onSurfaceVariant}}; font-weight: 500">From 2026-11-16 · To 2026-11-23</button>
       <sc-for list="{{actions}}" as="a" hint-placeholder-count="6">
         <button onClick="{{a.pick}}" aria-pressed="{{a.on}}" style="{{a.style}}">{{a.label}} · {{a.n}}</button>
       </sc-for>
@@ -82,7 +82,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #8FD88A;outline-offse
           <span>M region/r.0.-1.mca</span><span>M level.dat</span>
         </div>
         <div style="padding: 16px; border-radius: 16px; background: {{t.tertiaryContainer}}; color: {{t.onTertiaryContainer}}; font-size: 14px; line-height: 20px">Rolling back keeps every later point. You can roll forward again from this list.</div>
-        <button style="height: 56px; border-radius: 28px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; font-size: 16px; font-weight: 600">Roll back to this point</button>
+        <button style="height: 56px; border-radius: 28px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; font-size: 16px; font-weight: 600">Roll back here</button>
         <button style="height: 40px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 500">Open as a copy</button>
       </aside>
     </div>

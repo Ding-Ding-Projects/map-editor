@@ -797,7 +797,7 @@ function shell() {
       ${user && prefs.onboarded ? `<nav class="tabs rail" aria-label="Tabs"><div class="rail-list" role="tablist" aria-orientation="vertical">
         ${open.map((x) => `<div class="rail-item ${x === prefs.tab ? 'active' : ''}"><button type="button" role="tab" aria-selected="${x === prefs.tab}" data-tab="${x}" class="rail-btn"><span class="rail-ico" aria-hidden="true">${iconSvg(RAIL_ICONS[x] ?? 'next', 24)}</span><span class="rail-lbl">${esc(tx(x as Key))}</span></button>${x === prefs.tab && !prefs.tabsLocked ? `<button type="button" class="rail-x" data-close="${x}" aria-label="${esc(tx('close'))}: ${esc(tx(x as Key))}" title="${esc(tx('close'))}">${iconSvg('x', 14)}</button>` : ''}</div>`).join('')}
         </div>
-        <div class="tab-tools"><button type="button" class="rail-tool" id="tab-find" aria-label="${esc(tx('tabSearch'))}" title="${esc(tx('tabSearch'))}">${iconSvg('search', 20)}</button>${prefs.closedTabs.length ? `<button type="button" class="rail-tool" id="open-all" aria-label="${esc(tx('openEveryTab'))}" title="${esc(tx('openEveryTab'))}">${iconSvg('list', 20)}</button>` : ''}</div>
+        <div class="tab-tools"><button type="button" class="rail-tool" id="tab-find" aria-label="${esc(tx('tabSearch'))}" title="${esc(tx('tabSearch'))}">${iconSvg('search', 20)}</button><button type="button" class="rail-tool" id="tab-new" aria-haspopup="menu" aria-label="${esc(tx('newTab'))}" title="${esc(tx('newTab'))}">${iconSvg('plus', 20)}</button>${prefs.closedTabs.length ? `<button type="button" class="rail-tool" id="open-all" aria-label="${esc(tx('openEveryTab'))}" title="${esc(tx('openEveryTab'))}">${iconSvg('list', 20)}</button>` : ''}</div>
       </nav>` : ''}
       <main id="view" class="view" role="tabpanel"></main>
     </div>
@@ -808,6 +808,16 @@ function shell() {
   app.querySelectorAll<HTMLElement>('[data-tab]').forEach((c) => c.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('[data-close]')) return; prefs.tab = c.dataset.tab!; savePrefs(); render(); }));
   app.querySelectorAll<HTMLElement>('[data-close]').forEach((c) => c.addEventListener('click', () => { prefs.closedTabs.push(c.dataset.close!); savePrefs(); render(); }));
   app.querySelector('#open-all')?.addEventListener('click', () => { prefs.closedTabs = []; savePrefs(); render(); });
+  // New tab: a catalogue of every tab. Closed ones come first and open again one at a time.
+  app.querySelector<HTMLElement>('#tab-new')?.addEventListener('click', (e) => {
+    const btn = e.currentTarget as HTMLElement; const r = btn.getBoundingClientRect();
+    const closed = TABS.filter((x) => prefs.closedTabs.includes(x)), openNow = TABS.filter((x) => !prefs.closedTabs.includes(x));
+    contextMenu(r.left, r.bottom + 4, tx('newTabMenu'), [
+      ...closed.map((x) => [tx('newTabOpen', { tab: tx(x as Key) }), goTab(x)] as [string, () => void]),
+      ...(closed.length > 1 ? [[tx('openEveryTab'), () => { prefs.closedTabs = []; savePrefs(); render(); }] as [string, () => void]] : []),
+      ...openNow.map((x) => [tx('newTabGo', { tab: tx(x as Key) }), goTab(x)] as [string, () => void]),
+    ], btn, -1, true);
+  });
   app.querySelector('#tab-find')?.addEventListener('click', () => tabSearch());
   app.querySelector('#cmd')?.addEventListener('click', () => showPalette());
   app.querySelector('#bell')?.addEventListener('click', () => toggleNoteCentre());

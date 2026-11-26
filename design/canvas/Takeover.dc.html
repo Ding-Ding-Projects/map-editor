@@ -53,14 +53,13 @@ button:focus-visible{outline:3px solid #FFFFFF;outline-offset:3px}
     <section role="alertdialog" aria-labelledby="bad-title" style="position: relative; width: 100%; max-width: 920px; display: flex; flex-direction: column; gap: 20px; align-items: flex-start">
       <span style="height: 36px; padding: 0 16px; border-radius: 18px; background: {{chip}}; font-size: 14px; font-weight: 700; line-height: 36px">Install failed · stays until you close it</span>
       <h1 id="bad-title" style="margin: 0; font-size: 88px; line-height: 86px; font-weight: 900; letter-spacing: -3px; font-variation-settings: 'wdth' 120">That did not work.</h1>
-      <p style="margin: 0; font-size: 20px; line-height: 28px">Docker could not start map-editor-1. Port 8420 is already used by another program.</p>
+      <p style="margin: 0; font-size: 20px; line-height: 28px">Docker could not start map-editor-1. Port 8420 is already used by another program. Nothing else on this computer was changed.</p>
       <div style="width: 100%; box-sizing: border-box; padding: 20px 24px; border-radius: 24px; background: {{codeBg}}; color: {{codeFg}}; font-family: 'Roboto Mono', monospace; font-size: 14px; line-height: 22px; white-space: pre-wrap">$ docker compose -p map-editor-1 up -d
 Error response from daemon: driver failed programming external connectivity:
 Bind for 0.0.0.0:8420 failed: port is already allocated
 exit code 1 · 16:44:51 EST</div>
       <div style="display: flex; gap: 8px; flex-wrap: wrap">
-        <button style="height: 64px; padding: 0 32px; border-radius: 32px; border: 0; background: {{fg}}; color: {{bg}}; font-size: 18px; font-weight: 800">Try port 8421</button>
-        <button style="height: 64px; padding: 0 28px; border-radius: 32px; border: 2px solid {{fg}}; background: transparent; color: {{fg}}; font-size: 18px; font-weight: 700">View full log</button>
+        <button style="height: 64px; padding: 0 32px; border-radius: 32px; border: 0; background: {{fg}}; color: {{bg}}; font-size: 18px; font-weight: 800">Try again</button>
         <button style="height: 64px; padding: 0 28px; border-radius: 32px; border: 2px solid {{fg}}; background: transparent; color: {{fg}}; font-size: 18px; font-weight: 700">Copy details</button>
         <button style="height: 64px; padding: 0 24px; border-radius: 32px; border: 0; background: transparent; color: {{fg}}; font-size: 16px; font-weight: 600">Dismiss (Esc)</button>
       </div>

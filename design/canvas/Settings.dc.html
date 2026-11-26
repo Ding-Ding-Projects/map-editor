@@ -79,13 +79,13 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
           <sc-for list="{{seeds}}" as="c" hint-placeholder-count="5">
             <button aria-label="{{c.n}}" onClick="{{c.pick}}" style="{{c.style}}"></button>
           </sc-for>
-          <button style="height: 40px; padding: 0 16px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 600">Custom colour…</button>
+          <button style="height: 40px; padding: 0 16px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 600">Theme colour</button>
         </div>
       </section>
 
       <section style="padding: 28px; border-radius: 8px 8px 32px 32px; background: {{t.surfaceContainerLow}}; display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
         <div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 4px">
-          <h2 style="margin: 0; font-size: 28px; line-height: 36px; font-weight: 700">Your settings, saved locally</h2>
+          <h2 style="margin: 0; font-size: 28px; line-height: 36px; font-weight: 700">Backup and history</h2>
           <span style="font-size: 14px; color: {{t.onSurfaceVariant}}">Every change is in history and can be undone. Export to move them to another computer.</span>
         </div>
         <button style="height: 40px; padding: 0 20px; border-radius: 20px; border: 1px solid {{t.outline}}; background: transparent; color: {{t.primary}}; font-weight: 600">Export settings</button>
