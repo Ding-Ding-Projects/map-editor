@@ -76,8 +76,20 @@ export function collection() {
   };
 }
 
+/** One collection per area, each usable on its own: file name → collection. The master file holds them all as folders. */
+export function areaCollections() {
+  const master = collection();
+  return new Map(master.item.map((g) => [
+    `map-editor.${g.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}.postman_collection.json`,
+    { info: { ...master.info, name: `Map Editor API: ${g.name}`, description: `The ${g.name} routes of the Map Editor server. Sign in first with POST /api/auth/login from the "Sign-in and accounts" collection so the session cookie is kept. Set baseUrl to your server.` }, variable: master.variable, item: g.item },
+  ]));
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const text = JSON.stringify(collection(), null, 2) + '\n';
-  if (process.argv.includes('--check')) { if (readFileSync(out, 'utf8') !== text) { console.error('docs/postman is out of date: run node scripts/postman.mjs'); process.exit(1); } console.log('Postman collection is current.'); }
-  else { mkdirSync(path.dirname(out), { recursive: true }); writeFileSync(out, text); console.log(`Wrote ${path.relative(root, out)} with ${routes().length} routes.`); }
+  const files = new Map([[path.basename(out), collection()], ...areaCollections()]);
+  const dir = path.dirname(out); const text = (c) => JSON.stringify(c, null, 2) + '\n';
+  if (process.argv.includes('--check')) {
+    for (const [name, c] of files) { let saved = ''; try { saved = readFileSync(path.join(dir, name), 'utf8'); } catch { /* missing counts as out of date */ } if (saved !== text(c)) { console.error(`docs/postman/${name} is out of date: run node scripts/postman.mjs`); process.exit(1); } }
+    console.log('Postman collections are current.');
+  } else { mkdirSync(dir, { recursive: true }); for (const [name, c] of files) writeFileSync(path.join(dir, name), text(c)); console.log(`Wrote ${files.size} collections to docs/postman with ${routes().length} routes.`); }
 }

@@ -1,0 +1,198 @@
+{
+  "info": {
+    "name": "Map Editor API: History and activity",
+    "description": "The History and activity routes of the Map Editor server. Sign in first with POST /api/auth/login from the \"Sign-in and accounts\" collection so the session cookie is kept. Set baseUrl to your server.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8420"
+    }
+  ],
+  "item": [
+    {
+      "name": "GET /api/activity",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/activity",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "activity"
+          ]
+        }
+      }
+    },
+    {
+      "name": "POST /api/activity",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/activity",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "activity"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"kind\": \"settings\",\n  \"message\": \"Dark theme switched on\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Reads: kind, message. Values in angle brackets come from an earlier request."
+      }
+    },
+    {
+      "name": "GET /api/history",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/history",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "history"
+          ]
+        }
+      }
+    },
+    {
+      "name": "POST /api/history/copy",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/history/copy",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "history",
+            "copy"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sha\": \"<sha from the history list>\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Reads: sha. Values in angle brackets come from an earlier request."
+      }
+    },
+    {
+      "name": "POST /api/history/restore",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/history/restore",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "history",
+            "restore"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sha\": \"<sha from the history list>\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Reads: sha. Values in angle brackets come from an earlier request."
+      }
+    },
+    {
+      "name": "GET /api/history/stats",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/history/stats",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "history",
+            "stats"
+          ]
+        }
+      }
+    },
+    {
+      "name": "POST /api/history/undo",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/history/undo",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "history",
+            "undo"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Takes no fields; send an empty JSON object."
+      }
+    }
+  ]
+}

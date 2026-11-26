@@ -1,0 +1,50 @@
+{
+  "info": {
+    "name": "Map Editor API: Other",
+    "description": "The Other routes of the Map Editor server. Sign in first with POST /api/auth/login from the \"Sign-in and accounts\" collection so the session cookie is kept. Set baseUrl to your server.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8420"
+    }
+  ],
+  "item": [
+    {
+      "name": "GET /api/changelog",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/changelog",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "changelog"
+          ]
+        }
+      }
+    },
+    {
+      "name": "GET /api/dimsum/random",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/dimsum/random",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "dimsum",
+            "random"
+          ]
+        }
+      }
+    }
+  ]
+}

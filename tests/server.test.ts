@@ -222,6 +222,18 @@ describe('Postman collection', () => {
     expect(names.length).toBe(routes().length);
     for (const must of ['POST /api/auth/login', 'GET /api/worlds', 'POST /api/worlds/open', 'GET /api/render', 'GET /api/blocks']) expect(names).toContain(must);
   });
+  it('keeps one collection per area on disk, together holding every route exactly once', async () => {
+    // @ts-expect-error the script is plain JavaScript with no type file
+    const { areaCollections, routes } = await import('../scripts/postman.mjs');
+    const { readFileSync, readdirSync } = await import('node:fs');
+    const areas: Map<string, { item: Array<{ name: string }> }> = areaCollections();
+    const dir = new URL('../docs/postman/', import.meta.url);
+    expect(readdirSync(dir).filter((f) => f.endsWith('.json')).sort()).toEqual(['map-editor.postman_collection.json', ...areas.keys()].sort());
+    const names: string[] = [];
+    for (const [file, c] of areas) { expect(JSON.parse(readFileSync(new URL(file, dir), 'utf8')), file).toEqual(JSON.parse(JSON.stringify(c))); names.push(...c.item.map((i) => i.name)); }
+    expect(names.length).toBe(routes().length);
+    expect(new Set(names).size).toBe(names.length);
+  });
   it('gives every state-changing request the fields the server reads, with a real example for each', async () => {
     // @ts-expect-error the script is plain JavaScript with no type file
     const { bodyFields, collection, EXAMPLES, UPLOADS } = await import('../scripts/postman.mjs');

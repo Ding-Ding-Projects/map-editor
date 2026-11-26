@@ -3,7 +3,10 @@
 `map-editor.postman_collection.json` is the master collection: every HTTP route the server answers, grouped by area
 (sign-in and accounts, worlds, editing and views, history and activity, extensions, tools).
 
-1. Import the file into Postman.
+Beside it there is one smaller collection per area (`map-editor.worlds.postman_collection.json` and so on) for
+when you only need one part. They hold the same requests as the folders of the master file.
+
+1. Import the master file, or the area files you need, into Postman.
 2. Set the `baseUrl` variable to your server, for example `http://localhost:8420`.
 3. Send `POST /api/auth/login` first; Postman keeps the session cookie for the other requests.
 

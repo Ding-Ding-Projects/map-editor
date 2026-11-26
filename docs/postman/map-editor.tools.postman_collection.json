@@ -1,0 +1,83 @@
+{
+  "info": {
+    "name": "Map Editor API: Tools",
+    "description": "The Tools routes of the Map Editor server. Sign in first with POST /api/auth/login from the \"Sign-in and accounts\" collection so the session cookie is kept. Set baseUrl to your server.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8420"
+    }
+  ],
+  "item": [
+    {
+      "name": "GET /api/notes",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/notes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "notes"
+          ]
+        }
+      }
+    },
+    {
+      "name": "POST /api/ollama/ask",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/ollama/ask",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "ollama",
+            "ask"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"model\": \"llama3.2\",\n  \"prompt\": \"How do I fill an area with stone?\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Reads: model, prompt. Values in angle brackets come from an earlier request."
+      }
+    },
+    {
+      "name": "GET /api/ollama/models",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/ollama/models",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "ollama",
+            "models"
+          ]
+        }
+      }
+    }
+  ]
+}

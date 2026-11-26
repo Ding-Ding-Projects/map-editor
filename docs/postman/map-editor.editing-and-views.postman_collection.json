@@ -1,0 +1,179 @@
+{
+  "info": {
+    "name": "Map Editor API: Editing and views",
+    "description": "The Editing and views routes of the Map Editor server. Sign in first with POST /api/auth/login from the \"Sign-in and accounts\" collection so the session cookie is kept. Set baseUrl to your server.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8420"
+    }
+  ],
+  "item": [
+    {
+      "name": "GET /api/blocks",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/blocks",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "blocks"
+          ]
+        }
+      }
+    },
+    {
+      "name": "POST /api/op",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/op",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "op"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"op\": \"fill\",\n  \"dimension\": \"overworld\",\n  \"box\": {\n    \"x1\": 0,\n    \"y1\": 64,\n    \"z1\": 0,\n    \"x2\": 7,\n    \"y2\": 64,\n    \"z2\": 7\n  },\n  \"block\": \"minecraft:stone\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Reads: op, dimension, box, block. Values in angle brackets come from an earlier request."
+      }
+    },
+    {
+      "name": "GET /api/render",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/render",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "render"
+          ]
+        }
+      }
+    },
+    {
+      "name": "GET /api/slice",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/slice",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "slice"
+          ]
+        }
+      }
+    },
+    {
+      "name": "GET /api/structure",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/structure",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "structure"
+          ]
+        }
+      }
+    },
+    {
+      "name": "POST /api/structure/place",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Map-Editor",
+            "value": "1"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/structure/place",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "structure",
+            "place"
+          ]
+        },
+        "body": {
+          "mode": "file",
+          "file": {
+            "src": ""
+          }
+        },
+        "description": "Send the file itself as the request body (choose it under Body, binary). The X-Map-Editor header is required."
+      }
+    },
+    {
+      "name": "GET /api/top",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/top",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "top"
+          ]
+        }
+      }
+    },
+    {
+      "name": "GET /api/volume",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/volume",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "volume"
+          ]
+        }
+      }
+    }
+  ]
+}

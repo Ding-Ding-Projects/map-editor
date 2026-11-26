@@ -1,0 +1,247 @@
+{
+  "info": {
+    "name": "Map Editor API: Worlds",
+    "description": "The Worlds routes of the Map Editor server. Sign in first with POST /api/auth/login from the \"Sign-in and accounts\" collection so the session cookie is kept. Set baseUrl to your server.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8420"
+    }
+  ],
+  "item": [
+    {
+      "name": "GET /api/world",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/world",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "world"
+          ]
+        }
+      }
+    },
+    {
+      "name": "GET /api/worlds",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/worlds",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "worlds"
+          ]
+        }
+      }
+    },
+    {
+      "name": "GET /api/worlds/bin",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/worlds/bin",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "worlds",
+            "bin"
+          ]
+        }
+      }
+    },
+    {
+      "name": "POST /api/worlds/bin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/worlds/bin",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "worlds",
+            "bin"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"paths\": [\n    \"/srv/minecraft/worlds/Practice\"\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Reads: paths. Values in angle brackets come from an earlier request."
+      }
+    },
+    {
+      "name": "GET /api/worlds/download",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/worlds/download",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "worlds",
+            "download"
+          ]
+        }
+      }
+    },
+    {
+      "name": "POST /api/worlds/new",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/worlds/new",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "worlds",
+            "new"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Alex\",\n  \"preset\": \"classic\",\n  \"size\": 4\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Reads: name, preset, size. Values in angle brackets come from an earlier request."
+      }
+    },
+    {
+      "name": "POST /api/worlds/open",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/worlds/open",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "worlds",
+            "open"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"path\": \"/srv/minecraft/worlds/Practice\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Reads: path. Values in angle brackets come from an earlier request."
+      }
+    },
+    {
+      "name": "POST /api/worlds/restore",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/worlds/restore",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "worlds",
+            "restore"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"root\": \"/srv/minecraft/worlds\",\n  \"id\": \"<id from the list request>\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Reads: root, id. Values in angle brackets come from an earlier request."
+      }
+    },
+    {
+      "name": "POST /api/worlds/upload",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Map-Editor",
+            "value": "1"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/worlds/upload",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "worlds",
+            "upload"
+          ]
+        },
+        "body": {
+          "mode": "file",
+          "file": {
+            "src": ""
+          }
+        },
+        "description": "Send the file itself as the request body (choose it under Body, binary). The X-Map-Editor header is required."
+      }
+    }
+  ]
+}

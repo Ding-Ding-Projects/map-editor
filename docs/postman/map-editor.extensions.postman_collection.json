@@ -1,0 +1,278 @@
+{
+  "info": {
+    "name": "Map Editor API: Extensions",
+    "description": "The Extensions routes of the Map Editor server. Sign in first with POST /api/auth/login from the \"Sign-in and accounts\" collection so the session cookie is kept. Set baseUrl to your server.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8420"
+    }
+  ],
+  "item": [
+    {
+      "name": "GET /api/extensions",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/extensions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "extensions"
+          ]
+        }
+      }
+    },
+    {
+      "name": "POST /api/extensions/add-folder",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/extensions/add-folder",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "extensions",
+            "add-folder"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"path\": \"/srv/minecraft/worlds/Practice\",\n  \"replace\": false\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Reads: path, replace. Values in angle brackets come from an earlier request."
+      }
+    },
+    {
+      "name": "POST /api/extensions/add-url",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/extensions/add-url",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "extensions",
+            "add-url"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"url\": \"https://example.com/extension.zip\",\n  \"replace\": false,\n  \"sha256\": \"<sha256 of the file, 64 hex characters>\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Reads: url, replace, sha256. Values in angle brackets come from an earlier request."
+      }
+    },
+    {
+      "name": "POST /api/extensions/enable",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/extensions/enable",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "extensions",
+            "enable"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"<id from the list request>\",\n  \"enabled\": true,\n  \"permissionKey\": \"<permissionKey from the extension list>\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Reads: id, enabled, permissionKey. Values in angle brackets come from an earlier request."
+      }
+    },
+    {
+      "name": "POST /api/extensions/master",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/extensions/master",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "extensions",
+            "master"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"on\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Reads: on. Values in angle brackets come from an earlier request."
+      }
+    },
+    {
+      "name": "POST /api/extensions/remove",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/extensions/remove",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "extensions",
+            "remove"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"<id from the list request>\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Reads: id. Values in angle brackets come from an earlier request."
+      }
+    },
+    {
+      "name": "POST /api/extensions/run",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/extensions/run",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "extensions",
+            "run"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"<id from the list request>\",\n  \"command\": \"<command id from the extension list>\",\n  \"selection\": {\n    \"x1\": 0,\n    \"y1\": 64,\n    \"z1\": 0,\n    \"x2\": 7,\n    \"y2\": 64,\n    \"z2\": 7\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Reads: id, command, selection. Values in angle brackets come from an earlier request."
+      }
+    },
+    {
+      "name": "GET /api/extensions/runs",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/extensions/runs",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "extensions",
+            "runs"
+          ]
+        }
+      }
+    },
+    {
+      "name": "POST /api/extensions/upload",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Map-Editor",
+            "value": "1"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/extensions/upload",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "extensions",
+            "upload"
+          ]
+        },
+        "body": {
+          "mode": "file",
+          "file": {
+            "src": ""
+          }
+        },
+        "description": "Send the file itself as the request body (choose it under Body, binary). The X-Map-Editor header is required."
+      }
+    }
+  ]
+}
