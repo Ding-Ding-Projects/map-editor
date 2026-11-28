@@ -41,6 +41,7 @@ let busy = 0; // edits in progress; a restart waits until they finish
 import { colorPicker, applyRainbowSpeed } from './colorpicker.js';
 import { RAINBOW } from './color.js';
 import { blockColor } from '../core/colors.js';
+import { MapTiles, visibleTiles, tileRect, TILE_CHUNKS, TILE_BLOCKS } from './maptiles.js';
 import { argbFromHex, themeFromSourceColor, applyTheme as applyM3Theme } from '@material/material-color-utilities';
 import { notesPanel as notesPanelImpl } from './notes.js';
 import { contextMenu, initMenus, type MenuItem } from './menu.js';
@@ -924,6 +925,8 @@ function worldsScreen(view: HTMLElement) {
 let syncSel: (() => void) | undefined;
 let setMapMode: ((m: MapMode) => void) | undefined;
 let selectTool: ((op: string) => void) | undefined;
+/** Drops the previous editor map's tiles and listeners when a new one is mounted. */
+let disposeMap: (() => void) | undefined;
 
 async function undoLast() {
   if (!world) return;
@@ -999,7 +1002,6 @@ async function editorView(view: HTMLElement): Promise<void> {
   setOp('fill'); size();
   mapEl.querySelectorAll<HTMLElement>('[data-dim]').forEach((c) => c.addEventListener('click', () => { dim = c.dataset.dim!; mapView = undefined; mapEl.querySelectorAll<HTMLElement & { selected: boolean }>('[data-dim]').forEach((x) => { x.selected = x === c; }); fitToWorld().then(() => drawMap()); }));
   mapEl.querySelector('#undo')!.addEventListener('click', () => undoLast());
-  document.addEventListener('world-changed', () => { if (canvas.isConnected) drawMap(); });
   toolEl.querySelectorAll<HTMLElement & { selected: boolean }>('[data-op]').forEach((chip, _i, all) => chip.addEventListener('click', () => { all.forEach((c) => { c.selected = c === chip; }); setOp(chip.dataset.op as typeof op); }));
   toolEl.querySelectorAll<HTMLInputElement>('.coords-grid md-outlined-text-field').forEach((f) => f.addEventListener('input', () => { (sel as Record<string, number>)[f.getAttribute('name')!] = Math.trunc(Number(f.value)); size(); drawSel(); }));
   runBtn.addEventListener('click', async () => {
@@ -1018,7 +1020,7 @@ async function editorView(view: HTMLElement): Promise<void> {
       notify(txWith('opDone', { op }, { n: r.changed.toLocaleString('en'), ms: r.ms }), false, { label: tx('history'), run: () => { prefs.tab = 'history'; render(); } });
       document.dispatchEvent(new Event('history-changed'));
       if (r.skipped) notify(tx('opSkipped', { n: r.skipped.toLocaleString('en') }), true);
-      await drawMap();
+      reloadMap();
     } catch (err) { notify((err as Error).message, true); } finally { busy--; runBtn.removeAttribute('disabled'); }
   });
 
@@ -1045,7 +1047,7 @@ async function editorView(view: HTMLElement): Promise<void> {
       notify(tx('structPlaced', { name: f.name, n: j.changed.toLocaleString('en') }), false, { label: tx('undo'), run: () => undoLast() });
       if (j.skipped) notify(tx('opSkipped', { n: j.skipped.toLocaleString('en') }), true);
       document.dispatchEvent(new Event('history-changed'));
-      await drawMap();
+      reloadMap();
     } catch (err) { notify((err as Error).message, true); } finally { busy--; }
   });
 
@@ -1073,42 +1075,62 @@ async function editorView(view: HTMLElement): Promise<void> {
       originZ = centreZ - rect.height / scale / 2;
     } catch { /* keep the current view */ }
   }
-  let image: ImageBitmap | undefined; let imgCx = 0, imgCz = 0;
+  let measure: { x1: number; z1: number; x2: number; z2: number } | undefined;
+  disposeMap?.();
+  let blocksTimer: ReturnType<typeof setTimeout> | undefined;
+  const tiles = new MapTiles<ImageBitmap>(
+    async (d, [tx, tz]) => {
+      const buf = await api<ArrayBuffer>(`/api/render?dim=${d}&cx=${tx * TILE_CHUNKS}&cz=${tz * TILE_CHUNKS}&w=${TILE_CHUNKS}&h=${TILE_CHUNKS}`);
+      return createImageBitmap(new ImageData(new Uint8ClampedArray(buf), TILE_BLOCKS, TILE_BLOCKS));
+    },
+    () => { drawSel(); clearTimeout(blocksTimer); blocksTimer = setTimeout(() => void loadWorldBlocks(), 300); },
+    (err) => notify((err as Error).message, true),
+  );
+  /** Paint what is already loaded, at once. Resizing a canvas clears it, so both happen in one step. */
   function drawSel() {
+    const rect = canvas.getBoundingClientRect();
+    const width = Math.floor(rect.width), height = Math.floor(rect.height);
+    // A panel that is not showing has no size; its last picture is kept for when it comes back.
+    if (width < 1 || height < 1) return;
+    if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
     ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = getComputedStyle(canvas).getPropertyValue('--md-sys-color-surface-container-lowest') || '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    if (image) ctx.drawImage(image, (imgCx * 16 - originX) * scale, (imgCz * 16 - originZ) * scale, image.width * scale, image.height * scale);
+    for (const tile of visibleTiles(originX, originZ, scale, width, height, 0)) {
+      const image = tiles.get(dim, tile);
+      if (!image) continue;
+      const r = tileRect(tile, originX, originZ, scale);
+      ctx.drawImage(image, r.x, r.y, r.w, r.h);
+    }
     const x = (Math.min(sel.x1, sel.x2) - originX) * scale, z = (Math.min(sel.z1, sel.z2) - originZ) * scale;
     const w = (Math.abs(sel.x2 - sel.x1) + 1) * scale, h = (Math.abs(sel.z2 - sel.z1) + 1) * scale;
     ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--md-sys-color-primary') || '#8fd88a';
     ctx.lineWidth = 2; ctx.strokeRect(x, z, w, h);
+    drawMeasure();
   }
-  async function drawMap() {
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = Math.max(1, Math.floor(rect.width)); canvas.height = Math.max(1, Math.floor(rect.height));
-    const cx0 = Math.floor(originX / 16), cz0 = Math.floor(originZ / 16);
-    const w = Math.min(64, Math.ceil(canvas.width / scale / 16) + 1), h = Math.min(64, Math.ceil(canvas.height / scale / 16) + 1);
-    try {
-      const buf = await api<ArrayBuffer>(`/api/render?dim=${dim}&cx=${cx0}&cz=${cz0}&w=${w}&h=${h}`);
-      image = await createImageBitmap(new ImageData(new Uint8ClampedArray(buf), w * 16, h * 16));
-      imgCx = cx0; imgCz = cz0;
-      void loadWorldBlocks();
-    } catch (err) { notify((err as Error).message, true); }
+  /** Show the current view, loading whatever part of it is still missing. */
+  function drawMap() {
     drawSel();
+    if (canvas.clientWidth > 0 && canvas.clientHeight > 0) tiles.want(dim, visibleTiles(originX, originZ, scale, canvas.clientWidth, canvas.clientHeight));
   }
+  /** The world itself changed. */
+  function reloadMap() { tiles.invalidate(); drawMap(); }
+  const worldChanged = () => { if (canvas.isConnected) reloadMap(); else tiles.invalidate(); };
+  document.addEventListener('world-changed', worldChanged);
+  // Someone else may have edited the world while this window was in the background.
+  window.addEventListener('focus', worldChanged);
+  disposeMap = () => { document.removeEventListener('world-changed', worldChanged); window.removeEventListener('focus', worldChanged); clearTimeout(blocksTimer); tiles.dispose(); };
   let drag: { x: number; y: number; ox: number; oz: number; kind: 'pan' | 'select' | 'measure'; bx: number; bz: number } | undefined;
-  let measure: { x1: number; z1: number; x2: number; z2: number } | undefined;
   const status = mapEl.querySelector<HTMLElement>('#mt-status')!;
   const toBlock = (e: PointerEvent) => { const r = canvas.getBoundingClientRect(); return { x: Math.floor((e.clientX - r.left) / scale + originX), z: Math.floor((e.clientY - r.top) / scale + originZ) }; };
-  const drawMeasure = () => {
+  function drawMeasure() {
     if (!measure) return;
     const p = (x: number, z: number) => [(x + 0.5 - originX) * scale, (z + 0.5 - originZ) * scale] as const;
     const [ax, az] = p(measure.x1, measure.z1), [bx, bz] = p(measure.x2, measure.z2);
     ctx.save(); ctx.setLineDash([6, 4]); ctx.lineWidth = 2;
     ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--md-sys-color-tertiary') || '#fff';
     ctx.beginPath(); ctx.moveTo(ax, az); ctx.lineTo(bx, bz); ctx.stroke(); ctx.restore();
-  };
+  }
   const measureText = () => {
     if (!measure) return '';
     const dx = Math.abs(measure.x2 - measure.x1), dz = Math.abs(measure.z2 - measure.z1);
@@ -1128,10 +1150,12 @@ async function editorView(view: HTMLElement): Promise<void> {
     const b = toBlock(e); mapEl.querySelector('#coords')!.textContent = `x ${b.x} · z ${b.z} · chunk ${Math.floor(b.x / 16)}, ${Math.floor(b.z / 16)}`;
     if (!drag) return;
     if (drag.kind === 'select') { sel.x2 = b.x; sel.z2 = b.z; size(); drawSel(); }
-    else if (drag.kind === 'measure') { measure = { ...measure!, x2: b.x, z2: b.z }; drawSel(); drawMeasure(); status.textContent = measureText(); }
-    else { originX = drag.ox - (e.clientX - drag.x) / scale; originZ = drag.oz - (e.clientY - drag.y) / scale; drawSel(); drawMeasure(); }
+    else if (drag.kind === 'measure') { measure = { ...measure!, x2: b.x, z2: b.z }; drawSel(); status.textContent = measureText(); }
+    else { originX = drag.ox - (e.clientX - drag.x) / scale; originZ = drag.oz - (e.clientY - drag.y) / scale; drawMap(); }
   });
-  canvas.addEventListener('pointerup', () => { const was = drag; drag = undefined; if (was?.kind === 'pan') { keepView(true); drawMap(); } else if (was?.kind === 'select') syncSel?.(); });
+  canvas.addEventListener('pointerup', () => { const was = drag; drag = undefined; if (was?.kind === 'pan') { keepView(true); tiles.retry(); drawMap(); } else if (was?.kind === 'select') syncSel?.(); });
+  // A cancelled pointer (touch scroll, lost capture) ends the drag where it is.
+  canvas.addEventListener('pointercancel', () => { if (drag?.kind === 'pan') keepView(true); drag = undefined; });
   async function pickAt(x: number, z: number) {
     try {
       const { top } = await api<{ top: { y: number; block: string } | null }>(`/api/top?dim=${dim}&x=${x}&z=${z}`);
@@ -1198,10 +1222,10 @@ async function editorView(view: HTMLElement): Promise<void> {
     mapMenu(r.left + r.width / 2, r.top + r.height / 2, { x: Math.floor(originX + r.width / scale / 2), z: Math.floor(originZ + r.height / scale / 2) });
   });
   canvas.dataset.mode = mapMode;
-  canvas.addEventListener('wheel', (e) => { e.preventDefault(); scale = Math.max(0.5, Math.min(16, scale * (e.deltaY < 0 ? 1.25 : 0.8))); keepView(true); drawMap(); }, { passive: false });
+  canvas.addEventListener('wheel', (e) => { e.preventDefault(); scale = Math.max(0.5, Math.min(16, scale * (e.deltaY < 0 ? 1.25 : 0.8))); keepView(true); tiles.retry(); drawMap(); }, { passive: false });
   syncSel = () => toolEl.querySelectorAll<HTMLInputElement>('.coords-grid md-outlined-text-field').forEach((f) => { f.value = String((sel as Record<string, number>)[f.getAttribute('name')!]); });
   // Until the person moves the map themselves, it stays fitted to the world as the panel settles into its size.
-  new ResizeObserver(async () => { if ((fitPending || !mapView?.moved) && canvas.clientWidth > 0) { fitPending = false; await fitToWorld(); keepView(false); } drawMap(); }).observe(canvas);
+  new ResizeObserver(async () => { drawSel(); if ((fitPending || !mapView?.moved) && canvas.clientWidth > 0) { fitPending = false; await fitToWorld(); keepView(false); } drawMap(); }).observe(canvas);
   const histEl = document.createElement('div'); histEl.className = 'panel-scroll';
   const notesEl = document.createElement('div'); notesEl.className = 'panel-scroll';
   const blocksEl = document.createElement('section'); blocksEl.className = 'panel-scroll block-palette';
@@ -1535,7 +1559,7 @@ async function historyView(view: HTMLElement, embedded = false): Promise<void> {
     view.querySelectorAll<HTMLElement>('[data-sha]').forEach((b) => b.addEventListener('click', async () => {
       if (prefs.editLock) { refuseLocked('editLock'); return; }
       if (!await askConfirm(tx('restoreAsk'), tx('restore'), true)) return;
-      try { await api('/api/history/restore', { method: 'POST', body: { sha: b.dataset.sha } }); notify(tx('restored')); play('undo'); historyView(outer, embedded); }
+      try { await api('/api/history/restore', { method: 'POST', body: { sha: b.dataset.sha } }); notify(tx('restored')); play('undo'); document.dispatchEvent(new Event('world-changed')); historyView(outer, embedded); }
       catch (err) { notify((err as Error).message, true); }
     }));
   } catch (err) { notify((err as Error).message, true); }

@@ -158,6 +158,16 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 - [x] Desktop app: the data folder, its size and the worlds folder shown in Settings, with Open and Copy path. Choosing or moving it is not built.
 - [x] Sketch board on the Tools tab: seven pens, partial eraser, straight lines, undo and redo, SVG and PNG export.
 
+## Reported on 27 November 2026
+
+- [x] Editor map no longer turns black while it is dragged or resized, and fills the view at every zoom: it is drawn from kept tiles. Compared old and new builds of the web app in headless Edge on Windows with pointer events made in the page; the packaged desktop app was not opened.
+- [ ] Desktop app opens straight into the editor without asking anyone to create an account. The Docker-hosted web app and appliance keep their sign-in.
+- [ ] Desktop app top bar: replace the plain system title bar and menu with one in the app style, designed on the design canvas first.
+- [ ] Editor compared with Amulet Map Editor and brought closer to it in layout and behaviour.
+- [ ] Editor at 1440 px wide shows a sideways scrollbar under the workspace and cuts off the version line in the header.
+- [ ] The web page logs "Identifier 'intermediateBody' has already been declared" when the editor opens (present before the map change).
+- [ ] Twelve tests in eight files fail on a Windows checkout (same list before the map change).
+
 ## Deliberately not doing
 
 - Deleting a world for good. The app never deletes a world: Move to bin puts it aside and Put back returns it. Emptying the bin is left to the owner in their file manager.
