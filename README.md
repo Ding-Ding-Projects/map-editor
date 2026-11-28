@@ -73,7 +73,7 @@ Choose a part; each opens like a tab.
 
 - Every edit in a private Git history: filters, search, per-edit change counts, roll back, Open as a copy, Undo and Ctrl+Z.
 - An Activity panel for sign-ins, settings, extensions and worlds; passwords are never recorded.
-- The first person to open it becomes the owner; passkeys as well as the password.
+- Web app and appliance: the first person to open it becomes the owner; passkeys as well as the password. The desktop app has no account.
 
 </details>
 

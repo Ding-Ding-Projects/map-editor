@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "ranAt": "2026-11-28T05:04:03Z",
-  "fingerprint": "c1a7aa75ac0ce33ce5dad27706d5d80fb9659282d267393aa0b608792227d1db",
+  "ranAt": "2026-11-28T05:09:54Z",
+  "fingerprint": "cc5180b2d29ab90ca3542b6399da6dbc01232cee7fb23fd4e43bdf3259ad0d12",
   "checks": [
     {
       "name": "type check",
@@ -10,7 +10,7 @@
     {
       "name": "tests",
       "ok": true,
-      "passed": 263,
+      "passed": 264,
       "failed": 0,
       "skipped": 0
     }

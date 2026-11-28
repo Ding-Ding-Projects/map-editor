@@ -18,6 +18,12 @@ The desktop app runs the same editor as the web app, inside its own window. It s
 
 桌面程式行嘅編輯器同網頁程式係同一個，只係放喺自己嘅視窗入面。佢會喺你部電腦度開一個私人伺服器，淨係得嗰個視窗連得到，所以唔會有嘢暴露喺你個網絡度。
 
+## No account
+
+The desktop app does not ask you to create an account or sign in. It makes a new secret key at every start and gives it to its own window only, so other programs and web pages are still refused. The web app and the appliance, which other devices can reach, keep their sign-in.
+
+桌面程式唔會叫你開戶口或者登入。佢每次啟動都會整一條新嘅秘密鎖匙，淨係交畀自己個視窗，所以其他程式同網頁照樣入唔到。網頁程式同電器映像因為其他裝置連得到，仍然要登入。
+
 ## Open the world folder in another program
 
 With a world open, right-click the map or use the command palette and choose Open world folder in…. The app lists the editors it finds on this computer (Visual Studio Code, VSCodium, Cursor, Sublime Text, Notepad++) and the file manager, remembers your last choice, and hands over only a real world folder. If no editor is found it says so and the file manager still works.

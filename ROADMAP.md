@@ -160,8 +160,8 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 
 ## Reported on 27 November 2026
 
-- [x] Editor map no longer turns black while it is dragged or resized, and fills the view at every zoom: it is drawn from kept tiles. Compared old and new builds of the web app in headless Edge on Windows with pointer events made in the page; the packaged desktop app was not opened.
-- [ ] Desktop app opens straight into the editor without asking anyone to create an account. The Docker-hosted web app and appliance keep their sign-in.
+- [x] Editor map no longer turns black while it is dragged or resized, and fills the view at every zoom: it is drawn from kept tiles. Compared old and new builds of the web app in headless Edge on Windows with pointer events made in the page, then dragged again in the unpackaged desktop app on a hidden Windows desktop; the installed package was not run.
+- [x] Desktop app opens without asking anyone to create an account; a key made at each start keeps other programs out. The Docker-hosted web app and appliance keep their sign-in. Opened unpackaged on a hidden Windows desktop; the installed package was not run.
 - [ ] Desktop app top bar: replace the plain system title bar and menu with one in the app style, designed on the design canvas first.
 - [ ] Editor compared with Amulet Map Editor and brought closer to it in layout and behaviour.
 - [ ] Editor at 1440 px wide shows a sideways scrollbar under the workspace and cuts off the version line in the header.

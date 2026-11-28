@@ -168,5 +168,12 @@ branch, checkout or stash. This section says what is finished, what is not, and 
 
 - `src/ui/maptiles.ts` keeps 16 x 16 chunk tiles; `src/ui/main.ts` paints them at once and loads what is missing. `tests/maptiles.test.ts` covers it.
 - Headless Edge, web app, 928 x 748 map canvas, 1536-block test world. Before: lowest painted share of the map during three drags was 0 (blank), 31.7% at rest. After: lowest 52.9% (the edge of the test world), 82.8% at rest, never blank.
-- Not checked: the packaged desktop app, a real mouse or touch screen, and a Bedrock world.
+- Unpackaged desktop app (Electron 45.4.1) on a hidden Windows desktop: lowest painted share during the same drags was 55.6%, never blank.
+- Not checked: the installed package, a real mouse or touch screen, and a Bedrock world.
 - Open items from the same day are listed in `ROADMAP.md`.
+
+## Desktop app without accounts, 28 November 2026
+
+- `createServer` takes `localOwner: { key }`. The desktop app makes a new key at each start and sets it as its window's session cookie. Requests without it get 401; account routes get 409. The web app and appliance are unchanged.
+- Checked in the unpackaged desktop app: no sign-in form, no account button, no Account section in Settings, a request without the key refused. Tested in `tests/server.test.ts`.
+- Owner accounts made by earlier desktop versions stay in the data folder and are no longer asked for.

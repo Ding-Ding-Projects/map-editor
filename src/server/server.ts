@@ -20,7 +20,7 @@ import { volume, MAX_OPERATION_BLOCKS, OPERATIONS, type Box } from '../core/ops.
 import { importWorldZip, exportWorldZip, createFlatWorld, WORLD_PRESETS, WORLD_SIZES, type WorldPreset } from '../core/archive.js';
 import { createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
 
 export interface ServerOptions {
   host: string;
@@ -35,6 +35,11 @@ export interface ServerOptions {
   /** Desktop only: allow opening any folder the person picked in a native dialog. */
   allowAnyPath?: boolean;
   staticDir?: string;
+  /**
+   * Desktop only: the person at this computer is the owner, with no account. The app makes a new secret key at
+   * every start and puts it in its own window's session cookie, so other programs and web pages are still refused.
+   */
+  localOwner?: { key: string };
 }
 
 export interface BuildInfo { version: string; commit: string; builtAt: string | null; codeName?: { id: string; en: string; yue: string; jyutping: string } | null; changelog?: Array<{ sha: string; date: string; subject: string; body?: string }> }
@@ -102,6 +107,10 @@ export async function createServer(opts: ServerOptions) {
     return opts.worldRoots.some((r) => { const rel = path.relative(path.resolve(r), abs); return rel && !rel.startsWith('..') && !path.isAbsolute(rel); });
   }
 
+  const localKey = opts.localOwner ? Buffer.from(opts.localOwner.key) : undefined;
+  if (localKey && localKey.length < 32) throw new Error('The local owner key is too short.');
+  const isLocalKey = (token: string | undefined) => { const t = Buffer.from(token ?? ''); return Boolean(localKey) && t.length === localKey!.length && timingSafeEqual(t, localKey!); };
+
   async function api(req: http.IncomingMessage, res: http.ServerResponse, url: URL) {
     const send = (status: number, data: unknown) => { res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' }); res.end(JSON.stringify(data)); };
     const p = url.pathname;
@@ -116,13 +125,15 @@ export async function createServer(opts: ServerOptions) {
     if (isUpload && req.headers['x-map-editor'] !== '1') throw new HttpError(403, 'Uploads must come from the Map Editor page.');
 
     const token = cookie(req, 'me_session');
-    const user = accounts.session(token);
+    const user = localKey ? (isLocalKey(token) ? { name: 'Owner' } : undefined) : accounts.session(token);
 
     if (p === '/api/dimsum/random') {
       if (!user) throw new HttpError(401, 'Sign in first.');
       try { return send(200, await dimsum.random()); } catch (e) { throw new HttpError(503, `Dim sum catalog unavailable: ${(e as Error).message}`); }
     }
-    if (p === '/api/auth/state') return send(200, { hasOwner: await accounts.hasOwner(), hasPasskeys: (await passkeys.all()).length > 0, user: user ? { name: user.name } : null });
+    if (p === '/api/auth/state') return send(200, { local: Boolean(localKey), hasOwner: Boolean(localKey) || await accounts.hasOwner(), hasPasskeys: !localKey && (await passkeys.all()).length > 0, user: user ? { name: user.name } : null });
+    // With a local owner there is nothing to register, sign in to or sign out of.
+    if (localKey && ['/api/auth/', '/api/passkeys', '/api/authenticator'].some((x) => p.startsWith(x))) throw new HttpError(409, 'This app does not use accounts.');
     if (p === '/api/auth/passkey/options' && req.method === 'POST') {
       try { return send(200, await passkeys.loginOptions(rp(req))); } catch (e) { throw new HttpError(409, (e as Error).message); }
     }

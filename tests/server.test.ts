@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { mkdtemp, mkdir } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createServer } from '../src/server/server.js';
@@ -38,6 +38,26 @@ beforeAll(async () => {
   close = s.close;
 });
 afterAll(() => close());
+
+describe('a desktop app with a local owner', () => {
+  it('lets only the key holder in, and has no accounts', async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'me-local-'));
+    const key = 'k'.repeat(43);
+    const local = await createServer({ host: '127.0.0.1', port: 0, dataDir: dir, worldRoots: [dir], localOwner: { key } });
+    try {
+      const url = `http://127.0.0.1:${local.port}`;
+      const get = (p: string, cookie?: string) => fetch(url + p, { headers: cookie ? { cookie: `me_session=${cookie}` } : {} });
+      expect(await (await get('/api/auth/state', key)).json()).toMatchObject({ local: true, hasOwner: true, user: { name: 'Owner' } });
+      expect((await get('/api/worlds', key)).status).toBe(200);
+      expect((await get('/api/worlds')).status).toBe(401);
+      expect((await get('/api/worlds', 'x'.repeat(43))).status).toBe(401);
+      for (const p of ['/api/auth/register', '/api/auth/login', '/api/auth/logout']) {
+        const r = await fetch(url + p, { method: 'POST', headers: { 'content-type': 'application/json', cookie: `me_session=${key}` }, body: JSON.stringify({ name: 'Alex', password: 'correct horse battery' }) });
+        expect(r.status).toBe(409);
+      }
+    } finally { await local.close(); await rm(dir, { recursive: true, force: true }); }
+  });
+});
 
 describe('server', () => {
   it('reports health with version provenance (honestly unavailable in tests)', async () => {

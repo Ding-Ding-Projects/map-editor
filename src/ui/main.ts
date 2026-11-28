@@ -135,6 +135,8 @@ let health: Health | undefined;
 let user: { name: string } | null = null;
 let hasOwner = true;
 let hasPasskeys = false;
+/** The desktop app has no accounts: nothing to sign in to, sign out of or secure. */
+let localOwner = false;
 /** Passkeys need a secure page (https or localhost) and a browser that supports them. */
 const passkeysUsable = () => window.isSecureContext && browserSupportsWebAuthn();
 let world: { name: string; versionName?: string; edition?: 'java' | 'bedrock'; path: string; dimensions?: string[]; spawn?: { x: number; y: number; z: number } } | undefined;
@@ -543,6 +545,7 @@ function paletteCommands(): Command[] {
   for (const c of cmds) { const sel = gotoOf[c.id]; const t = sel && SETTING_TARGETS.find(([x]) => x === sel); if (t) c.goto = () => showSetting(t[0], t[1]); }
   const covered = new Set(Object.values(gotoOf));
   for (const [selector, section, key] of SETTING_TARGETS) {
+    if (localOwner && section === 'account') continue;
     if (covered.has(selector)) continue;
     cmds.push({ id: `set-${selector.replace(/\W/g, '')}`, label: tx(key), where: `${tx('settings')} › ${tx(SECTION_KEY[section])}`, run: () => showSetting(selector, section), goto: () => showSetting(selector, section) });
   }
@@ -791,7 +794,7 @@ function shell() {
       </md-chip-set>
       ${user && prefs.onboarded ? `<md-icon-button id="tour-help" aria-label="${esc(tx('help'))}" title="${esc(tx('help'))}"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.7-2.5 2-2.5 4M12 17h.01"/></svg></md-icon-button>` : ''}
       ${user ? `<span class="bell-wrap"><md-icon-button id="bell" aria-label="${esc(tx('notifications'))}${notes.length ? `, ${notes.length}` : ''}"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21h4"/></svg></md-icon-button>${notes.length ? `<span class="badge">${notes.length}</span>` : ''}</span>` : ''}
-      ${user ? `<md-outlined-button id="logout" data-icon="user" title="${esc(tx('acctOpen', { name: user.name }))}" aria-label="${esc(tx('acctOpen', { name: user.name }))}" aria-haspopup="menu"><span class="acct-name">${esc(user.name)}</span></md-outlined-button>` : ''}
+      ${user && !localOwner ? `<md-outlined-button id="logout" data-icon="user" title="${esc(tx('acctOpen', { name: user.name }))}" aria-label="${esc(tx('acctOpen', { name: user.name }))}" aria-haspopup="menu"><span class="acct-name">${esc(user.name)}</span></md-outlined-button>` : ''}
     </header>
     <div id="update-banner" class="update-banner" role="region" aria-label="${esc(tx('updateRegion'))}" hidden></div>
     <div class="body">
@@ -1792,7 +1795,8 @@ async function extensionsPanel(view: HTMLElement) {
 }
 
 function settingsView(view: HTMLElement) {
-  const sec = SECTIONS.some(([id]) => id === prefs.settingsSection) ? prefs.settingsSection : 'language';
+  const sections = SECTIONS.filter(([id]) => !(localOwner && id === 'account'));
+  const sec = sections.some(([id]) => id === prefs.settingsSection) ? prefs.settingsSection : 'language';
   // Every switch can be locked on its own, so it cannot be changed by accident (here or in the palette).
   const lockedSet = new Set(prefs.lockedSettings);
   // Where the value comes from: the built-in choice, or the person's own change, always naming the built-in one.
@@ -1874,8 +1878,8 @@ function settingsView(view: HTMLElement) {
   view.innerHTML = `<div class="settings">
     <nav class="set-nav" aria-label="${esc(tx('settings'))}"><h1>${esc(tx('settings'))}</h1>
       <div id="ss-host"></div>
-      <div role="tablist" aria-orientation="vertical">${SECTIONS.map(([id, k]) => `<button role="tab" class="set-tab${id === sec ? ' on' : ''}" aria-selected="${id === sec}" data-sec="${id}">${esc(tx(k))}</button>`).join('')}</div></nav>
-    <main class="set-main" id="set-main">${SECTIONS.map(([id, k]) => `<section class="set-sec" data-sec-body="${id}" ${id === sec ? '' : 'hidden'}><h2>${esc(tx(k))}</h2>${body[id]}</section>`).join('')}
+      <div role="tablist" aria-orientation="vertical">${sections.map(([id, k]) => `<button role="tab" class="set-tab${id === sec ? ' on' : ''}" aria-selected="${id === sec}" data-sec="${id}">${esc(tx(k))}</button>`).join('')}</div></nav>
+    <main class="set-main" id="set-main">${sections.map(([id, k]) => `<section class="set-sec" data-sec-body="${id}" ${id === sec ? '' : 'hidden'}><h2>${esc(tx(k))}</h2>${body[id]}</section>`).join('')}
       <p class="muted" id="ss-none" hidden></p></main></div>`;
   // A locked Settings screen can be read but not changed, until it is unlocked here (which asks first).
   if (prefs.settingsLocked) {
@@ -1913,7 +1917,7 @@ function settingsView(view: HTMLElement) {
     const none = view.querySelector<HTMLElement>('#ss-none')!; none.hidden = !q || count > 0; none.textContent = tx('noSettingMatch', { q });
   });
   if (sec === 'extensions' || ss.query()) void extensionsPanel(view);
-  if (sec === 'account' || ss.query()) { void totpPanel(view); void passkeyPanel(view); view.querySelector('#pk-add')?.addEventListener('click', () => { void addPasskey(view); }); }
+  if (!localOwner && (sec === 'account' || ss.query())) { void totpPanel(view); void passkeyPanel(view); view.querySelector('#pk-add')?.addEventListener('click', () => { void addPasskey(view); }); }
   view.querySelectorAll<HTMLElement>('[data-set-lang]').forEach((b) => b.addEventListener('click', () => { prefs.lang = b.dataset.setLang as Prefs['lang']; savePrefs(); applyTheme(); render(); }));
   const num = (id: string) => Number((view.querySelector(id) as HTMLInputElement).value);
   const sel = (e: Event) => (e.target as HTMLElement & { selected: boolean }).selected;
@@ -2124,7 +2128,7 @@ document.addEventListener('keydown', (e) => {
   }
   enableClearControls((field) => tx('clearField', { field }));
   try { health = await api<Health>('/api/health'); } catch { /* shown as unavailable */ }
-  try { const s = await api<{ hasOwner: boolean; hasPasskeys?: boolean; user: { name: string } | null }>('/api/auth/state'); hasOwner = s.hasOwner; hasPasskeys = Boolean(s.hasPasskeys); user = s.user; } catch (e) { notify((e as Error).message, true); }
+  try { const s = await api<{ local?: boolean; hasOwner: boolean; hasPasskeys?: boolean; user: { name: string } | null }>('/api/auth/state'); localOwner = Boolean(s.local); hasOwner = s.hasOwner; hasPasskeys = Boolean(s.hasPasskeys); user = s.user; } catch (e) { notify((e as Error).message, true); }
   render();
   setTimeout(() => { void dimSumSurprise(); }, 2500);
   if (user) loadExtensions().catch(() => undefined);

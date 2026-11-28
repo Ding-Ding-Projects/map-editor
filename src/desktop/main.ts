@@ -7,6 +7,7 @@ import { createServer } from '../server/server.js';
 import { handleSquirrelEvent } from './squirrel.js';
 import { startUpdater } from './updater.js';
 import { spawn } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
 import { detectEditors } from './editors.js';
 import { changeWorldsFolders, currentDataDir, extraWorldsFolders, moveDataDir, savedWindowName, saveWindowName } from './datafolder.js';
 
@@ -27,8 +28,10 @@ if (!squirrel) app.whenReady().then(async () => {
   await fs.mkdir(dataDir, { recursive: true });
   // The server keeps this very list, so a folder added in Settings shows its worlds straight away.
   const worldRoots = [defaultSaves(), ...await extraWorldsFolders(userData, defaultSaves())];
+  // No account on the desktop: a key made for this run, known only to this window, stands in for signing in.
+  const key = randomBytes(32).toString('base64url');
   const { port } = await createServer({
-    host: '127.0.0.1', port: 0, dataDir, worldRoots, allowAnyPath: true,
+    host: '127.0.0.1', port: 0, dataDir, worldRoots, allowAnyPath: true, localOwner: { key },
     staticDir: path.join(__dirname, '..', 'ui'),
   });
   win = new BrowserWindow({
@@ -106,6 +109,7 @@ if (!squirrel) app.whenReady().then(async () => {
   // Links to other sites open in the normal browser, never inside the app window.
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: 'deny' }; });
   win.webContents.on('will-navigate', (e, url) => { if (!url.startsWith(`http://127.0.0.1:${port}/`)) e.preventDefault(); });
+  await win.webContents.session.cookies.set({ url: `http://127.0.0.1:${port}/`, name: 'me_session', value: key, httpOnly: true, sameSite: 'strict' });
   await win.loadURL(`http://127.0.0.1:${port}/`);
 });
 
