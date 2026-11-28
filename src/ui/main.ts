@@ -20,6 +20,7 @@ import { onboarding } from './onboarding.js';
 /** Present only inside the desktop app (see src/desktop/preload.ts). */
 type UpdState = { state: 'disabled'; reason: string } | { state: 'idle' | 'checking' | 'none' | 'downloading'; at?: string } | { state: 'ready'; version: string; notes: string } | { state: 'error'; message: string };
 interface DesktopBridge {
+  titleBarColors?: (color: string, symbolColor: string) => Promise<void>;
   pickFolder: () => Promise<string | undefined>;
   openDataFolder?: (p: string) => Promise<string>;
   editors?: () => Promise<Array<{ id: string; name: string }>>;
@@ -594,6 +595,18 @@ function applyTheme() {
   if (wordingOff !== prefs.schoolMode) applyWording();
   configureSounds(prefs.sounds && !quiet(), prefs.soundVolume / 100);
   document.documentElement.dataset.lang = prefs.lang; document.documentElement.lang = prefs.lang === 'yue' ? 'zh-Hant-HK' : 'en';
+  paintTitleBar();
+}
+
+/** In the desktop app the header is the title bar: the system's window buttons take the header's colours. */
+function paintTitleBar() {
+  if (!desktopBridge?.titleBarColors) return;
+  const root = document.documentElement;
+  root.classList.add('desktop-frame');
+  const tone = root.dataset.toneHeader;
+  const [back, text] = tone && tone !== 'surface' ? [`${tone}-container`, `on-${tone}-container`] : [tone === 'surface' ? 'surface-container-high' : 'surface', 'on-surface'];
+  const colour = (name: string) => getComputedStyle(root).getPropertyValue(`--md-sys-color-${name}`).trim();
+  void desktopBridge.titleBarColors(colour(back), colour(text)).catch(() => undefined);
 }
 
 function provenance() {

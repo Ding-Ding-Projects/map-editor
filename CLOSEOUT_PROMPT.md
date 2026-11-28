@@ -15,8 +15,8 @@ State on 2026-11-28:
   Linux for the record. Check the newest Build and release run before relying on a release.
 
 Next, in this order:
-1. Desktop app: replace the plain system title bar and the File, Edit, View, Window menu with a top bar in the
-   app style. Put the design on the design canvas (design/canvas) before building it.
+1. The desktop top bar is built (the header is the title bar). Check the canvas board for it is in design/canvas,
+   and try window dragging, the hidden menu's shortcuts and the installed package.
 2. Compare the editor with Amulet Map Editor (a checkout may sit next to this repository) and bring layout and
    behaviour closer to it, again designed on the canvas first.
 3. The editor shows a sideways scrollbar and a cut-off version line at 1440 px wide, and logs

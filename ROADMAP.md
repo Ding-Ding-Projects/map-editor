@@ -162,7 +162,9 @@ Ticked means the built artifact was run and checked. Everything else says exactl
 
 - [x] Editor map no longer turns black while it is dragged or resized, and fills the view at every zoom: it is drawn from kept tiles. Compared old and new builds of the web app in headless Edge on Windows with pointer events made in the page, then dragged again in the unpackaged desktop app on a hidden Windows desktop; the installed package was not run.
 - [x] Desktop app opens without asking anyone to create an account; a key made at each start keeps other programs out. The Docker-hosted web app and appliance keep their sign-in. Opened unpackaged on a hidden Windows desktop; the installed package was not run.
-- [ ] Desktop app top bar: replace the plain system title bar and menu with one in the app style, designed on the design canvas first.
+- [x] Desktop app top bar: the app header is the title bar, the system draws only the window buttons in the theme colours, and the menu row is gone (its keyboard shortcuts stay registered). Seen in the unpackaged app on a hidden Windows desktop, dark and light, at 1440, 720 and 380 px. Dragging the window by the header with a real mouse, the installed package and macOS were not tried.
+- [ ] Design canvas board for the new desktop top bar.
+- [ ] At 380 px the Worlds screen scrolls sideways because of the long worlds folder path.
 - [ ] Editor compared with Amulet Map Editor and brought closer to it in layout and behaviour.
 - [ ] Editor at 1440 px wide shows a sideways scrollbar under the workspace and cuts off the version line in the header.
 - [ ] The web page logs "Identifier 'intermediateBody' has already been declared" when the editor opens (present before the map change).

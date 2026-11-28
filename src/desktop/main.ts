@@ -37,7 +37,16 @@ if (!squirrel) app.whenReady().then(async () => {
   win = new BrowserWindow({
     width: 1440, height: 900, minWidth: 360, minHeight: 600, title: (await savedWindowName(userData)) || 'Map Editor', backgroundColor: '#10140F',
     icon: path.join(__dirname, '..', 'icon.png'),
+    // The app's own header is the title bar; the system draws only the window buttons, in the theme's colours.
+    titleBarStyle: 'hidden', titleBarOverlay: { color: '#10140F', symbolColor: '#E0E4DB', height: 72 },
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false },
+  });
+  // The File, Edit, View and Window menu stays registered for its keyboard shortcuts but is never shown.
+  win.setMenuBarVisibility(false);
+  ipcMain.handle('title-bar-colors', (_e, color: unknown, symbolColor: unknown) => {
+    const hex = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
+    // macOS draws its own window buttons and has no overlay to colour.
+    if (process.platform !== 'darwin' && hex(color) && hex(symbolColor)) win?.setTitleBarOverlay({ color, symbolColor });
   });
   // Opens a folder in Explorer, but only inside this app's own data folder (the extensions folder).
   ipcMain.handle('open-data-folder', async (_e, p: string) => {

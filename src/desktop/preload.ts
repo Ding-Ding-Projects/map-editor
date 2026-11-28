@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('mapEditorDesktop', {
   relaunch: (): Promise<void> => ipcRenderer.invoke('relaunch'),
   rememberName: (name: string): Promise<string> => ipcRenderer.invoke('window-name', name),
   openDataRoot: (): Promise<string> => ipcRenderer.invoke('open-data-root'),
+  titleBarColors: (color: string, symbolColor: string): Promise<void> => ipcRenderer.invoke('title-bar-colors', color, symbolColor),
   updates: {
     state: () => ipcRenderer.invoke('update-state'),
     check: () => ipcRenderer.invoke('update-check'),

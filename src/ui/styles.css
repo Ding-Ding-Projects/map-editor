@@ -1332,3 +1332,14 @@ details.set-more ul { margin: 4px 0 6px; padding-inline-start: 20px; display: gr
 }
 .card label.check:has(md-checkbox), .vd-form label.check:has(md-checkbox), p > label.check:has(md-checkbox), label.check.check:has(md-checkbox) { display: inline-flex; align-items: center; gap: 4px; min-height: 48px; cursor: pointer; }
 .ob-switch > span { display: flex; flex-direction: column; gap: 2px; flex: 1; } .ob-switch small { font-size: 13px; color: var(--md-sys-color-on-surface-variant); } label.ob-switch { min-height: 64px; padding: 8px 16px; border-radius: 20px; background: var(--md-sys-color-surface-container-high); margin: 6px 0; gap: 16px; align-items: center; cursor: pointer; }
+
+/* ================= Desktop app: the header is the title bar ================= */
+/* Empty header space drags the window. The right (or, on macOS, left) padding leaves room for the system window buttons. */
+.desktop-frame .top { position: sticky; top: 0; z-index: 15; min-height: 72px; box-sizing: border-box; -webkit-app-region: drag; user-select: none;
+  padding-left: calc(env(titlebar-area-x, 0px) + 20px); padding-right: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + 12px); }
+.desktop-frame .top :is(button, a, input, md-chip-set, md-icon-button, md-outlined-button, .search-pill, .bell-wrap) { -webkit-app-region: no-drag; }
+/* Anything laid over the header must still take clicks. */
+.desktop-frame :is(.palette-scrim, .takeover, .super-confirm, .note-centre, .ctx-menu, .help-menu, .tour-card, .level-up, .dimsum, .toasts, dialog, md-dialog, md-menu, [popover]) { -webkit-app-region: no-drag; }
+/* Narrow desktop windows: search gets its own row, so the name keeps the room beside the window buttons. */
+@media (max-width: 800px) { .desktop-frame .top .brand { flex: 1 1 0; } .desktop-frame .top .search-pill { order: 9; flex: 1 1 100%; max-width: none; } }
+@media (max-width: 440px) { .desktop-frame .top .brand .logo { display: none; } }

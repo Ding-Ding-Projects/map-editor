@@ -177,3 +177,8 @@ branch, checkout or stash. This section says what is finished, what is not, and 
 - `createServer` takes `localOwner: { key }`. The desktop app makes a new key at each start and sets it as its window's session cookie. Requests without it get 401; account routes get 409. The web app and appliance are unchanged.
 - Checked in the unpackaged desktop app: no sign-in form, no account button, no Account section in Settings, a request without the key refused. Tested in `tests/server.test.ts`.
 - Owner accounts made by earlier desktop versions stay in the data folder and are no longer asked for.
+
+## Desktop top bar, 28 November 2026
+
+- `src/desktop/main.ts` hides the system title bar and shows the window buttons as an overlay; the page recolours them through `titleBarColors` whenever the theme changes. Drag and no-drag areas are at the end of `src/ui/styles.css`.
+- Checked as listed in `ROADMAP.md`. Keyboard shortcuts of the hidden menu were not pressed. The design canvas board was drawn after the code, not before it.
